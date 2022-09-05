@@ -1,5 +1,5 @@
 use error_stack::{Context, IntoReport, Report, Result, ResultExt};
-use std::fmt::Display;
+use std::{fmt::Display, mem::discriminant};
 
 #[derive(Debug)]
 pub enum LexerError {
@@ -58,6 +58,12 @@ pub(crate) enum Token {
     LBrace,
     RBrace,
 }
+impl Token {
+    /// Checks if the token type matches without checking the internal data
+    pub(crate) fn token_matches(&self, other: &Self) -> bool {
+        discriminant(self) == discriminant(other)
+    }
+}
 
 #[derive(Debug, Clone)]
 pub(crate) struct LocTok {
@@ -90,7 +96,7 @@ impl<'a> Lexer<'a> {
         while self.pos < self.len && (self.input[self.pos] as char).is_whitespace() {
             self.pos += 1;
             self.column += 1;
-            if self.input[self.pos] as char == '\n' {
+            if self.pos < self.len && self.input[self.pos] as char == '\n' {
                 self.line += 1;
                 self.column = 0;
             }
@@ -320,6 +326,40 @@ mod test {
             Ident("add".into()), Assign, Func, LParen, Ident("x".into()), Comma, Ident("y".into()), RParen, LBrace, Ident("x".into()),
             Minus, Ident("y".into()), RBrace, Semicolon,
         ];
+        let lexer = Lexer::new(code.as_bytes(), code.len());
+        assert_eq!(
+            correct,
+            lexer
+                .into_iter()
+                .map(|lok_tok| lok_tok.token)
+                .collect::<Vec<_>>()
+        );
+    }
+
+    #[test]
+    fn let_ends_on_plus_space() {
+        let code: &'static str = r#"let x = 10 + "#;
+        #[rustfmt::skip]
+            let correct = vec![
+                Let, Ident("x".into()), Assign, Int(10), Plus
+            ];
+        let lexer = Lexer::new(code.as_bytes(), code.len());
+        assert_eq!(
+            correct,
+            lexer
+                .into_iter()
+                .map(|lok_tok| lok_tok.token)
+                .collect::<Vec<_>>()
+        );
+    }
+
+    #[test]
+    fn let_ends_on_plus() {
+        let code: &'static str = r#"let x = 10 +"#;
+        #[rustfmt::skip]
+            let correct = vec![
+                Let, Ident("x".into()), Assign, Int(10), Plus
+            ];
         let lexer = Lexer::new(code.as_bytes(), code.len());
         assert_eq!(
             correct,
