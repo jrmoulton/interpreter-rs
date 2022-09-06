@@ -43,9 +43,14 @@ pub(crate) struct LetStatement {
 }
 
 #[derive(Debug)]
+pub(crate) struct ReturnStatement {
+    expr: Expr,
+}
+
+#[derive(Debug)]
 pub(crate) enum Statement {
     Let(LetStatement),
-    Deleteme,
+    Return(ReturnStatement),
 }
 
 #[derive(Debug)]
@@ -81,10 +86,14 @@ pub(crate) fn parse(lexer: Lexer) -> Result<Vec<Statement>, ParseErrors> {
                 Ok(statement) => statements.push(Statement::Let(statement)),
                 Err(e) => errors.extend(e.0),
             },
+            Token::Return => match parse_return_statement(lexer_ref.clone()) {
+                Ok(statement) => statements.push(Statement::Return(statement)),
+                Err(e) => errors.extend(e.0),
+            },
             _ => {
                 errors.push(
                     Report::new(ParseError::UnexpectedToken(lok_tok))
-                        .attach_printable("Expected a `Let` keyword"),
+                        .attach_printable("Expected a statement such as `Let` or `Return` "),
                 );
             }
         };
@@ -96,6 +105,26 @@ pub(crate) fn parse(lexer: Lexer) -> Result<Vec<Statement>, ParseErrors> {
         Err(Report::new(ParseErrors(errors)))
     } else {
         Ok(statements)
+    }
+}
+
+fn parse_return_statement(
+    lexer: LexerPeekRef,
+) -> std::result::Result<ReturnStatement, ParseErrors> {
+    let mut errors = Vec::new();
+    let expr = match parse_expression(lexer.clone()) {
+        Ok(expr) => Some(expr),
+        Err(e) => {
+            errors.push(e);
+            None
+        }
+    };
+    if errors.is_empty() {
+        Ok(ReturnStatement {
+            expr: expr.expect("Some because there are no errors"),
+        })
+    } else {
+        Err(ParseErrors(errors))
     }
 }
 
@@ -179,6 +208,7 @@ fn parse_expression(lexer: LexerPeekRef) -> Result<Expr, ParseError> {
             Token::Int(_) | Token::If | Token::Func => {
                 let peek = lexer.borrow_mut().peek().map(|val| val.to_owned());
                 match peek {
+                    // When do expressions end?
                     Some(peek_lok_tok) => match peek_lok_tok.token {
                         Token::Semicolon => {
                             Ok(Expr::Base(lhs_lok_tok))
@@ -307,6 +337,30 @@ mod test {
                         assert!(false, "The parser didn't return any values");
                     }
                 };
+            }
+            Err(e) => {
+                println!("{e}");
+                assert!(false);
+            }
+        };
+    }
+
+    #[test]
+    fn basic_return() {
+        let code: &'static str = r#"return 35;"#;
+        let lexer = Lexer::new(code.as_bytes(), code.len());
+        match parse(lexer) {
+            Ok(statements) => {
+                let mut statements = statements.iter();
+                assert_matches!(
+                    statements.next(),
+                    Some(Statement::Return(ReturnStatement {
+                        expr: Expr::Base(LocTok {
+                            token: Token::Int(35),
+                            ..
+                        }),
+                    }))
+                );
             }
             Err(e) => {
                 println!("{e}");

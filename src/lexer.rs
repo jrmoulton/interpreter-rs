@@ -94,12 +94,13 @@ impl<'a> Lexer<'a> {
     }
     fn next_token(&mut self) -> Result<Option<LocTok>, LexerError> {
         while self.pos < self.len && (self.input[self.pos] as char).is_whitespace() {
-            self.pos += 1;
-            self.column += 1;
-            if self.pos < self.len && self.input[self.pos] as char == '\n' {
+            if self.input[self.pos] as char == '\n' {
                 self.line += 1;
                 self.column = 0;
+            } else {
+                self.column += 1;
             }
+            self.pos += 1;
         }
         let mut token = LocTok {
             line: self.line,
