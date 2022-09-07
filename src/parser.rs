@@ -74,18 +74,12 @@ pub(crate) fn parse(lexer: Lexer) -> Result<Vec<Statement>, ParseErrors> {
                 Ok(statement) => statements.push(Statement::Return(statement)),
                 Err(e) => errors.extend(e.0),
             },
-            Token::Int(_) => match parse_expression_statement(lexer_ref.clone()) {
-                Ok(statement) => statements.push(Statement::Expression(statement)),
-                Err(e) => errors.push(e),
-            },
-            Token::If => match parse_expression_statement(lexer_ref.clone()) {
-                Ok(statement) => statements.push(Statement::Expression(statement)),
-                Err(e) => errors.push(e),
-            },
-            Token::Ident(_) => match parse_expression_statement(lexer_ref.clone()) {
-                Ok(statement) => statements.push(Statement::Expression(statement)),
-                Err(e) => errors.push(e),
-            },
+            Token::Int(_) | Token::If | Token::Ident(_) => {
+                match parse_expression_statement(lexer_ref.clone()) {
+                    Ok(statement) => statements.push(Statement::Expression(statement)),
+                    Err(e) => errors.push(e),
+                }
+            }
             _ => errors.push(
                 Report::new(ParseError::UnexpectedToken(lok_tok))
                     .attach_printable("Expected a statement or an expression"),
@@ -210,17 +204,27 @@ fn parse_identifier(lexer: LexerPeekRef) -> Result<LocTok, ParseError> {
 
 fn parse_expression_statement(lexer: LexerPeekRef) -> Result<Expr, ParseError> {
     parse_expression(lexer.clone(), Precedence::Lowest)
+    // TODO: Handle optional semicolon here
 }
 
 fn parse_expression(lexer: LexerPeekRef, precedence: Precedence) -> Result<Expr, ParseError> {
-    let lhs_val = lexer.borrow_mut().next();
-    let mut left_exp = match lhs_val {
+    use Token::*;
+    let lhs_val_peek = lexer.borrow_mut().peek().map(|val| val.to_owned());
+    let mut left_exp = match lhs_val_peek {
         Some(left_lok_tok) => match left_lok_tok.token {
             // All Literals, identifiers and prefix operators should be matched here
-            Token::Ident(_) => Expr::Ident(left_lok_tok),
-            Token::Int(_) => (Expr::IntLiteral(left_lok_tok)),
-            Token::Bang => (parse_prefix_expression(lexer.clone())?),
-            Token::Minus => (parse_prefix_expression(lexer.clone())?),
+            Ident(_) => {
+                lexer.borrow_mut().next();
+                Expr::Ident(left_lok_tok)
+            }
+            Int(_) => {
+                lexer.borrow_mut().next();
+                Expr::IntLiteral(left_lok_tok)
+            }
+            Bang | Token::Minus => {
+                lexer.borrow_mut().next();
+                parse_prefix_expression(lexer.clone())?
+            }
             _ => Err(Report::new(ParseError::UnexpectedToken(left_lok_tok))
                 .attach_printable("Expected an expression"))?,
         },
@@ -235,14 +239,9 @@ fn parse_expression(lexer: LexerPeekRef, precedence: Precedence) -> Result<Expr,
     while precedence < peek_op_token.token.precedence() {
         left_exp = match peek_op_token.token {
             // All binary tokens should be matched here
-            Token::Plus => parse_binary_expression(lexer.clone(), left_exp)?,
-            Token::Minus => parse_binary_expression(lexer.clone(), left_exp)?,
-            Token::Slash => parse_binary_expression(lexer.clone(), left_exp)?,
-            Token::Asterisk => parse_binary_expression(lexer.clone(), left_exp)?,
-            Token::Eq => parse_binary_expression(lexer.clone(), left_exp)?,
-            Token::Ne => parse_binary_expression(lexer.clone(), left_exp)?,
-            Token::LT => parse_binary_expression(lexer.clone(), left_exp)?,
-            Token::GT => parse_binary_expression(lexer.clone(), left_exp)?,
+            Plus | Minus | Slash | Asterisk | Eq | Ne | LT | GT | Assign => {
+                parse_binary_expression(lexer.clone(), left_exp)?
+            }
             _ => Err(Report::new(ParseError::UnexpectedToken(peek_op_token))
                 .attach_printable("Expected a binary operator"))?,
         };
