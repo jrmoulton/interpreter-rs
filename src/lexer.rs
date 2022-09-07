@@ -13,6 +13,17 @@ impl Display for LexerError {
 }
 impl Context for LexerError {}
 
+#[derive(PartialEq, PartialOrd)]
+pub(crate) enum Precedence {
+    Lowest = 0,
+    Equals = 1,
+    LessGreat = 2,
+    Sum = 3,
+    Product = 4,
+    Prefix = 5,
+    Call = 6,
+}
+
 #[derive(Debug, Clone, PartialEq)]
 pub(crate) enum Token {
     // Extra stuff
@@ -62,6 +73,21 @@ impl Token {
     /// Checks if the token type matches without checking the internal data
     pub(crate) fn token_matches(&self, other: &Self) -> bool {
         discriminant(self) == discriminant(other)
+    }
+    pub(crate) fn precedence(&self) -> Precedence {
+        use Precedence::*;
+        use Token::*;
+        match self {
+            Plus => Sum,
+            Minus => Sum,
+            Slash => Product,
+            Asterisk => Product,
+            LT => LessGreat,
+            GT => LessGreat,
+            Eq => Equals,
+            Ne => Equals,
+            _ => Lowest,
+        }
     }
 }
 

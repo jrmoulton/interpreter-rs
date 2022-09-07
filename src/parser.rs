@@ -1,39 +1,27 @@
 use std::{cell::RefCell, fmt::Display, iter::Peekable, rc::Rc};
 
-use crate::lexer::{Lexer, LocTok, Token};
+use crate::lexer::{Lexer, LocTok, Precedence, Token};
 use error_stack::{Context, Report, Result};
 
 #[derive(Debug)]
-struct AddExpr {
-    lhs: LocTok,
+pub(crate) struct BinExp {
+    lhs: Box<Expr>,
+    operator: LocTok,
     rhs: Box<Expr>,
 }
 
 #[derive(Debug)]
-struct SubExpr {
-    lhs: LocTok,
-    op: LocTok,
-    rhs: Expr,
+pub(crate) struct PreExpr {
+    operator: LocTok,
+    expression: Box<Expr>,
 }
 
 #[derive(Debug)]
-struct MultExpression {
-    lhs: LocTok,
-    op: LocTok,
-    rhs: Expr,
-}
-
-#[derive(Debug)]
-struct DivExpression {
-    lhs: LocTok,
-    op: LocTok,
-    rhs: Expr,
-}
-
-#[derive(Debug)]
-enum Expr {
-    Base(LocTok),
-    AdditionExpression(AddExpr),
+pub(crate) enum Expr {
+    IntLiteral(LocTok),
+    Ident(LocTok),
+    PrefixExpression(PreExpr),
+    BinaryExpression(BinExp),
 }
 
 #[derive(Debug)]
@@ -43,14 +31,10 @@ pub(crate) struct LetStatement {
 }
 
 #[derive(Debug)]
-pub(crate) struct ReturnStatement {
-    expr: Expr,
-}
-
-#[derive(Debug)]
 pub(crate) enum Statement {
     Let(LetStatement),
-    Return(ReturnStatement),
+    Return(Expr),
+    Expression(Expr),
 }
 
 #[derive(Debug)]
@@ -79,8 +63,8 @@ pub(crate) fn parse(lexer: Lexer) -> Result<Vec<Statement>, ParseErrors> {
     let mut statements = Vec::new();
     let mut errors = Vec::new();
     let lexer_ref = Rc::new(RefCell::new(lexer.peekable()));
-    let mut next = lexer_ref.borrow_mut().next();
-    while let Some(lok_tok) = next {
+    let mut start_statement_peek = lexer_ref.borrow_mut().peek().map(|val| val.to_owned());
+    while let Some(lok_tok) = start_statement_peek {
         match lok_tok.token {
             Token::Let => match parse_let_statement(lexer_ref.clone()) {
                 Ok(statement) => statements.push(Statement::Let(statement)),
@@ -90,16 +74,26 @@ pub(crate) fn parse(lexer: Lexer) -> Result<Vec<Statement>, ParseErrors> {
                 Ok(statement) => statements.push(Statement::Return(statement)),
                 Err(e) => errors.extend(e.0),
             },
-            _ => {
-                errors.push(
-                    Report::new(ParseError::UnexpectedToken(lok_tok))
-                        .attach_printable("Expected a statement such as `Let` or `Return` "),
-                );
-            }
+            Token::Int(_) => match parse_expression_statement(lexer_ref.clone()) {
+                Ok(statement) => statements.push(Statement::Expression(statement)),
+                Err(e) => errors.push(e),
+            },
+            Token::If => match parse_expression_statement(lexer_ref.clone()) {
+                Ok(statement) => statements.push(Statement::Expression(statement)),
+                Err(e) => errors.push(e),
+            },
+            Token::Ident(_) => match parse_expression_statement(lexer_ref.clone()) {
+                Ok(statement) => statements.push(Statement::Expression(statement)),
+                Err(e) => errors.push(e),
+            },
+            _ => errors.push(
+                Report::new(ParseError::UnexpectedToken(lok_tok))
+                    .attach_printable("Expected a statement or an expression"),
+            ),
         };
-        // Need to call twice because the semicolon was only ever peeked
+        // Need to call next because the semicolon was only ever peeked
         lexer_ref.borrow_mut().next();
-        next = lexer_ref.borrow_mut().next();
+        start_statement_peek = lexer_ref.borrow_mut().peek().map(|val| val.to_owned());
     }
     if !errors.is_empty() {
         Err(Report::new(ParseErrors(errors)))
@@ -108,21 +102,25 @@ pub(crate) fn parse(lexer: Lexer) -> Result<Vec<Statement>, ParseErrors> {
     }
 }
 
-fn parse_return_statement(
-    lexer: LexerPeekRef,
-) -> std::result::Result<ReturnStatement, ParseErrors> {
+fn parse_return_statement(lexer: LexerPeekRef) -> std::result::Result<Expr, ParseErrors> {
+    lexer
+        .borrow_mut()
+        .next()
+        .expect("The return keyword was already peeked and matched");
     let mut errors = Vec::new();
-    let expr = match parse_expression(lexer.clone()) {
+    let expr = match parse_expression(lexer.clone(), Precedence::Lowest) {
         Ok(expr) => Some(expr),
         Err(e) => {
             errors.push(e);
             None
         }
     };
+    match expect_peek(lexer.clone(), Token::Semicolon) {
+        Ok(_) => {}
+        Err(e) => errors.push(e),
+    }
     if errors.is_empty() {
-        Ok(ReturnStatement {
-            expr: expr.expect("Some because there are no errors"),
-        })
+        Ok(expr.expect("Expression there because there are no errors"))
     } else {
         Err(ParseErrors(errors))
     }
@@ -131,6 +129,10 @@ fn parse_return_statement(
 /// This assumes that the let keyword has already been checked and that the next token in the
 /// iterator is an identifier
 fn parse_let_statement(lexer: LexerPeekRef) -> std::result::Result<LetStatement, ParseErrors> {
+    lexer
+        .borrow_mut()
+        .next()
+        .expect("The let keyword was already peeked and matched");
     let mut errors = Vec::new();
     let peek = expect_peek(lexer.clone(), Token::Ident(String::default()));
     let ident = match peek {
@@ -146,8 +148,8 @@ fn parse_let_statement(lexer: LexerPeekRef) -> std::result::Result<LetStatement,
             None
         }
     };
-    let peek = expect_peek(lexer.clone(), Token::Assign);
-    match peek {
+    let expect_assign = expect_peek(lexer.clone(), Token::Assign);
+    match expect_assign {
         Ok(_) => {
             lexer.borrow_mut().next();
         }
@@ -155,13 +157,17 @@ fn parse_let_statement(lexer: LexerPeekRef) -> std::result::Result<LetStatement,
             errors.push(e);
         }
     };
-    let expr = match parse_expression(lexer.clone()) {
+    let expr = match parse_expression(lexer.clone(), Precedence::Lowest) {
         Ok(expr) => Some(expr),
         Err(e) => {
             errors.push(e);
             None
         }
     };
+    match expect_peek(lexer.clone(), Token::Semicolon) {
+        Ok(_) => {}
+        Err(e) => errors.push(e),
+    }
 
     if errors.is_empty() {
         Ok(LetStatement {
@@ -201,72 +207,87 @@ fn parse_identifier(lexer: LexerPeekRef) -> Result<LocTok, ParseError> {
         None => Err(Report::new(ParseError::Eof).attach_printable("Expected an identifier")),
     }
 }
-fn parse_expression(lexer: LexerPeekRef) -> Result<Expr, ParseError> {
-    let next = lexer.borrow_mut().next();
-    match next {
-        Some(lhs_lok_tok) => match lhs_lok_tok.token {
-            Token::Int(_) | Token::If | Token::Func => {
-                let peek = lexer.borrow_mut().peek().map(|val| val.to_owned());
-                match peek {
-                    // When do expressions end?
-                    Some(peek_lok_tok) => match peek_lok_tok.token {
-                        Token::Semicolon => {
-                            Ok(Expr::Base(lhs_lok_tok))
-                        }
-                        _ => Ok(parse_expression_op(lexer.clone(), lhs_lok_tok)?),
-                    },
-                    None => {
-                        Err(Report::new(ParseError::Eof).attach_printable("Expected a semicolon"))
-                    }
-                }
-            }
-            _ => Err(Report::new(ParseError::UnexpectedToken(lhs_lok_tok))
-                .attach_printable("Expected the lhs of an expression to be a valid lvalue (evaluatable to a single value)")),
-        },
-        None => Err(Report::new(ParseError::Eof).attach_printable("Expected an expression")),
-    }
+
+fn parse_expression_statement(lexer: LexerPeekRef) -> Result<Expr, ParseError> {
+    parse_expression(lexer.clone(), Precedence::Lowest)
 }
 
-fn parse_expression_op(lexer: LexerPeekRef, lhs: LocTok) -> Result<Expr, ParseError> {
-    let next = lexer
+fn parse_expression(lexer: LexerPeekRef, precedence: Precedence) -> Result<Expr, ParseError> {
+    let lhs_val = lexer.borrow_mut().next();
+    let mut left_exp = match lhs_val {
+        Some(left_lok_tok) => match left_lok_tok.token {
+            // All Literals, identifiers and prefix operators should be matched here
+            Token::Ident(_) => Expr::Ident(left_lok_tok),
+            Token::Int(_) => (Expr::IntLiteral(left_lok_tok)),
+            Token::Bang => (parse_prefix_expression(lexer.clone())?),
+            Token::Minus => (parse_prefix_expression(lexer.clone())?),
+            _ => Err(Report::new(ParseError::UnexpectedToken(left_lok_tok))
+                .attach_printable("Expected an expression"))?,
+        },
+        None => Err(Report::new(ParseError::Eof).attach_printable("Expected an expression"))?,
+    };
+
+    // In correct code the peek token is an operator
+    let mut peek_op_token = match lexer.borrow_mut().peek().map(|val| val.to_owned()) {
+        Some(token) => token,
+        None => return Ok(left_exp),
+    };
+    while precedence < peek_op_token.token.precedence() {
+        left_exp = match peek_op_token.token {
+            // All binary tokens should be matched here
+            Token::Plus => parse_binary_expression(lexer.clone(), left_exp)?,
+            Token::Minus => parse_binary_expression(lexer.clone(), left_exp)?,
+            Token::Slash => parse_binary_expression(lexer.clone(), left_exp)?,
+            Token::Asterisk => parse_binary_expression(lexer.clone(), left_exp)?,
+            Token::Eq => parse_binary_expression(lexer.clone(), left_exp)?,
+            Token::Ne => parse_binary_expression(lexer.clone(), left_exp)?,
+            Token::LT => parse_binary_expression(lexer.clone(), left_exp)?,
+            Token::GT => parse_binary_expression(lexer.clone(), left_exp)?,
+            _ => Err(Report::new(ParseError::UnexpectedToken(peek_op_token))
+                .attach_printable("Expected a binary operator"))?,
+        };
+        peek_op_token = match lexer.borrow_mut().peek().map(|val| val.to_owned()) {
+            Some(token) => token,
+            None => return Ok(left_exp),
+        };
+    }
+    Ok(left_exp)
+}
+
+fn parse_prefix_expression(lexer: LexerPeekRef) -> Result<Expr, ParseError> {
+    let operator = lexer
         .borrow_mut()
         .next()
-        .expect("The op token was previously found")
-        .token;
-    match next {
-        // Token::If => {},
-        Token::Plus => Ok(parse_expression_plus(lexer.clone(), lhs)?),
-        // Token::Minus => {},
-        // Token::Mult => {},
-        _ => unimplemented!(),
-    }
+        .expect("The operator was already peeked and found");
+    let right = lexer.borrow_mut().peek().map(|val| val.to_owned());
+    let expression = match right {
+        Some(_) => parse_expression(lexer, operator.token.precedence())?,
+        None => Err(Report::new(ParseError::Eof).attach_printable(format!(
+            "Expected an operand after the prefix operator {:?} at {operator:?}",
+            operator.token
+        )))?,
+    };
+    Ok(Expr::PrefixExpression(PreExpr {
+        operator,
+        expression: Box::new(expression),
+    }))
 }
 
-fn parse_expression_plus(lexer: LexerPeekRef, lhs: LocTok) -> Result<Expr, ParseError> {
-    let next = lexer.borrow_mut().next();
-    match next {
-        Some(expr_lok_tok) => match lexer.borrow_mut().peek() {
-            Some(qsemi_lok_tok) => match qsemi_lok_tok.token {
-                Token::Semicolon => Ok(Expr::AdditionExpression(AddExpr {
-                    lhs,
-                    rhs: Box::new(Expr::Base(expr_lok_tok)),
-                })),
-                _ => Ok(Expr::AdditionExpression(AddExpr {
-                    lhs,
-                    rhs: Box::new(parse_expression_op(lexer.clone(), expr_lok_tok)?),
-                })),
-            },
-            None => match expr_lok_tok.token {
-                Token::Semicolon => {
-                    Err(Report::new(ParseError::Eof).attach_printable("Expected an expression"))
-                }
-                _ => Err(Report::new(ParseError::Eof).attach_printable("Expected a semicolon")),
-            },
-        },
-        None => Err(Report::new(ParseError::Eof).attach_printable("Expected an expression")),
-    }
+fn parse_binary_expression(lexer: LexerPeekRef, left: Expr) -> Result<Expr, ParseError> {
+    let operator = lexer
+        .borrow_mut()
+        .next()
+        .expect("The operator was already peeked and found");
+    let op_precedence = operator.token.precedence();
+    Ok(Expr::BinaryExpression(BinExp {
+        lhs: Box::new(left),
+        operator,
+        rhs: Box::new(parse_expression(lexer.clone(), op_precedence)?),
+    }))
 }
 
+/// This is a test mod
+/// I think I want to move it to it's own folder
 #[cfg(test)]
 mod test {
     use crate::lexer::Lexer;
@@ -287,7 +308,7 @@ mod test {
                             token: Token::Ident(_),
                             ..
                         },
-                        expr: Expr::Base(LocTok {
+                        expr: Expr::IntLiteral(LocTok {
                             token: Token::Int(5),
                             ..
                         }),
@@ -313,10 +334,18 @@ mod test {
                         Statement::Let(LetStatement { ident, expr }) => {
                             assert_eq!(ident.token, Token::Ident("x".into()));
                             match expr {
-                                Expr::AdditionExpression(AddExpr { lhs, rhs }) => {
-                                    assert_eq!(lhs.token, Token::Int(10));
+                                Expr::BinaryExpression(BinExp { lhs, operator, rhs }) => {
+                                    assert_eq!(operator.token, Token::Plus);
+                                    match lhs.as_ref() {
+                                        Expr::IntLiteral(LocTok { token, .. }) => {
+                                            assert_eq!(*token, Token::Int(10));
+                                        }
+                                        _ => {
+                                            assert!(false);
+                                        }
+                                    };
                                     match rhs.as_ref() {
-                                        Expr::Base(LocTok { token, .. }) => {
+                                        Expr::IntLiteral(LocTok { token, .. }) => {
                                             assert_eq!(*token, Token::Int(3));
                                         }
                                         _ => {
@@ -346,6 +375,83 @@ mod test {
     }
 
     #[test]
+    fn single_operator_precedence_expression_statement() {
+        let code: &'static str = r#"5 + 5 * 5"#;
+        let lexer = Lexer::new(code.as_bytes(), code.len());
+        match parse(lexer) {
+            Ok(statements) => {
+                let mut statements = statements.iter();
+                match statements.next() {
+                    Some(Statement::Expression(Expr::BinaryExpression(BinExp {
+                        lhs,
+                        operator,
+                        rhs,
+                    }))) => {
+                        match lhs.as_ref() {
+                            Expr::IntLiteral(LocTok { token, .. }) => {
+                                assert_eq!(*token, Token::Int(5))
+                            }
+                            _ => assert!(false, "Expected lhs in addition to be a 5 got a {lhs:?}"),
+                        }
+                        assert_eq!(operator.token, Token::Plus);
+                        match rhs.as_ref() {
+                            Expr::BinaryExpression(BinExp { lhs, operator, rhs }) => {
+                                match lhs.as_ref() {
+                                    Expr::IntLiteral(LocTok { token, .. }) => {
+                                        assert_eq!(*token, Token::Int(5))
+                                    }
+                                    _ => assert!(
+                                        false,
+                                        "Expected lhs in multiply to be a 5 got a {lhs:?}"
+                                    ),
+                                }
+                                assert_eq!(operator.token, Token::Asterisk);
+                                match rhs.as_ref() {
+                                    Expr::IntLiteral(LocTok { token, .. }) => {
+                                        assert_eq!(*token, Token::Int(5))
+                                    }
+                                    _ => assert!(
+                                        false,
+                                        "Expected rhs in multiply to be a 5 got a {rhs:?}"
+                                    ),
+                                }
+                            }
+                            _ => assert!(false, "Expected rhs in addition to be a multiply expression got a {rhs:?}"),
+                        }
+                    }
+                    _ => assert!(false, "Expected an expression"),
+                };
+            }
+            Err(e) => {
+                println!("{e}");
+                assert!(false);
+            }
+        };
+    }
+
+    #[test]
+    fn single_int_expression() {
+        let code: &'static str = r#"35"#;
+        let lexer = Lexer::new(code.as_bytes(), code.len());
+        match parse(lexer) {
+            Ok(statements) => {
+                let mut statements = statements.iter();
+                assert_matches!(
+                    statements.next(),
+                    Some(Statement::Expression(Expr::IntLiteral(LocTok {
+                        token: Token::Int(35),
+                        ..
+                    }),))
+                );
+            }
+            Err(e) => {
+                println!("{e}");
+                assert!(false);
+            }
+        };
+    }
+
+    #[test]
     fn basic_return() {
         let code: &'static str = r#"return 35;"#;
         let lexer = Lexer::new(code.as_bytes(), code.len());
@@ -354,13 +460,33 @@ mod test {
                 let mut statements = statements.iter();
                 assert_matches!(
                     statements.next(),
-                    Some(Statement::Return(ReturnStatement {
-                        expr: Expr::Base(LocTok {
-                            token: Token::Int(35),
-                            ..
-                        }),
-                    }))
+                    Some(Statement::Return(Expr::IntLiteral(LocTok {
+                        token: Token::Int(35),
+                        ..
+                    }),))
                 );
+            }
+            Err(e) => {
+                println!("{e}");
+                assert!(false);
+            }
+        };
+    }
+
+    #[test]
+    fn identifier_expression() {
+        let code: &'static str = r#"foobar"#;
+        let lexer = Lexer::new(code.as_bytes(), code.len());
+        match parse(lexer) {
+            Ok(statements) => {
+                let mut statements = statements.iter();
+                let statement = statements.next();
+                match statement {
+                    Some(Statement::Expression(Expr::Ident(LocTok { token, .. }))) => {
+                        assert_eq!(*token, Token::Ident("foobar".into()));
+                    }
+                    _ => assert!(false),
+                };
             }
             Err(e) => {
                 println!("{e}");
@@ -384,7 +510,7 @@ mod test {
                             token: Token::Ident(_),
                             ..
                         },
-                        expr: Expr::Base(LocTok {
+                        expr: Expr::IntLiteral(LocTok {
                             token: Token::Int(5),
                             ..
                         }),
@@ -397,7 +523,7 @@ mod test {
                             token: Token::Ident(_),
                             ..
                         },
-                        expr: Expr::Base(LocTok {
+                        expr: Expr::IntLiteral(LocTok {
                             token: Token::Int(3),
                             ..
                         }),
