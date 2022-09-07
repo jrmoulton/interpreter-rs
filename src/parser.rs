@@ -17,12 +17,20 @@ pub(crate) struct PreExpr {
 }
 
 #[derive(Debug)]
+pub(crate) struct IfExpr {
+    condition: Box<Expr>,
+    consequence: Vec<Statement>,
+    alternative: Vec<Statement>,
+}
+
+#[derive(Debug)]
 pub(crate) enum Expr {
     IntLiteral(LocTok),
     BoolLiteral(LocTok),
     Ident(LocTok),
     PrefixExpression(PreExpr),
     BinaryExpression(BinExp),
+    If(IfExpr),
 }
 
 #[derive(Debug)]
@@ -80,10 +88,20 @@ pub(crate) fn parse(lexer: Lexer) -> Result<Vec<Statement>, ParseErrors> {
                 Ok(statement) => statements.push(Statement::Return(statement)),
                 Err(e) => errors.extend(e.0),
             },
-            Token::Int(_) | Token::If | Token::Ident(_) | Token::LParen => {
-                match parse_expression_statement(lexer_ref.clone()) {
-                    Ok(statement) => statements.push(Statement::Expression(statement)),
-                    Err(e) => errors.extend(e.0),
+            Token::Int(_)
+            | Token::If
+            | Token::Ident(_)
+            | Token::LParen
+            | Token::Minus
+            | Token::Bang => match parse_expression_statement(lexer_ref.clone()) {
+                Ok(statement) => statements.push(Statement::Expression(statement)),
+                Err(e) => errors.extend(e.0),
+            },
+            Token::RBrace => {
+                if !errors.is_empty() {
+                    return Err(Report::new(ParseErrors(errors)));
+                } else {
+                    return Ok(statements);
                 }
             }
             _ => errors.push(
@@ -236,12 +254,16 @@ fn parse_expression(
                 Expr::BoolLiteral(left_lok_tok)
             }
             Bang | Token::Minus => {
-                lexer.borrow_mut().next(); // This skips the operator
+                // Don't skip the operator because it is needed
                 parse_prefix_expression(lexer.clone())?
             }
             LParen => {
                 lexer.borrow_mut().next(); // This skips the lparen
                 parse_grouped_expression(lexer.clone())?
+            }
+            If => {
+                lexer.borrow_mut().next();
+                parse_if_expression(lexer.clone())?
             }
             _ => Err(Report::new(ParseError::UnexpectedToken(left_lok_tok))
                 .attach_printable("Expected an expression"))?,
@@ -293,6 +315,40 @@ fn parse_grouped_expression(lexer: LexerPeekRef) -> std::result::Result<Expr, Pa
     }
 }
 
+fn parse_if_expression(lexer: LexerPeekRef) -> std::result::Result<Expr, ParseErrors> {
+    let mut errors = Vec::new();
+    let condition: Option<Expr> = match lexer.borrow_mut().next() {
+        Some(condition) => match parse_expression(lexer.clone(), Precedence::Lowest) {
+            Ok(condition) => Some(condition),
+            Err(e) => {
+                errors.extend(e.0);
+                None
+            }
+        },
+        _ => {
+            errors.push(
+                Report::new(ParseError::Eof)
+                    .attach_printable("Expected a condition after the if keyword"),
+            );
+            None
+        }
+    };
+    if let Err(e) = expect_peek(lexer.clone(), Token::LBrace) {
+        errors.push(e);
+    } else {
+        let _lbrace = lexer.borrow_mut().next();
+    };
+    let consequence = parse_block_statement(lexer.clone());
+    if let Err(e) = expect_peek(lexer.clone(), Token::RBrace) {
+        errors.push(e);
+    } else {
+        let _rbrace = lexer.borrow_mut().next();
+    };
+    let alternate = if let Err(_) = expect_peek(lexer.clone(), Token::LBrace) {
+
+    }
+}
+
 fn parse_prefix_expression(lexer: LexerPeekRef) -> std::result::Result<Expr, ParseErrors> {
     let operator = lexer
         .borrow_mut()
@@ -336,7 +392,38 @@ mod test {
 
     use super::*;
     use assert_matches::assert_matches;
-
+    #[test]
+    fn simple_prefix_op_expression_statement() {
+        let code: &'static str = r#"-5"#;
+        let lexer = Lexer::new(code.as_bytes(), code.len());
+        match parse(lexer) {
+            Ok(statements) => {
+                let statement = statements.iter().next();
+                match statement {
+                    Some(Statement::Expression(Expr::PrefixExpression(PreExpr {
+                        operator:
+                            LocTok {
+                                token: Token::Minus,
+                                ..
+                            },
+                        expression,
+                    }))) => match expression.as_ref() {
+                        Expr::IntLiteral(LocTok { token, .. }) => {
+                            assert_eq!(*token, Token::Int(5))
+                        }
+                        _ => assert!(false, "Expected a 5 after the minus"),
+                    },
+                    _ => {
+                        assert!(false, "Expected a minus (-) 5, found {statement:?}")
+                    }
+                };
+            }
+            Err(e) => {
+                eprintln!("{e}");
+                assert!(false);
+            }
+        };
+    }
     #[test]
     fn single_let() {
         let code: &'static str = r#"let x = 5;"#;
@@ -358,11 +445,12 @@ mod test {
                 );
             }
             Err(e) => {
-                println!("{e}");
+                eprintln!("{e}");
                 assert!(false);
             }
         };
     }
+
     #[test]
     fn single_let_with_bool() {
         let code: &'static str = r#"let x = true;"#;
@@ -384,7 +472,7 @@ mod test {
                 );
             }
             Err(e) => {
-                println!("{e}");
+                eprintln!("{e}");
                 assert!(false);
             }
         };
@@ -436,7 +524,7 @@ mod test {
                 };
             }
             Err(e) => {
-                println!("{e}");
+                eprintln!("{e}");
                 assert!(false);
             }
         };
@@ -491,7 +579,7 @@ mod test {
                 };
             }
             Err(e) => {
-                println!("{e}");
+                eprintln!("{e}");
                 assert!(false);
             }
         };
@@ -548,7 +636,7 @@ mod test {
                 };
             }
             Err(e) => {
-                println!("{e}");
+                eprintln!("{e}");
                 assert!(false);
             }
         };
@@ -570,7 +658,7 @@ mod test {
                 );
             }
             Err(e) => {
-                println!("{e}");
+                eprintln!("{e}");
                 assert!(false);
             }
         };
@@ -592,7 +680,7 @@ mod test {
                 );
             }
             Err(e) => {
-                println!("{e}");
+                eprintln!("{e}");
                 assert!(false);
             }
         };
@@ -614,7 +702,7 @@ mod test {
                 };
             }
             Err(e) => {
-                println!("{e}");
+                eprintln!("{e}");
                 assert!(false);
             }
         };
@@ -656,9 +744,44 @@ mod test {
                 );
             }
             Err(e) => {
-                println!("{e}");
+                eprintln!("{e}");
                 assert!(false);
             }
         };
+    }
+    #[test]
+    fn if_else() {
+        let code: &'static str = r#"if x {
+            x 
+        } else {
+            y
+        }"#;
+        let lexer = Lexer::new(code.as_bytes(), code.len());
+        match parse(lexer) {
+            Ok(statements) => {
+                let statement = statements.iter().next().expect("At least 1 statement");
+                match statement {
+                    Statement::Expression(Expr::If(IfExpr {
+                        condition,
+                        consequence,
+                        alternative,
+                    })) => match condition.as_ref() {
+                        Expr::Ident(lok_tok) => {
+                            assert_eq!(lok_tok.token, Token::Ident("x".into()));
+                        }
+                        _ => {
+                            assert!(false, "Expected an identifier `x`, found a {condition:?}")
+                        }
+                    },
+                    _ => {
+                        assert!(false, "Expected an If expression, found a {statement:?}")
+                    }
+                }
+            }
+            Err(e) => {
+                eprintln!("{e}");
+                assert!(false);
+            }
+        }
     }
 }
