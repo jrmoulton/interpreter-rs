@@ -2,7 +2,7 @@ use crate::lexer::Lexer;
 
 use super::*;
 use assert_matches::assert_matches;
-use expect_test::{expect, expect_file};
+use expect_test::expect_file;
 use pretty_assertions::assert_eq;
 
 #[test]
@@ -515,6 +515,27 @@ fn if_elseif_else_again() {
         Err(e) => {
             eprintln!("{e}");
             assert!(false);
+        }
+    }
+
+    // Ahh yeah this is better
+    #[test]
+    fn new_scope() {
+        let code: &'static str = r#"
+        {
+
+        }"#;
+        let lexer = Lexer::new(code.as_bytes(), code.len());
+        match parse(lexer) {
+            Ok(statements) => {
+                let expected =
+                    expect_file!["./../../tests/expect_test_results/parser/new_scope.txt"];
+                expected.assert_eq(&format!("{statements:?}"));
+            }
+            Err(e) => {
+                eprintln!("{e}");
+                assert!(false);
+            }
         }
     }
 }

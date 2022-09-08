@@ -108,13 +108,27 @@ pub(crate) fn parse_statements(
                 Ok(statement) => statements.push(Statement::Expression(statement)),
                 Err(e) => errors.extend(e.0),
             },
-            Token::RBrace | Token::LBrace => {
+            Token::RBrace => {
                 // If there is a brace it is time to yeet out while keeping any errors
                 if !errors.is_empty() {
                     return Err(ParseErrors(errors));
                 } else {
                     return Ok(statements);
                 }
+            }
+            Token::LBrace => {
+                let _lbrace = lexer.borrow_mut().next();
+                match parse_statements(lexer.clone()) {
+                    Ok(inner_statements) => statements.extend(inner_statements),
+                    Err(e) => errors.extend(e.0),
+                };
+                let rbrace = expect_peek(lexer.clone(), Token::RBrace);
+                match rbrace {
+                    Ok(_) => {
+                        lexer.borrow_mut().next();
+                    }
+                    Err(e) => errors.push(e),
+                };
             }
             _ => {
                 errors.push(
