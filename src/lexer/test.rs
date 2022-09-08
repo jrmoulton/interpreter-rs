@@ -1,0 +1,162 @@
+use super::*;
+use pretty_assertions::assert_eq;
+// use pretty_assertions::assert_ne;
+use Token::*;
+
+#[test]
+fn single_expr() {
+    let code: &'static str = r#"5 + 5"#;
+    let correct = vec![Int(5), Plus, Int(5)];
+    let lexer = Lexer::new(code.as_bytes(), code.len());
+    assert_eq!(
+        correct,
+        lexer
+            .into_iter()
+            .map(|lok_tok| lok_tok.token)
+            .collect::<Vec<_>>()
+    );
+}
+
+#[test]
+fn single_let() {
+    let code: &'static str = r#"let"#;
+    let correct = vec![Let];
+    let lexer = Lexer::new(code.as_bytes(), code.len());
+    assert_eq!(
+        correct,
+        lexer
+            .into_iter()
+            .map(|lok_tok| lok_tok.token)
+            .collect::<Vec<_>>()
+    );
+}
+
+#[test]
+fn single_assign() {
+    let code: &'static str = r#"let five = 5;"#;
+    let correct = vec![Let, Ident("five".into()), Assign, Int(5), Semicolon];
+    let lexer = Lexer::new(code.as_bytes(), code.len());
+    assert_eq!(
+        correct,
+        lexer
+            .into_iter()
+            .map(|lok_tok| lok_tok.token)
+            .collect::<Vec<_>>()
+    );
+}
+
+#[test]
+fn double_assign() {
+    let code: &'static str = r#"let five = 5;let ten = 10;"#;
+    #[rustfmt::skip]
+    let correct = vec![
+        Let, Ident("five".into()), Assign, Int(5), Semicolon, Let, Ident("ten".into()), Assign, Int(10), Semicolon,
+    ];
+    let lexer = Lexer::new(code.as_bytes(), code.len());
+    assert_eq!(
+        correct,
+        lexer
+            .into_iter()
+            .map(|lok_tok| lok_tok.token)
+            .collect::<Vec<_>>()
+    );
+}
+
+#[test]
+fn single_func() {
+    let code: &'static str = r#"let add = fn(x, y) {
+                x - y
+            };"#;
+    #[rustfmt::skip]
+    let correct = vec![
+        Let,
+        Ident("add".into()), Assign, Func, LParen, Ident("x".into()), Comma, Ident("y".into()), RParen, LBrace, Ident("x".into()),
+        Minus, Ident("y".into()), RBrace, Semicolon,
+    ];
+    let lexer = Lexer::new(code.as_bytes(), code.len());
+    assert_eq!(
+        correct,
+        lexer
+            .into_iter()
+            .map(|lok_tok| lok_tok.token)
+            .collect::<Vec<_>>()
+    );
+}
+
+#[test]
+fn let_ends_on_plus_space() {
+    let code: &'static str = r#"let x = 10 + "#;
+    #[rustfmt::skip]
+        let correct = vec![
+            Let, Ident("x".into()), Assign, Int(10), Plus
+        ];
+    let lexer = Lexer::new(code.as_bytes(), code.len());
+    assert_eq!(
+        correct,
+        lexer
+            .into_iter()
+            .map(|lok_tok| lok_tok.token)
+            .collect::<Vec<_>>()
+    );
+}
+
+#[test]
+fn let_ends_on_plus() {
+    let code: &'static str = r#"let x = 10 +"#;
+    #[rustfmt::skip]
+        let correct = vec![
+            Let, Ident("x".into()), Assign, Int(10), Plus
+        ];
+    let lexer = Lexer::new(code.as_bytes(), code.len());
+    assert_eq!(
+        correct,
+        lexer
+            .into_iter()
+            .map(|lok_tok| lok_tok.token)
+            .collect::<Vec<_>>()
+    );
+}
+
+#[test]
+fn comprehensive() {
+    let code: &'static str = r#"
+                let five = 5;
+                let ten = 10;
+                   let add = fn(x, y) {
+                     x - y;
+                };
+                   let result = add(five, ten);
+                   !-/*5;
+                   5 < 10 > 5;
+                   if (5 < 10) {
+                       return true;
+                   } else {
+                       return false;
+                }
+                10 == 10; 10 != 9;"#;
+    #[rustfmt::skip]
+        let correct = vec![
+            Let, Ident("five".into()), Assign, Int(5), Semicolon,
+            Let, Ident("ten".into()), Assign, Int(10), Semicolon,
+            Let, Ident("add".into()), Assign, Func, LParen, Ident("x".into()), Comma, Ident("y".into()), RParen, LBrace,
+            Ident("x".into()), Minus, Ident("y".into()), Semicolon, 
+            RBrace, Semicolon,
+            Let, Ident("result".into()), Assign, Ident("add".into()), LParen, Ident("five".into()), Comma, Ident("ten".into()), RParen, Semicolon,
+            Bang, Minus, Slash, Asterisk, Int(5), Semicolon,
+            Int(5), LT, Int(10), GT, Int(5), Semicolon,
+            If, LParen, Int(5), LT, Int(10), RParen, LBrace,
+            Return, True, Semicolon,
+            RBrace, Else, LBrace, 
+            Return, False, Semicolon,
+            RBrace,
+            Int(10), Eq, Int(10), Semicolon, Int(10), Ne, Int(9), Semicolon
+        ];
+    let lexer = Lexer::new(code.as_bytes(), code.len());
+    assert_eq!(
+        correct,
+        lexer
+            .into_iter()
+            .map(|lok_tok| lok_tok.token)
+            .collect::<Vec<_>>()
+    );
+}

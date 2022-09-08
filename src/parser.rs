@@ -17,10 +17,16 @@ pub(crate) struct PreExpr {
 }
 
 #[derive(Debug)]
+pub(crate) enum ElseIfExpr {
+    ElseIf(Box<Expr>),
+    Else(Vec<Statement>),
+}
+
+#[derive(Debug)]
 pub(crate) struct IfExpr {
     condition: Box<Expr>,
     consequence: Vec<Statement>,
-    alternative: Vec<Statement>,
+    alternative: Option<ElseIfExpr>,
 }
 
 #[derive(Debug)]
@@ -73,18 +79,23 @@ impl Context for ParseErrors {}
 
 type LexerPeekRef<'a> = Rc<RefCell<Peekable<Lexer<'a>>>>;
 
-pub(crate) fn parse(lexer: Lexer) -> Result<Vec<Statement>, ParseErrors> {
+pub(crate) fn parse(lexer: Lexer) -> std::result::Result<Vec<Statement>, ParseErrors> {
+    parse_statements(Rc::new(RefCell::new(lexer.peekable())))
+}
+
+pub(crate) fn parse_statements(
+    lexer: LexerPeekRef,
+) -> std::result::Result<Vec<Statement>, ParseErrors> {
     let mut statements = Vec::new();
     let mut errors = Vec::new();
-    let lexer_ref = Rc::new(RefCell::new(lexer.peekable()));
-    let mut start_statement_peek = lexer_ref.borrow_mut().peek().map(|val| val.to_owned());
+    let mut start_statement_peek = lexer.borrow_mut().peek().map(|val| val.to_owned());
     while let Some(lok_tok) = start_statement_peek {
         match lok_tok.token {
-            Token::Let => match parse_let_statement(lexer_ref.clone()) {
+            Token::Let => match parse_let_statement(lexer.clone()) {
                 Ok(statement) => statements.push(Statement::Let(statement)),
                 Err(e) => errors.extend(e.0),
             },
-            Token::Return => match parse_return_statement(lexer_ref.clone()) {
+            Token::Return => match parse_return_statement(lexer.clone()) {
                 Ok(statement) => statements.push(Statement::Return(statement)),
                 Err(e) => errors.extend(e.0),
             },
@@ -93,28 +104,30 @@ pub(crate) fn parse(lexer: Lexer) -> Result<Vec<Statement>, ParseErrors> {
             | Token::Ident(_)
             | Token::LParen
             | Token::Minus
-            | Token::Bang => match parse_expression_statement(lexer_ref.clone()) {
+            | Token::Bang => match parse_expression_statement(lexer.clone()) {
                 Ok(statement) => statements.push(Statement::Expression(statement)),
                 Err(e) => errors.extend(e.0),
             },
-            Token::RBrace => {
+            Token::RBrace | Token::LBrace => {
+                // If there is a brace it is time to yeet out while keeping any errors
                 if !errors.is_empty() {
-                    return Err(Report::new(ParseErrors(errors)));
+                    return Err(ParseErrors(errors));
                 } else {
                     return Ok(statements);
                 }
             }
-            _ => errors.push(
-                Report::new(ParseError::UnexpectedToken(lok_tok))
-                    .attach_printable("Expected a statement or an expression"),
-            ),
+            _ => {
+                errors.push(
+                    Report::new(ParseError::UnexpectedToken(lok_tok))
+                        .attach_printable("Expected a statement or an expression"),
+                );
+                return Err(ParseErrors(errors));
+            }
         };
-        // Need to call next because the semicolon was only ever peeked
-        lexer_ref.borrow_mut().next();
-        start_statement_peek = lexer_ref.borrow_mut().peek().map(|val| val.to_owned());
+        start_statement_peek = lexer.borrow_mut().peek().map(|val| val.to_owned());
     }
     if !errors.is_empty() {
-        Err(Report::new(ParseErrors(errors)))
+        Err(ParseErrors(errors))
     } else {
         Ok(statements)
     }
@@ -134,7 +147,9 @@ fn parse_return_statement(lexer: LexerPeekRef) -> std::result::Result<Expr, Pars
         }
     };
     match expect_peek(lexer.clone(), Token::Semicolon) {
-        Ok(_) => {}
+        Ok(_) => {
+            lexer.borrow_mut().next();
+        }
         Err(e) => errors.push(e),
     }
     if errors.is_empty() {
@@ -183,7 +198,9 @@ fn parse_let_statement(lexer: LexerPeekRef) -> std::result::Result<LetStatement,
         }
     };
     match expect_peek(lexer.clone(), Token::Semicolon) {
-        Ok(_) => {}
+        Ok(_) => {
+            lexer.borrow_mut().next();
+        }
         Err(e) => errors.push(e),
     }
 
@@ -271,7 +288,6 @@ fn parse_expression(
         None => Err(Report::new(ParseError::Eof).attach_printable("Expected an expression"))?,
     };
 
-    // In correct code the peek token is an operator
     let mut peek_op_token = match lexer.borrow_mut().peek().map(|val| val.to_owned()) {
         Some(token) => token,
         None => return Ok(left_exp),
@@ -317,19 +333,10 @@ fn parse_grouped_expression(lexer: LexerPeekRef) -> std::result::Result<Expr, Pa
 
 fn parse_if_expression(lexer: LexerPeekRef) -> std::result::Result<Expr, ParseErrors> {
     let mut errors = Vec::new();
-    let condition: Option<Expr> = match lexer.borrow_mut().next() {
-        Some(condition) => match parse_expression(lexer.clone(), Precedence::Lowest) {
-            Ok(condition) => Some(condition),
-            Err(e) => {
-                errors.extend(e.0);
-                None
-            }
-        },
-        _ => {
-            errors.push(
-                Report::new(ParseError::Eof)
-                    .attach_printable("Expected a condition after the if keyword"),
-            );
+    let condition: Option<Expr> = match parse_expression(lexer.clone(), Precedence::Lowest) {
+        Ok(condition) => Some(condition),
+        Err(e) => {
+            errors.extend(e.0);
             None
         }
     };
@@ -338,14 +345,63 @@ fn parse_if_expression(lexer: LexerPeekRef) -> std::result::Result<Expr, ParseEr
     } else {
         let _lbrace = lexer.borrow_mut().next();
     };
-    let consequence = parse_block_statement(lexer.clone());
+    let consequence = match parse_statements(lexer.clone()) {
+        Ok(statements) => Some(statements),
+        Err(e) => {
+            errors.extend(e.0);
+            None
+        }
+    };
     if let Err(e) = expect_peek(lexer.clone(), Token::RBrace) {
         errors.push(e);
     } else {
         let _rbrace = lexer.borrow_mut().next();
     };
-    let alternate = if let Err(_) = expect_peek(lexer.clone(), Token::LBrace) {
-
+    let alternate_opt = expect_peek(lexer.clone(), Token::Else);
+    let alternative = match alternate_opt {
+        Err(_) => None,
+        Ok(_) => {
+            let _else_lok_tok = lexer.borrow_mut().next();
+            let if_or_lbrace = expect_peek(lexer.clone(), Token::If);
+            match if_or_lbrace {
+                Err(_) => {
+                    if let Err(e) = expect_peek(lexer.clone(), Token::LBrace) {
+                        errors.push(e);
+                    } else {
+                        lexer.borrow_mut().next();
+                    }
+                    match parse_statements(lexer.clone()) {
+                        Ok(statements) => Some(ElseIfExpr::Else(statements)),
+                        Err(e) => {
+                            errors.extend(e.0);
+                            None
+                        }
+                    }
+                }
+                Ok(_) => {
+                    let _if_lok_tok = lexer.borrow_mut().next();
+                    match parse_if_expression(lexer.clone()) {
+                        Ok(if_expr) => Some(ElseIfExpr::ElseIf(Box::new(if_expr))),
+                        Err(e) => {
+                            errors.extend(e.0);
+                            None
+                        }
+                    }
+                }
+            }
+        }
+    };
+    if !errors.is_empty() {
+        Err(ParseErrors(errors))
+    } else {
+        Ok(Expr::If(IfExpr {
+            condition: Box::new(
+                condition.expect("If there are no errors then the expression is present"),
+            ),
+            consequence: consequence
+                .expect("If there are no errors then the expression is present"),
+            alternative,
+        }))
     }
 }
 
@@ -384,404 +440,5 @@ fn parse_binary_expression(
     }))
 }
 
-/// This is a test mod
-/// I think I want to move it to it's own folder
 #[cfg(test)]
-mod test {
-    use crate::lexer::Lexer;
-
-    use super::*;
-    use assert_matches::assert_matches;
-    #[test]
-    fn simple_prefix_op_expression_statement() {
-        let code: &'static str = r#"-5"#;
-        let lexer = Lexer::new(code.as_bytes(), code.len());
-        match parse(lexer) {
-            Ok(statements) => {
-                let statement = statements.iter().next();
-                match statement {
-                    Some(Statement::Expression(Expr::PrefixExpression(PreExpr {
-                        operator:
-                            LocTok {
-                                token: Token::Minus,
-                                ..
-                            },
-                        expression,
-                    }))) => match expression.as_ref() {
-                        Expr::IntLiteral(LocTok { token, .. }) => {
-                            assert_eq!(*token, Token::Int(5))
-                        }
-                        _ => assert!(false, "Expected a 5 after the minus"),
-                    },
-                    _ => {
-                        assert!(false, "Expected a minus (-) 5, found {statement:?}")
-                    }
-                };
-            }
-            Err(e) => {
-                eprintln!("{e}");
-                assert!(false);
-            }
-        };
-    }
-    #[test]
-    fn single_let() {
-        let code: &'static str = r#"let x = 5;"#;
-        let lexer = Lexer::new(code.as_bytes(), code.len());
-        match parse(lexer) {
-            Ok(statements) => {
-                assert_matches!(
-                    statements.iter().next(),
-                    Some(Statement::Let(LetStatement {
-                        ident: LocTok {
-                            token: Token::Ident(_),
-                            ..
-                        },
-                        expr: Expr::IntLiteral(LocTok {
-                            token: Token::Int(5),
-                            ..
-                        }),
-                    }))
-                );
-            }
-            Err(e) => {
-                eprintln!("{e}");
-                assert!(false);
-            }
-        };
-    }
-
-    #[test]
-    fn single_let_with_bool() {
-        let code: &'static str = r#"let x = true;"#;
-        let lexer = Lexer::new(code.as_bytes(), code.len());
-        match parse(lexer) {
-            Ok(statements) => {
-                assert_matches!(
-                    statements.iter().next(),
-                    Some(Statement::Let(LetStatement {
-                        ident: LocTok {
-                            token: Token::Ident(_),
-                            ..
-                        },
-                        expr: Expr::BoolLiteral(LocTok {
-                            token: Token::True,
-                            ..
-                        }),
-                    }))
-                );
-            }
-            Err(e) => {
-                eprintln!("{e}");
-                assert!(false);
-            }
-        };
-    }
-
-    #[test]
-    fn single_let_with_add() {
-        let code: &'static str = r#"let x = 10 + 3;"#;
-        let lexer = Lexer::new(code.as_bytes(), code.len());
-        match parse(lexer) {
-            Ok(statements) => {
-                let next = statements.iter().next();
-                match next {
-                    Some(statement) => match statement {
-                        Statement::Let(LetStatement { ident, expr }) => {
-                            assert_eq!(ident.token, Token::Ident("x".into()));
-                            match expr {
-                                Expr::BinaryExpression(BinExp { lhs, operator, rhs }) => {
-                                    assert_eq!(operator.token, Token::Plus);
-                                    match lhs.as_ref() {
-                                        Expr::IntLiteral(LocTok { token, .. }) => {
-                                            assert_eq!(*token, Token::Int(10));
-                                        }
-                                        _ => {
-                                            assert!(false);
-                                        }
-                                    };
-                                    match rhs.as_ref() {
-                                        Expr::IntLiteral(LocTok { token, .. }) => {
-                                            assert_eq!(*token, Token::Int(3));
-                                        }
-                                        _ => {
-                                            assert!(false);
-                                        }
-                                    };
-                                }
-                                _ => {
-                                    assert!(false, "Found {expr:?} should have been an AddExpr");
-                                }
-                            };
-                        }
-                        _ => {
-                            assert!(false, "Found {statement:?} should have been a Statement::Let(LetStatement)");
-                        }
-                    },
-                    _ => {
-                        assert!(false, "The parser didn't return any values");
-                    }
-                };
-            }
-            Err(e) => {
-                eprintln!("{e}");
-                assert!(false);
-            }
-        };
-    }
-
-    #[test]
-    fn single_operator_precedence_expression_statement() {
-        let code: &'static str = r#"5 + 5 * 5"#;
-        let lexer = Lexer::new(code.as_bytes(), code.len());
-        match parse(lexer) {
-            Ok(statements) => {
-                let mut statements = statements.iter();
-                match statements.next() {
-                    Some(Statement::Expression(Expr::BinaryExpression(BinExp {
-                        lhs,
-                        operator,
-                        rhs,
-                    }))) => {
-                        match lhs.as_ref() {
-                            Expr::IntLiteral(LocTok { token, .. }) => {
-                                assert_eq!(*token, Token::Int(5))
-                            }
-                            _ => assert!(false, "Expected lhs in addition to be a 5 got a {lhs:?}"),
-                        }
-                        assert_eq!(operator.token, Token::Plus);
-                        match rhs.as_ref() {
-                            Expr::BinaryExpression(BinExp { lhs, operator, rhs }) => {
-                                match lhs.as_ref() {
-                                    Expr::IntLiteral(LocTok { token, .. }) => {
-                                        assert_eq!(*token, Token::Int(5))
-                                    }
-                                    _ => assert!(
-                                        false,
-                                        "Expected lhs in multiply to be a 5 got a {lhs:?}"
-                                    ),
-                                }
-                                assert_eq!(operator.token, Token::Asterisk);
-                                match rhs.as_ref() {
-                                    Expr::IntLiteral(LocTok { token, .. }) => {
-                                        assert_eq!(*token, Token::Int(5))
-                                    }
-                                    _ => assert!(
-                                        false,
-                                        "Expected rhs in multiply to be a 5 got a {rhs:?}"
-                                    ),
-                                }
-                            }
-                            _ => assert!(false, "Expected rhs in addition to be a multiply expression got a {rhs:?}"),
-                        }
-                    }
-                    _ => assert!(false, "Expected an expression"),
-                };
-            }
-            Err(e) => {
-                eprintln!("{e}");
-                assert!(false);
-            }
-        };
-    }
-    #[test]
-    fn operator_precedence_with_grouped_expressions() {
-        let code: &'static str = r#"(5 + 5) * 5"#;
-        let lexer = Lexer::new(code.as_bytes(), code.len());
-        match parse(lexer) {
-            Ok(statements) => {
-                let mut statements = statements.iter();
-                match statements.next() {
-                    Some(Statement::Expression(Expr::BinaryExpression(BinExp {
-                        lhs,
-                        operator,
-                        rhs,
-                    }))) => {
-                        match lhs.as_ref() {
-                            Expr::BinaryExpression(BinExp { lhs, operator, rhs }) => {
-                                match lhs.as_ref() {
-                                    Expr::IntLiteral(LocTok { token, .. }) => {
-                                        assert_eq!(*token, Token::Int(5))
-                                    }
-                                    _ => assert!(
-                                        false,
-                                        "Expected lhs in grouped addition to be a 5 got a {lhs:?}"
-                                    ),
-                                }
-                                assert_eq!(operator.token, Token::Plus);
-                                match rhs.as_ref() {
-                                    Expr::IntLiteral(LocTok { token, .. }) => {
-                                        assert_eq!(*token, Token::Int(5))
-                                    }
-                                    _ => assert!(
-                                        false,
-                                        "Expected rhs in grouped addition to be a 5 got a {rhs:?}"
-                                    ),
-                                }
-                            }
-                            _ => assert!(false, "Expected lhs in expression to be a grouped addition expression got a {lhs:?}"),
-                        }
-                        assert_eq!(operator.token, Token::Asterisk);
-                        match rhs.as_ref() {
-                            Expr::IntLiteral(LocTok { token, .. }) => {
-                                assert_eq!(*token, Token::Int(5))
-                            }
-                            _ => assert!(
-                                false,
-                                "Expected rhs in multiplication to be a 5 got a {rhs:?}"
-                            ),
-                        }
-                    }
-                    _ => assert!(false, "Expected an expression"),
-                };
-            }
-            Err(e) => {
-                eprintln!("{e}");
-                assert!(false);
-            }
-        };
-    }
-
-    #[test]
-    fn single_int_expression() {
-        let code: &'static str = r#"35"#;
-        let lexer = Lexer::new(code.as_bytes(), code.len());
-        match parse(lexer) {
-            Ok(statements) => {
-                let mut statements = statements.iter();
-                assert_matches!(
-                    statements.next(),
-                    Some(Statement::Expression(Expr::IntLiteral(LocTok {
-                        token: Token::Int(35),
-                        ..
-                    }),))
-                );
-            }
-            Err(e) => {
-                eprintln!("{e}");
-                assert!(false);
-            }
-        };
-    }
-
-    #[test]
-    fn basic_return() {
-        let code: &'static str = r#"return 35;"#;
-        let lexer = Lexer::new(code.as_bytes(), code.len());
-        match parse(lexer) {
-            Ok(statements) => {
-                let mut statements = statements.iter();
-                assert_matches!(
-                    statements.next(),
-                    Some(Statement::Return(Expr::IntLiteral(LocTok {
-                        token: Token::Int(35),
-                        ..
-                    }),))
-                );
-            }
-            Err(e) => {
-                eprintln!("{e}");
-                assert!(false);
-            }
-        };
-    }
-
-    #[test]
-    fn identifier_expression() {
-        let code: &'static str = r#"foobar"#;
-        let lexer = Lexer::new(code.as_bytes(), code.len());
-        match parse(lexer) {
-            Ok(statements) => {
-                let mut statements = statements.iter();
-                let statement = statements.next();
-                match statement {
-                    Some(Statement::Expression(Expr::Ident(LocTok { token, .. }))) => {
-                        assert_eq!(*token, Token::Ident("foobar".into()));
-                    }
-                    _ => assert!(false),
-                };
-            }
-            Err(e) => {
-                eprintln!("{e}");
-                assert!(false);
-            }
-        };
-    }
-
-    #[test]
-    fn double_let() {
-        let code: &'static str = r#"let x = 5;
-        let y = 3;"#;
-        let lexer = Lexer::new(code.as_bytes(), code.len());
-        match parse(lexer) {
-            Ok(statements) => {
-                let mut statements = statements.iter();
-                assert_matches!(
-                    statements.next(),
-                    Some(Statement::Let(LetStatement {
-                        ident: LocTok {
-                            token: Token::Ident(_),
-                            ..
-                        },
-                        expr: Expr::IntLiteral(LocTok {
-                            token: Token::Int(5),
-                            ..
-                        }),
-                    }))
-                );
-                assert_matches!(
-                    statements.next(),
-                    Some(Statement::Let(LetStatement {
-                        ident: LocTok {
-                            token: Token::Ident(_),
-                            ..
-                        },
-                        expr: Expr::IntLiteral(LocTok {
-                            token: Token::Int(3),
-                            ..
-                        }),
-                    }))
-                );
-            }
-            Err(e) => {
-                eprintln!("{e}");
-                assert!(false);
-            }
-        };
-    }
-    #[test]
-    fn if_else() {
-        let code: &'static str = r#"if x {
-            x 
-        } else {
-            y
-        }"#;
-        let lexer = Lexer::new(code.as_bytes(), code.len());
-        match parse(lexer) {
-            Ok(statements) => {
-                let statement = statements.iter().next().expect("At least 1 statement");
-                match statement {
-                    Statement::Expression(Expr::If(IfExpr {
-                        condition,
-                        consequence,
-                        alternative,
-                    })) => match condition.as_ref() {
-                        Expr::Ident(lok_tok) => {
-                            assert_eq!(lok_tok.token, Token::Ident("x".into()));
-                        }
-                        _ => {
-                            assert!(false, "Expected an identifier `x`, found a {condition:?}")
-                        }
-                    },
-                    _ => {
-                        assert!(false, "Expected an If expression, found a {statement:?}")
-                    }
-                }
-            }
-            Err(e) => {
-                eprintln!("{e}");
-                assert!(false);
-            }
-        }
-    }
-}
+mod test;
