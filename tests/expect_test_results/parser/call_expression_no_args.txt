@@ -1,0 +1,1 @@
+[Expression(Terminated(CallExpression(CallExpr { function: Identifier(Ident(LocTok { line: 0, column: 0, abs_pos: 0, len: 3, token: Ident("add") })), args: [] })))]

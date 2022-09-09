@@ -2,9 +2,7 @@
 use crate::lexer::Lexer;
 
 use super::*;
-use assert_matches::assert_matches;
 use expect_test::expect_file;
-use pretty_assertions::assert_eq;
 
 #[test]
 fn simple_prefix_op_expression_statement() {
@@ -12,57 +10,32 @@ fn simple_prefix_op_expression_statement() {
     let lexer = Lexer::new(code.as_bytes(), code.len());
     match parse(lexer) {
         Ok(statements) => {
-            let statement = statements.iter().next();
-            match statement {
-                Some(Statement::Expression(Expr::PrefixExpression(PreExpr {
-                    operator:
-                        LocTok {
-                            token: Token::Minus,
-                            ..
-                        },
-                    expression,
-                }))) => match expression.as_ref() {
-                    Expr::IntLiteral(LocTok { token, .. }) => {
-                        assert_eq!(*token, Token::Int(5))
-                    }
-                    _ => assert!(false, "Expected a 5 after the minus"),
-                },
-                _ => {
-                    assert!(false, "Expected a minus (-) 5, found {statement:?}")
-                }
-            };
+            let expected = expect_file![
+                "./../../tests/expect_test_results/parser/simple_prefix_op_expression_statement.txt"
+            ];
+            expected.assert_eq(&format!("{statements:?}"));
         }
         Err(e) => {
             eprintln!("{e}");
             assert!(false);
         }
-    };
+    }
 }
+
 #[test]
 fn single_let() {
     let code: &'static str = r#"let x = 5;"#;
     let lexer = Lexer::new(code.as_bytes(), code.len());
     match parse(lexer) {
         Ok(statements) => {
-            assert_matches!(
-                statements.iter().next(),
-                Some(Statement::Let(LetStatement {
-                    ident: LocTok {
-                        token: Token::Ident(_),
-                        ..
-                    },
-                    expr: Expr::IntLiteral(LocTok {
-                        token: Token::Int(5),
-                        ..
-                    }),
-                }))
-            );
+            let expected = expect_file!["./../../tests/expect_test_results/parser/single_let.txt"];
+            expected.assert_eq(&format!("{statements:?}"));
         }
         Err(e) => {
             eprintln!("{e}");
             assert!(false);
         }
-    };
+    }
 }
 
 #[test]
@@ -71,25 +44,15 @@ fn single_let_with_bool() {
     let lexer = Lexer::new(code.as_bytes(), code.len());
     match parse(lexer) {
         Ok(statements) => {
-            assert_matches!(
-                statements.iter().next(),
-                Some(Statement::Let(LetStatement {
-                    ident: LocTok {
-                        token: Token::Ident(_),
-                        ..
-                    },
-                    expr: Expr::BoolLiteral(LocTok {
-                        token: Token::True,
-                        ..
-                    }),
-                }))
-            );
+            let expected =
+                expect_file!["./../../tests/expect_test_results/parser/single_let_with_bool.txt"];
+            expected.assert_eq(&format!("{statements:?}"));
         }
         Err(e) => {
             eprintln!("{e}");
             assert!(false);
         }
-    };
+    }
 }
 
 #[test]
@@ -98,52 +61,15 @@ fn single_let_with_add() {
     let lexer = Lexer::new(code.as_bytes(), code.len());
     match parse(lexer) {
         Ok(statements) => {
-            let next = statements.iter().next();
-            match next {
-                Some(statement) => {
-                    match statement {
-                        Statement::Let(LetStatement { ident, expr }) => {
-                            assert_eq!(ident.token, Token::Ident("x".into()));
-                            match expr {
-                                Expr::BinaryExpression(BinExp { lhs, operator, rhs }) => {
-                                    assert_eq!(operator.token, Token::Plus);
-                                    match lhs.as_ref() {
-                                        Expr::IntLiteral(LocTok { token, .. }) => {
-                                            assert_eq!(*token, Token::Int(10));
-                                        }
-                                        _ => {
-                                            assert!(false);
-                                        }
-                                    };
-                                    match rhs.as_ref() {
-                                        Expr::IntLiteral(LocTok { token, .. }) => {
-                                            assert_eq!(*token, Token::Int(3));
-                                        }
-                                        _ => {
-                                            assert!(false);
-                                        }
-                                    };
-                                }
-                                _ => {
-                                    assert!(false, "Found {expr:?} should have been an AddExpr");
-                                }
-                            };
-                        }
-                        _ => {
-                            assert!(false, "Found {statement:?} should have been a Statement::Let(LetStatement)");
-                        }
-                    }
-                }
-                _ => {
-                    assert!(false, "The parser didn't return any values");
-                }
-            };
+            let expected =
+                expect_file!["./../../tests/expect_test_results/parser/single_let_with_add.txt"];
+            expected.assert_eq(&format!("{statements:?}"));
         }
         Err(e) => {
             eprintln!("{e}");
             assert!(false);
         }
-    };
+    }
 }
 
 #[test]
@@ -152,56 +78,16 @@ fn single_operator_precedence_expression_statement() {
     let lexer = Lexer::new(code.as_bytes(), code.len());
     match parse(lexer) {
         Ok(statements) => {
-            let mut statements = statements.iter();
-            match statements.next() {
-                Some(Statement::Expression(Expr::BinaryExpression(BinExp {
-                    lhs,
-                    operator,
-                    rhs,
-                }))) => {
-                    match lhs.as_ref() {
-                        Expr::IntLiteral(LocTok { token, .. }) => {
-                            assert_eq!(*token, Token::Int(5))
-                        }
-                        _ => assert!(false, "Expected lhs in addition to be a 5 got a {lhs:?}"),
-                    }
-                    assert_eq!(operator.token, Token::Plus);
-                    match rhs.as_ref() {
-                        Expr::BinaryExpression(BinExp { lhs, operator, rhs }) => {
-                            match lhs.as_ref() {
-                                Expr::IntLiteral(LocTok { token, .. }) => {
-                                    assert_eq!(*token, Token::Int(5))
-                                }
-                                _ => assert!(
-                                    false,
-                                    "Expected lhs in multiply to be a 5 got a {lhs:?}"
-                                ),
-                            }
-                            assert_eq!(operator.token, Token::Asterisk);
-                            match rhs.as_ref() {
-                                Expr::IntLiteral(LocTok { token, .. }) => {
-                                    assert_eq!(*token, Token::Int(5))
-                                }
-                                _ => assert!(
-                                    false,
-                                    "Expected rhs in multiply to be a 5 got a {rhs:?}"
-                                ),
-                            }
-                        }
-                        _ => assert!(
-                            false,
-                            "Expected rhs in addition to be a multiply expression got a {rhs:?}"
-                        ),
-                    }
-                }
-                _ => assert!(false, "Expected an expression"),
-            };
+            let expected = expect_file![
+                "./../../tests/expect_test_results/parser/single_operator_precedence_expression_statement.txt"
+            ];
+            expected.assert_eq(&format!("{statements:?}"));
         }
         Err(e) => {
             eprintln!("{e}");
             assert!(false);
         }
-    };
+    }
 }
 #[test]
 fn operator_precedence_with_grouped_expressions() {
@@ -209,56 +95,16 @@ fn operator_precedence_with_grouped_expressions() {
     let lexer = Lexer::new(code.as_bytes(), code.len());
     match parse(lexer) {
         Ok(statements) => {
-            let mut statements = statements.iter();
-            match statements.next() {
-                Some(Statement::Expression(Expr::BinaryExpression(BinExp {
-                    lhs,
-                    operator,
-                    rhs,
-                }))) => {
-                    match lhs.as_ref() {
-                        Expr::BinaryExpression(BinExp { lhs, operator, rhs }) => {
-                            match lhs.as_ref() {
-                                Expr::IntLiteral(LocTok { token, .. }) => {
-                                    assert_eq!(*token, Token::Int(5))
-                                }
-                                _ => assert!(
-                                    false,
-                                    "Expected lhs in grouped addition to be a 5 got a {lhs:?}"
-                                ),
-                            }
-                            assert_eq!(operator.token, Token::Plus);
-                            match rhs.as_ref() {
-                                Expr::IntLiteral(LocTok { token, .. }) => {
-                                    assert_eq!(*token, Token::Int(5))
-                                }
-                                _ => assert!(
-                                    false,
-                                    "Expected rhs in grouped addition to be a 5 got a {rhs:?}"
-                                ),
-                            }
-                        }
-                        _ => assert!(false, "Expected lhs in expression to be a grouped addition expression got a {lhs:?}"),
-                    }
-                    assert_eq!(operator.token, Token::Asterisk);
-                    match rhs.as_ref() {
-                        Expr::IntLiteral(LocTok { token, .. }) => {
-                            assert_eq!(*token, Token::Int(5))
-                        }
-                        _ => assert!(
-                            false,
-                            "Expected rhs in multiplication to be a 5 got a {rhs:?}"
-                        ),
-                    }
-                }
-                _ => assert!(false, "Expected an expression"),
-            };
+            let expected = expect_file![
+                "./../../tests/expect_test_results/parser/operator_precedence_with_grouped_expressions.txt"
+            ];
+            expected.assert_eq(&format!("{statements:?}"));
         }
         Err(e) => {
             eprintln!("{e}");
             assert!(false);
         }
-    };
+    }
 }
 
 #[test]
@@ -267,20 +113,15 @@ fn single_int_expression() {
     let lexer = Lexer::new(code.as_bytes(), code.len());
     match parse(lexer) {
         Ok(statements) => {
-            let mut statements = statements.iter();
-            assert_matches!(
-                statements.next(),
-                Some(Statement::Expression(Expr::IntLiteral(LocTok {
-                    token: Token::Int(35),
-                    ..
-                }),))
-            );
+            let expected =
+                expect_file!["./../../tests/expect_test_results/parser/single_int_expression.txt"];
+            expected.assert_eq(&format!("{statements:?}"));
         }
         Err(e) => {
             eprintln!("{e}");
             assert!(false);
         }
-    };
+    }
 }
 
 #[test]
@@ -289,20 +130,15 @@ fn basic_return() {
     let lexer = Lexer::new(code.as_bytes(), code.len());
     match parse(lexer) {
         Ok(statements) => {
-            let mut statements = statements.iter();
-            assert_matches!(
-                statements.next(),
-                Some(Statement::Return(Expr::IntLiteral(LocTok {
-                    token: Token::Int(35),
-                    ..
-                }),))
-            );
+            let expected =
+                expect_file!["./../../tests/expect_test_results/parser/basic_return.txt"];
+            expected.assert_eq(&format!("{statements:?}"));
         }
         Err(e) => {
             eprintln!("{e}");
             assert!(false);
         }
-    };
+    }
 }
 
 #[test]
@@ -311,20 +147,15 @@ fn identifier_expression() {
     let lexer = Lexer::new(code.as_bytes(), code.len());
     match parse(lexer) {
         Ok(statements) => {
-            let mut statements = statements.iter();
-            let statement = statements.next();
-            match statement {
-                Some(Statement::Expression(Expr::Identifier(Ident(LocTok { token, .. })))) => {
-                    assert_eq!(*token, Token::Ident("foobar".into()));
-                }
-                _ => assert!(false),
-            };
+            let expected =
+                expect_file!["./../../tests/expect_test_results/parser/identifier_expression.txt"];
+            expected.assert_eq(&format!("{statements:?}"));
         }
         Err(e) => {
             eprintln!("{e}");
             assert!(false);
         }
-    };
+    }
 }
 
 #[test]
@@ -334,43 +165,16 @@ fn double_let() {
     let lexer = Lexer::new(code.as_bytes(), code.len());
     match parse(lexer) {
         Ok(statements) => {
-            let mut statements = statements.iter();
-            assert_matches!(
-                statements.next(),
-                Some(Statement::Let(LetStatement {
-                    ident: LocTok {
-                        token: Token::Ident(_),
-                        ..
-                    },
-                    expr: Expr::IntLiteral(LocTok {
-                        token: Token::Int(5),
-                        ..
-                    }),
-                }))
-            );
-            assert_matches!(
-                statements.next(),
-                Some(Statement::Let(LetStatement {
-                    ident: LocTok {
-                        token: Token::Ident(_),
-                        ..
-                    },
-                    expr: Expr::IntLiteral(LocTok {
-                        token: Token::Int(3),
-                        ..
-                    }),
-                }))
-            );
+            let expected = expect_file!["./../../tests/expect_test_results/parser/double_let.txt"];
+            expected.assert_eq(&format!("{statements:?}"));
         }
         Err(e) => {
             eprintln!("{e}");
             assert!(false);
         }
-    };
+    }
 }
 
-// This test makes it obvious that I need to invest in better testing infrastructure
-// This test alone is 123 lines of code
 #[test]
 fn if_elseif_else() {
     let code: &'static str = r#"
@@ -384,117 +188,9 @@ fn if_elseif_else() {
     let lexer = Lexer::new(code.as_bytes(), code.len());
     match parse(lexer) {
         Ok(statements) => {
-            let statement = statements.iter().next().expect("At least 1 statement");
-            match statement {
-                Statement::Expression(Expr::If(IfExpr {
-                    condition,
-                    consequence,
-                    alternative,
-                })) => {
-                    match condition.as_ref() {
-                        Expr::Identifier(Ident(lok_tok)) => {
-                            assert_eq!(lok_tok.token, Token::Ident("x".into()));
-                        }
-                        _ => {
-                            assert!(false, "Expected an identifier `x`, found a {condition:?}")
-                        }
-                    };
-                    let consequence = consequence
-                        .statements
-                        .first()
-                        .expect("At least 1 statement in the consequence");
-                    match consequence {
-                        Statement::Expression(Expr::Identifier(Ident(ident))) => {
-                            assert_eq!(ident.token, Token::Ident("x".into()))
-                        }
-                        _ => {
-                            assert!(
-                                false,
-                                "Expected an identifier expression `x`, found {consequence:?}"
-                            )
-                        }
-                    };
-                    match alternative.as_ref().expect("An else if alternative") {
-                        ElseIfExpr::ElseIf(inner) => match inner.as_ref() {
-                            Expr::If(IfExpr {
-                                condition,
-                                consequence,
-                                alternative,
-                            }) => {
-                                match condition.as_ref() {
-                                    Expr::Identifier(Ident(lok_tok)) => {
-                                        assert_eq!(lok_tok.token, Token::Ident("y".into()));
-                                    }
-                                    _ => {
-                                        assert!(
-                                            false,
-                                            "Expected an identifier `y`, found a {condition:?}"
-                                        )
-                                    }
-                                };
-                                let consequence = consequence
-                                    .statements
-                                    .iter()
-                                    .next()
-                                    .expect("At least 1 statement in the consequence");
-                                match consequence {
-                                    Statement::Expression(Expr::Identifier(Ident(ident))) => {
-                                        assert_eq!(ident.token, Token::Ident("y".into()))
-                                    }
-                                    _ => {
-                                        assert!(
-                                false,
-                                "Expected an identifier expression `y`, found {consequence:?}"
-                            )
-                                    }
-                                };
-                                match alternative.as_ref().expect("An else alternative") {
-                                    ElseIfExpr::Else(statements) => {
-                                        dbg!(alternative);
-                                        let statement = statements
-                                            .statements
-                                            .iter()
-                                            .next()
-                                            .expect("At least 1 statement");
-                                        match statement {
-                                            Statement::Expression(Expr::Identifier(Ident(
-                                                ident,
-                                            ))) => {
-                                                assert_eq!(
-                                                    ident.token,
-                                                    Token::Ident("foobar".into())
-                                                )
-                                            }
-                                            _ => {
-                                                assert!(false, "Expected an identifier `foobar, found a {statement:?}")
-                                            }
-                                        }
-                                    }
-                                    _ => {
-                                        assert!(
-                                            false,
-                                            "Expected an Else If expression, found a {statement:?}"
-                                        )
-                                    }
-                                };
-                            }
-
-                            _ => {
-                                assert!(false, "Expected an If expression, found something else")
-                            }
-                        },
-                        _ => {
-                            assert!(
-                                false,
-                                "Expected an Else If expression, found something else"
-                            )
-                        }
-                    };
-                }
-                _ => {
-                    assert!(false, "Expected an If expression, found a {statement:?}")
-                }
-            }
+            let expected =
+                expect_file!["./../../tests/expect_test_results/parser/if_elseif_else.txt"];
+            expected.assert_eq(&format!("{statements:?}"));
         }
         Err(e) => {
             eprintln!("{e}");
@@ -601,6 +297,59 @@ fn function_literal() {
         Ok(statements) => {
             let expected =
                 expect_file!["./../../tests/expect_test_results/parser/function_literal.txt"];
+            expected.assert_eq(&format!("{statements:?}"));
+        }
+        Err(e) => {
+            eprintln!("{e}");
+            assert!(false);
+        }
+    }
+}
+
+#[test]
+fn call_expression() {
+    let code: &'static str = r#"add(x, y)"#;
+    let lexer = Lexer::new(code.as_bytes(), code.len());
+    match parse(lexer) {
+        Ok(statements) => {
+            let expected =
+                expect_file!["./../../tests/expect_test_results/parser/call_expression.txt"];
+            expected.assert_eq(&format!("{statements:?}"));
+        }
+        Err(e) => {
+            eprintln!("{e}");
+            assert!(false);
+        }
+    }
+}
+
+#[test]
+fn call_expression_no_args() {
+    let code: &'static str = r#"add();"#;
+    let lexer = Lexer::new(code.as_bytes(), code.len());
+    match parse(lexer) {
+        Ok(statements) => {
+            let expected = expect_file![
+                "./../../tests/expect_test_results/parser/call_expression_no_args.txt"
+            ];
+            expected.assert_eq(&format!("{statements:?}"));
+        }
+        Err(e) => {
+            eprintln!("{e}");
+            assert!(false);
+        }
+    }
+}
+
+#[test]
+fn call_expression_with_expression_args() {
+    let code: &'static str = r#"call_func(2, 3, fn(x,y){x + y})"#;
+    let lexer = Lexer::new(code.as_bytes(), code.len());
+    match parse(lexer) {
+        Ok(statements) => {
+            let expected = expect_file![
+                "./../../tests/expect_test_results/parser/call_expression_with_expression_args.txt"
+            ];
             expected.assert_eq(&format!("{statements:?}"));
         }
         Err(e) => {

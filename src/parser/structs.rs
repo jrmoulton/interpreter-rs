@@ -6,9 +6,9 @@ use std::{cell::RefCell, fmt::Display, iter::Peekable, rc::Rc};
 /// A binary epression has an operator that goes inbetween a lhs operand and a rhs operand.
 /// Both the lhs and rhs can be entire expressions themselves
 pub(crate) struct BinExp {
-    pub(crate) lhs: Box<Expr>,
+    pub(crate) lhs: Box<ExprBase>,
     pub(crate) operator: LocTok,
-    pub(crate) rhs: Box<Expr>,
+    pub(crate) rhs: Box<ExprBase>,
 }
 
 #[derive(Debug)]
@@ -21,14 +21,20 @@ pub(crate) struct PreExpr {
 #[derive(Debug)]
 /// The optional alterantive of an if expression
 pub(crate) enum ElseIfExpr {
-    ElseIf(Box<Expr>),
+    ElseIf(Box<ExprBase>),
     Else(Scope),
+}
+
+#[derive(Debug)]
+pub(crate) struct CallExpr {
+    pub(crate) function: Box<ExprBase>,
+    pub(crate) args: Vec<Expr>,
 }
 
 #[derive(Debug)]
 /// A faily self explanatory If expression
 pub(crate) struct IfExpr {
-    pub(crate) condition: Box<Expr>,
+    pub(crate) condition: Box<ExprBase>,
     pub(crate) consequence: Scope,
     pub(crate) alternative: Option<ElseIfExpr>,
 }
@@ -39,9 +45,16 @@ pub(crate) struct Ident(pub(crate) LocTok);
 #[derive(Debug)]
 // All of the differenct valid cases of expressions
 pub(crate) enum Expr {
+    Terminated(ExprBase),
+    NonTerminated(ExprBase),
+}
+
+#[derive(Debug)]
+pub(crate) enum ExprBase {
     IntLiteral(LocTok),
     BoolLiteral(LocTok),
     FuncLiteral(FnLiteral),
+    CallExpression(CallExpr),
     Identifier(Ident),
     PrefixExpression(PreExpr),
     BinaryExpression(BinExp),
@@ -74,6 +87,8 @@ pub(crate) enum Statement {
 #[derive(Debug)]
 pub(crate) enum ParseError {
     UnexpectedToken(LocTok),
+    UnexpectedTerminatedExpr(Expr),
+    ExpectedTerminatedExpr(Expr),
     Eof,
 }
 impl Display for ParseError {
@@ -95,6 +110,8 @@ impl Display for ParseErrors {
     }
 }
 impl Context for ParseErrors {}
+
+pub(crate) struct Suggestion(pub &'static str);
 
 #[derive(Debug)]
 pub(crate) struct Scope {

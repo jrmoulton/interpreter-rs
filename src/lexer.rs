@@ -78,6 +78,7 @@ impl Token {
         use Precedence::*;
         use Token::*;
         match self {
+            LParen => Call,
             Plus => Sum,
             Minus => Sum,
             Slash => Product,

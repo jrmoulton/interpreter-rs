@@ -1,0 +1,1 @@
+[Expression(NonTerminated(Identifier(Ident(LocTok { line: 0, column: 0, abs_pos: 0, len: 6, token: Ident("foobar") }))))]
