@@ -218,6 +218,7 @@ impl<'a> Lexer<'a> {
                     {
                         len += 1;
                     }
+                    token.len = len;
                     match std::str::from_utf8(&self.input[self.pos..self.pos + len]) {
                         Ok("let") => {
                             token.token = Token::Let;
@@ -247,7 +248,6 @@ impl<'a> Lexer<'a> {
                             token.token = Token::In;
                         }
                         Ok(ident) => {
-                            token.len = ident.len();
                             token.token = Token::Ident(ident.into());
                         }
                         Err(e) => {

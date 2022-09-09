@@ -1,0 +1,1 @@
+[LocTok { line: 0, column: 0, abs_pos: 0, len: 1, token: Illegal }]

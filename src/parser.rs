@@ -1,91 +1,17 @@
-use std::{cell::RefCell, fmt::Display, iter::Peekable, rc::Rc};
+mod structs;
+mod test;
+
+use error_stack::{Report, Result};
+use std::{cell::RefCell, rc::Rc};
 
 use crate::lexer::{Lexer, LocTok, Precedence, Token};
-use error_stack::{Context, Report, Result};
-
-#[derive(Debug)]
-pub(crate) struct BinExp {
-    lhs: Box<Expr>,
-    operator: LocTok,
-    rhs: Box<Expr>,
-}
-
-#[derive(Debug)]
-pub(crate) struct PreExpr {
-    operator: LocTok,
-    expression: Box<Expr>,
-}
-
-#[derive(Debug)]
-pub(crate) enum ElseIfExpr {
-    ElseIf(Box<Expr>),
-    Else(Vec<Statement>),
-}
-
-#[derive(Debug)]
-pub(crate) struct IfExpr {
-    condition: Box<Expr>,
-    consequence: Vec<Statement>,
-    alternative: Option<ElseIfExpr>,
-}
-
-#[derive(Debug)]
-pub(crate) enum Expr {
-    IntLiteral(LocTok),
-    BoolLiteral(LocTok),
-    Ident(LocTok),
-    PrefixExpression(PreExpr),
-    BinaryExpression(BinExp),
-    If(IfExpr),
-}
-
-#[derive(Debug)]
-pub(crate) struct LetStatement {
-    ident: LocTok,
-    expr: Expr,
-}
-
-#[derive(Debug)]
-pub(crate) enum Statement {
-    Let(LetStatement),
-    Return(Expr),
-    Expression(Expr),
-}
-
-#[derive(Debug)]
-pub(crate) enum ParseError {
-    UnexpectedToken(LocTok),
-    Eof,
-}
-impl Display for ParseError {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.write_fmt(format_args!("{self:?}"))
-    }
-}
-impl Context for ParseError {}
-impl From<Report<ParseError>> for ParseErrors {
-    fn from(parse_error: Report<ParseError>) -> Self {
-        ParseErrors(vec![parse_error])
-    }
-}
-#[derive(Debug)]
-pub(crate) struct ParseErrors(Vec<Report<ParseError>>);
-impl Display for ParseErrors {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.write_fmt(format_args!("{self:?}"))
-    }
-}
-impl Context for ParseErrors {}
-
-type LexerPeekRef<'a> = Rc<RefCell<Peekable<Lexer<'a>>>>;
+use structs::*;
 
 pub(crate) fn parse(lexer: Lexer) -> std::result::Result<Vec<Statement>, ParseErrors> {
     parse_statements(Rc::new(RefCell::new(lexer.peekable())))
 }
 
-pub(crate) fn parse_statements(
-    lexer: LexerPeekRef,
-) -> std::result::Result<Vec<Statement>, ParseErrors> {
+fn parse_statements(lexer: LexerPeekRef) -> std::result::Result<Vec<Statement>, ParseErrors> {
     let mut statements = Vec::new();
     let mut errors = Vec::new();
     let mut start_statement_peek = lexer.borrow_mut().peek().map(|val| val.to_owned());
@@ -104,7 +30,10 @@ pub(crate) fn parse_statements(
             | Token::Ident(_)
             | Token::LParen
             | Token::Minus
-            | Token::Bang => match parse_expression_statement(lexer.clone()) {
+            | Token::Bang
+            | Token::True
+            | Token::False
+            | Token::Func => match parse_expression_statement(lexer.clone()) {
                 Ok(statement) => statements.push(Statement::Expression(statement)),
                 Err(e) => errors.extend(e.0),
             },
@@ -119,7 +48,7 @@ pub(crate) fn parse_statements(
             Token::LBrace => {
                 let _lbrace = lexer.borrow_mut().next();
                 match parse_statements(lexer.clone()) {
-                    Ok(inner_statements) => statements.extend(inner_statements),
+                    Ok(inner_statements) => statements.push(Statement::Scope(inner_statements)),
                     Err(e) => errors.extend(e.0),
                 };
                 let rbrace = expect_peek(lexer.clone(), Token::RBrace);
@@ -273,7 +202,7 @@ fn parse_expression(
             // All Literals, identifiers and prefix operators should be matched here
             Ident(_) => {
                 lexer.borrow_mut().next();
-                Expr::Ident(left_lok_tok)
+                Expr::Identifier(structs::Ident(left_lok_tok))
             }
             Int(_) => {
                 lexer.borrow_mut().next();
@@ -295,6 +224,10 @@ fn parse_expression(
             If => {
                 lexer.borrow_mut().next();
                 parse_if_expression(lexer.clone())?
+            }
+            Func => {
+                lexer.borrow_mut().next();
+                parse_func_literal(lexer.clone())?
             }
             _ => Err(Report::new(ParseError::UnexpectedToken(left_lok_tok))
                 .attach_printable("Expected an expression"))?,
@@ -321,6 +254,109 @@ fn parse_expression(
         };
     }
     Ok(left_exp)
+}
+fn parse_func_literal(lexer: LexerPeekRef) -> std::result::Result<Expr, ParseErrors> {
+    let mut errors = Vec::new();
+    if let Err(e) = expect_peek(lexer.clone(), Token::LParen) {
+        errors.push(e);
+    } else {
+        let _lparen = lexer.borrow_mut().next();
+    }
+    let identifiers = match parse_function_parameters(lexer.clone()) {
+        Ok(identifiers) => Some(identifiers),
+        Err(e) => {
+            errors.extend(e.0);
+            None
+        }
+    };
+    let body = match parse_statements(lexer.clone()) {
+        Ok(statements) => Some(Scope::new(statements)),
+        Err(e) => {
+            errors.extend(e.0);
+            None
+        }
+    };
+
+    if !errors.is_empty() {
+        Err(ParseErrors(errors))
+    } else {
+        Ok(Expr::FuncLiteral(FnLiteral {
+            parameters: identifiers
+                .expect("If there are no errors then the identifers are present"),
+            body: body.expect("If there are no errors then the function body is present"),
+        }))
+    }
+}
+
+fn parse_function_parameters(lexer: LexerPeekRef) -> std::result::Result<Vec<Ident>, ParseErrors> {
+    enum ParamState {
+        None,
+        Ident,
+        Comma,
+    }
+    let mut errors = Vec::new();
+    let mut identifiers = Vec::new();
+    let mut param_state = ParamState::None;
+    let mut again = true;
+
+    let mut peek = lexer.borrow_mut().peek().map(|val| val.to_owned());
+    while again {
+        match peek {
+            Some(lok_tok) => match lok_tok.token {
+                Token::Ident(_) => {
+                    lexer.borrow_mut().next();
+                    match param_state {
+                        ParamState::Ident => {
+                            errors.push(
+                                Report::new(ParseError::UnexpectedToken(lok_tok))
+                                    .attach_printable("Identifiers should be separated by commas"),
+                            );
+                        }
+                        _ => {
+                            param_state = ParamState::Ident;
+                            identifiers.push(Ident(lok_tok));
+                        }
+                    }
+                }
+                Token::Comma => {
+                    lexer.borrow_mut().next();
+                    match param_state {
+                        ParamState::None | ParamState::Comma => {
+                            errors.push(
+                                Report::new(ParseError::UnexpectedToken(lok_tok)).attach_printable(
+                                    "There should be an identifier before the comma",
+                                ),
+                            );
+                        }
+                        ParamState::Ident => {}
+                    };
+                    param_state = ParamState::Comma;
+                }
+                Token::RParen => {
+                    again = false;
+                    lexer.borrow_mut().next();
+                }
+                _ => {
+                    errors.push(
+                        Report::new(ParseError::UnexpectedToken(lok_tok))
+                            .attach_printable("Expected an identifier or a closing parentheses"),
+                    );
+                    again = false;
+                }
+            },
+            None => errors.push(
+                Report::new(ParseError::Eof)
+                    .attach_printable("Expected function parameters or a closing parentheses"),
+            ),
+        }
+        peek = lexer.borrow_mut().peek().map(|val| val.to_owned());
+    }
+
+    if !errors.is_empty() {
+        Err(ParseErrors(errors))
+    } else {
+        Ok(identifiers)
+    }
 }
 
 fn parse_grouped_expression(lexer: LexerPeekRef) -> std::result::Result<Expr, ParseErrors> {
@@ -385,7 +421,7 @@ fn parse_if_expression(lexer: LexerPeekRef) -> std::result::Result<Expr, ParseEr
                         lexer.borrow_mut().next();
                     }
                     match parse_statements(lexer.clone()) {
-                        Ok(statements) => Some(ElseIfExpr::Else(statements)),
+                        Ok(statements) => Some(ElseIfExpr::Else(Scope::new(statements))),
                         Err(e) => {
                             errors.extend(e.0);
                             None
@@ -412,8 +448,9 @@ fn parse_if_expression(lexer: LexerPeekRef) -> std::result::Result<Expr, ParseEr
             condition: Box::new(
                 condition.expect("If there are no errors then the expression is present"),
             ),
-            consequence: consequence
-                .expect("If there are no errors then the expression is present"),
+            consequence: Scope::new(
+                consequence.expect("If there are no errors then the expression is present"),
+            ),
             alternative,
         }))
     }
@@ -453,6 +490,3 @@ fn parse_binary_expression(
         rhs: Box::new(parse_expression(lexer.clone(), op_precedence)?),
     }))
 }
-
-#[cfg(test)]
-mod test;

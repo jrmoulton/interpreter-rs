@@ -1,3 +1,4 @@
+#![cfg(test)]
 use crate::lexer::Lexer;
 
 use super::*;
@@ -313,7 +314,7 @@ fn identifier_expression() {
             let mut statements = statements.iter();
             let statement = statements.next();
             match statement {
-                Some(Statement::Expression(Expr::Ident(LocTok { token, .. }))) => {
+                Some(Statement::Expression(Expr::Identifier(Ident(LocTok { token, .. })))) => {
                     assert_eq!(*token, Token::Ident("foobar".into()));
                 }
                 _ => assert!(false),
@@ -391,7 +392,7 @@ fn if_elseif_else() {
                     alternative,
                 })) => {
                     match condition.as_ref() {
-                        Expr::Ident(lok_tok) => {
+                        Expr::Identifier(Ident(lok_tok)) => {
                             assert_eq!(lok_tok.token, Token::Ident("x".into()));
                         }
                         _ => {
@@ -399,10 +400,11 @@ fn if_elseif_else() {
                         }
                     };
                     let consequence = consequence
+                        .statements
                         .first()
                         .expect("At least 1 statement in the consequence");
                     match consequence {
-                        Statement::Expression(Expr::Ident(ident)) => {
+                        Statement::Expression(Expr::Identifier(Ident(ident))) => {
                             assert_eq!(ident.token, Token::Ident("x".into()))
                         }
                         _ => {
@@ -420,7 +422,7 @@ fn if_elseif_else() {
                                 alternative,
                             }) => {
                                 match condition.as_ref() {
-                                    Expr::Ident(lok_tok) => {
+                                    Expr::Identifier(Ident(lok_tok)) => {
                                         assert_eq!(lok_tok.token, Token::Ident("y".into()));
                                     }
                                     _ => {
@@ -431,10 +433,12 @@ fn if_elseif_else() {
                                     }
                                 };
                                 let consequence = consequence
-                                    .first()
+                                    .statements
+                                    .iter()
+                                    .next()
                                     .expect("At least 1 statement in the consequence");
                                 match consequence {
-                                    Statement::Expression(Expr::Ident(ident)) => {
+                                    Statement::Expression(Expr::Identifier(Ident(ident))) => {
                                         assert_eq!(ident.token, Token::Ident("y".into()))
                                     }
                                     _ => {
@@ -447,10 +451,15 @@ fn if_elseif_else() {
                                 match alternative.as_ref().expect("An else alternative") {
                                     ElseIfExpr::Else(statements) => {
                                         dbg!(alternative);
-                                        let statement =
-                                            statements.iter().next().expect("At least 1 statement");
+                                        let statement = statements
+                                            .statements
+                                            .iter()
+                                            .next()
+                                            .expect("At least 1 statement");
                                         match statement {
-                                            Statement::Expression(Expr::Ident(ident)) => {
+                                            Statement::Expression(Expr::Identifier(Ident(
+                                                ident,
+                                            ))) => {
                                                 assert_eq!(
                                                     ident.token,
                                                     Token::Ident("foobar".into())
@@ -517,25 +526,86 @@ fn if_elseif_else_again() {
             assert!(false);
         }
     }
+}
 
-    // Ahh yeah this is better
-    #[test]
-    fn new_scope() {
-        let code: &'static str = r#"
+#[test]
+fn if_with_bool_expr() {
+    let code: &'static str = r#"
+        if x {
+            true
+        } else {
+            false
+        }"#;
+    let lexer = Lexer::new(code.as_bytes(), code.len());
+    match parse(lexer) {
+        Ok(statements) => {
+            let expected =
+                expect_file!["./../../tests/expect_test_results/parser/if_with_bool_expr.txt"];
+            expected.assert_eq(&format!("{statements:?}"));
+        }
+        Err(e) => {
+            eprintln!("{e}");
+            assert!(false);
+        }
+    }
+}
+
+#[test]
+fn new_scope() {
+    let code: &'static str = r#"
         {
 
         }"#;
-        let lexer = Lexer::new(code.as_bytes(), code.len());
-        match parse(lexer) {
-            Ok(statements) => {
-                let expected =
-                    expect_file!["./../../tests/expect_test_results/parser/new_scope.txt"];
-                expected.assert_eq(&format!("{statements:?}"));
+    let lexer = Lexer::new(code.as_bytes(), code.len());
+    match parse(lexer) {
+        Ok(statements) => {
+            let expected = expect_file!["./../../tests/expect_test_results/parser/new_scope.txt"];
+            expected.assert_eq(&format!("{statements:?}"));
+        }
+        Err(e) => {
+            eprintln!("{e}");
+            assert!(false);
+        }
+    }
+}
+
+#[test]
+fn nested_scope() {
+    let code: &'static str = r#"
+        {
+            {
+
             }
-            Err(e) => {
-                eprintln!("{e}");
-                assert!(false);
-            }
+        }"#;
+    let lexer = Lexer::new(code.as_bytes(), code.len());
+    match parse(lexer) {
+        Ok(statements) => {
+            let expected =
+                expect_file!["./../../tests/expect_test_results/parser/nested_scope.txt"];
+            expected.assert_eq(&format!("{statements:?}"));
+        }
+        Err(e) => {
+            eprintln!("{e}");
+            assert!(false);
+        }
+    }
+}
+
+#[test]
+fn function_literal() {
+    let code: &'static str = r#"fn(x, y) {
+        x + y
+    }"#;
+    let lexer = Lexer::new(code.as_bytes(), code.len());
+    match parse(lexer) {
+        Ok(statements) => {
+            let expected =
+                expect_file!["./../../tests/expect_test_results/parser/function_literal.txt"];
+            expected.assert_eq(&format!("{statements:?}"));
+        }
+        Err(e) => {
+            eprintln!("{e}");
+            assert!(false);
         }
     }
 }

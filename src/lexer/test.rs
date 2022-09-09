@@ -1,4 +1,5 @@
 use super::*;
+use expect_test::expect_file;
 use pretty_assertions::assert_eq;
 // use pretty_assertions::assert_ne;
 use Token::*;
@@ -159,4 +160,39 @@ fn comprehensive() {
             .map(|lok_tok| lok_tok.token)
             .collect::<Vec<_>>()
     );
+}
+
+#[test]
+fn comprehensive_expect_test() {
+    let code: &'static str = r#"
+                let five = 5;
+                let ten = 10;
+                   let add = fn(x, y) {
+                     x - y;
+                };
+                   let result = add(five, ten);
+                   !-/*5;
+                   5 < 10 > 5;
+                   if (5 < 10) {
+                       return true;
+                   } else {
+                       return false;
+                }
+                10 == 10; 10 != 9;"#;
+    let lexer = Lexer::new(code.as_bytes(), code.len())
+        .into_iter()
+        .collect::<Vec<_>>();
+    let expected =
+        expect_file!["./../../tests/expect_test_results/lexer/comprehensive_expect_test.txt"];
+    expected.assert_eq(&format!("{lexer:?}"));
+}
+
+#[test]
+fn bad_character() {
+    let code: &'static str = r#"?"#;
+    let lexer = Lexer::new(code.as_bytes(), code.len())
+        .into_iter()
+        .collect::<Vec<_>>();
+    let expected = expect_file!["./../../tests/expect_test_results/lexer/bad_character.txt"];
+    expected.assert_eq(&format!("{lexer:?}"));
 }
