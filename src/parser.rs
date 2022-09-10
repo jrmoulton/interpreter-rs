@@ -60,7 +60,7 @@ fn parse_statements(lexer: LexerPeekRef) -> Result<Vec<Statement>, ParseErrors> 
                     Report::new(ParseError::UnexpectedToken(lok_tok))
                         .attach_printable("Expected a statement or an expression"),
                 );
-                return Err(ParseErrors(errors));
+                lexer.borrow_mut().next();
             }
         };
         start_statement_peek = lexer.borrow_mut().peek().map(|val| val.to_owned());
