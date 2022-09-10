@@ -23,5 +23,5 @@ The evaluation of the AST needs to be completed and printed into a REPL while gi
 let x = 5;
 foobar;
 let y = (3 + 3) * 5;
-let multiply = fn(x, y){x * y}
+let multiply = fn(x, y){x * y};
 ```
