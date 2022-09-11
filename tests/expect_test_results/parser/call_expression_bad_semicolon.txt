@@ -1,0 +1,3 @@
+ParseErrors { errors: [UnexpectedToken(LocTok { line: 0, column: 5, abs_pos: 5, len: 1, token: Semicolon })
+             
+      - Identifiers should be separated by commas] }

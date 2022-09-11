@@ -1,0 +1,3 @@
+ParseErrors { errors: [UnexpectedToken(LocTok { line: 2, column: 12, abs_pos: 23, len: 1, token: Semicolon })
+             
+      - Expected a statement or an expression] }

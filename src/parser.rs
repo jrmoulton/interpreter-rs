@@ -19,11 +19,11 @@ fn parse_statements(lexer: LexerPeekRef) -> Result<Vec<Statement>, ParseErrors> 
         match lok_tok.token {
             Token::Let => match parse_let_statement(lexer.clone()) {
                 Ok(statement) => statements.push(Statement::Let(statement)),
-                Err(e) => errors.extend(e.0),
+                Err(e) => errors.extend(e.errors),
             },
             Token::Return => match parse_return_statement(lexer.clone()) {
                 Ok(statement) => statements.push(Statement::Return(statement)),
-                Err(e) => errors.extend(e.0),
+                Err(e) => errors.extend(e.errors),
             },
             Token::Int(_)
             | Token::If
@@ -33,14 +33,14 @@ fn parse_statements(lexer: LexerPeekRef) -> Result<Vec<Statement>, ParseErrors> 
             | Token::Bang
             | Token::True
             | Token::False
-            | Token::Func => match parse_expression_statement(lexer.clone()) {
+            | Token::Func => match parse_expression(lexer.clone(), Precedence::Lowest, true) {
                 Ok(statement) => statements.push(Statement::Expression(statement)),
-                Err(e) => errors.extend(e.0),
+                Err(e) => errors.extend(e.errors),
             },
             Token::RBrace => {
                 // If there is a brace it is time to yeet out while keeping any errors
                 if !errors.is_empty() {
-                    return Err(ParseErrors(errors));
+                    return Err(ParseErrors { errors });
                 } else {
                     return Ok(statements);
                 }
@@ -49,7 +49,7 @@ fn parse_statements(lexer: LexerPeekRef) -> Result<Vec<Statement>, ParseErrors> 
                 let _lbrace = lexer.borrow_mut().next();
                 match parse_statements(lexer.clone()) {
                     Ok(inner_statements) => statements.push(Statement::Scope(inner_statements)),
-                    Err(e) => errors.extend(e.0),
+                    Err(e) => errors.extend(e.errors),
                 };
                 if let Err(e) = expect_peek(lexer.clone(), Token::RBrace) {
                     errors.push(e)
@@ -66,7 +66,7 @@ fn parse_statements(lexer: LexerPeekRef) -> Result<Vec<Statement>, ParseErrors> 
         start_statement_peek = lexer.borrow_mut().peek().map(|val| val.to_owned());
     }
     if !errors.is_empty() {
-        Err(ParseErrors(errors))
+        Err(ParseErrors { errors })
     } else {
         Ok(statements)
     }
@@ -90,14 +90,14 @@ fn parse_return_statement(lexer: LexerPeekRef) -> Result<Expr, ParseErrors> {
             }
         },
         Err(e) => {
-            errors.extend(e.0);
+            errors.extend(e.errors);
             None
         }
     };
     if errors.is_empty() {
         Ok(expr.expect("Expression there because there are no errors"))
     } else {
-        Err(ParseErrors(errors))
+        Err(ParseErrors { errors })
     }
 }
 
@@ -153,7 +153,7 @@ fn parse_let_statement(lexer: LexerPeekRef) -> Result<LetStatement, ParseErrors>
             }
         },
         Err(e) => {
-            errors.extend(e.0);
+            errors.extend(e.errors);
             None
         }
     };
@@ -164,7 +164,7 @@ fn parse_let_statement(lexer: LexerPeekRef) -> Result<LetStatement, ParseErrors>
             expr: expr.expect("Some because there are no errors"),
         })
     } else {
-        Err(ParseErrors(errors))
+        Err(ParseErrors { errors })
     }
 }
 
@@ -174,6 +174,22 @@ fn expect_peek(lexer: LexerPeekRef, expected: Token) -> error_stack::Result<(), 
         Some(lok_tok) => {
             if lok_tok.token.token_matches(&expected) {
                 lexer.borrow_mut().next();
+                Ok(())
+            } else {
+                Err(Report::new(ParseError::UnexpectedToken(lok_tok))
+                    .attach_printable(format!("Expected a {expected:?}")))
+            }
+        }
+        None => {
+            Err(Report::new(ParseError::Eof).attach_printable(format!("Expected a {expected:?}")))
+        }
+    }
+}
+fn is_peek(lexer: LexerPeekRef, expected: Token) -> error_stack::Result<(), ParseError> {
+    let peek = lexer.borrow_mut().peek().map(|val| val.to_owned());
+    match peek {
+        Some(lok_tok) => {
+            if lok_tok.token.token_matches(&expected) {
                 Ok(())
             } else {
                 Err(Report::new(ParseError::UnexpectedToken(lok_tok))
@@ -198,11 +214,18 @@ fn parse_identifier(lexer: LexerPeekRef) -> error_stack::Result<LocTok, ParseErr
     }
 }
 
-fn parse_expression_statement(lexer: LexerPeekRef) -> Result<Expr, ParseErrors> {
-    parse_expression(lexer.clone(), Precedence::Lowest, true)
-    // TODO: Handle optional semicolon here
-}
-
+/// This function uses a recursive descent alrorithm to parse expressions. First the left hand side
+/// (lhs) is parsed. This may end up being the lhs in a larger expression or it could be the entire
+/// expression it self and be returned by itself at the end of the function. This lhs parsing work
+/// by matching tokens to functions that can properly parse the next token. This includes binary
+/// expressions, prefix expression and literals. The next section will see if there is an operator
+/// token and if the coming operator token has a higher precedence than the previous operator token
+/// (with the first call to this function just passing Precedence::Lowest) the lhs will get sucked
+/// into the expression with that higher precedence. If it is equal or lower precedence it will
+/// just be yeeted out as is which may be into a recursive call or out of the original function
+/// call. the This ensures proper parsing of oprator precedence. This includes the lparen token
+/// which in a way acts as a binary expression for a function call. But it matches to it's own
+/// function.
 fn parse_expression(
     lexer: LexerPeekRef,
     precedence: Precedence,
@@ -214,8 +237,23 @@ fn parse_expression(
         Some(left_lok_tok) => match left_lok_tok.token {
             // All Literals, identifiers and prefix operators should be matched here
             Ident(_) => {
+                // An ident can either be an expression all on its own or the start of an assign
+                // expression
                 lexer.borrow_mut().next();
-                ExprBase::Identifier(structs::Ident(left_lok_tok))
+                match expect_peek(lexer.clone(), Token::Assign) {
+                    Ok(_) => {
+                        let assign_expr = ExprBase::Assign(AssignExpr {
+                            ident: left_lok_tok,
+                            expr: Box::new(
+                                parse_expression(lexer.clone(), Precedence::Lowest, false)?
+                                    .expect_non_terminated(),
+                            ),
+                        });
+                        is_peek(lexer.clone(), Token::Semicolon)?;
+                        assign_expr
+                    }
+                    Err(_) => ExprBase::Identifier(structs::Ident(left_lok_tok)),
+                }
             }
             Int(_) => {
                 lexer.borrow_mut().next();
@@ -242,8 +280,11 @@ fn parse_expression(
                 lexer.borrow_mut().next();
                 parse_func_literal(lexer.clone())?
             }
-            _ => Err(Report::new(ParseError::UnexpectedToken(left_lok_tok))
-                .attach_printable("Expected an expression"))?,
+            _ => {
+                lexer.borrow_mut().next();
+                Err(Report::new(ParseError::UnexpectedToken(left_lok_tok))
+                    .attach_printable("Expected an expression"))?
+            }
         },
         None => Err(Report::new(ParseError::Eof).attach_printable("Expected an expression"))?,
     };
@@ -269,6 +310,8 @@ fn parse_expression(
             None => return Ok(Expr::NonTerminated(left_exp)),
         };
     }
+    // inner expressions should never be terminated so this check to match_semicolon checks if the
+    // calling function wants the expression to have the option of being terminated or not.
     if match_semicolon && peek_op_token.token.token_matches(&Token::Semicolon) {
         lexer.borrow_mut().next();
         Ok(Expr::Terminated(left_exp))
@@ -285,12 +328,12 @@ fn parse_call_expression(lexer: LexerPeekRef, function: ExprBase) -> Result<Expr
     let args = match parse_call_args(lexer.clone()) {
         Ok(args) => Some(args),
         Err(errs) => {
-            errors.extend(errs.0);
+            errors.extend(errs.errors);
             None
         }
     };
     if !errors.is_empty() {
-        Err(ParseErrors(errors))
+        Err(ParseErrors { errors })
     } else {
         Ok(ExprBase::CallExpression(CallExpr {
             function: Box::new(function),
@@ -300,6 +343,8 @@ fn parse_call_expression(lexer: LexerPeekRef, function: ExprBase) -> Result<Expr
 }
 
 fn parse_call_args(lexer: LexerPeekRef) -> Result<Vec<Expr>, ParseErrors> {
+    // A enum as  a state machine to track what the previous token was. This gives better options
+    // for error messages
     enum ArgState {
         Empty,
         Arg,
@@ -339,20 +384,20 @@ fn parse_call_args(lexer: LexerPeekRef) -> Result<Vec<Expr>, ParseErrors> {
                                 Report::new(ParseError::UnexpectedToken(lok_tok))
                                     .attach_printable("Identifiers should be separated by commas"),
                             );
+                            lexer.borrow_mut().next();
                         }
                         _ => {
                             arg_state = ArgState::Arg;
                         }
                     };
                     // TODO: match semicolon here?
-                    match parse_expression(lexer.clone(), Precedence::Lowest, true) {
+                    match parse_expression(lexer.clone(), Precedence::Lowest, false) {
                         Ok(arg) => {
                             arguments.push(arg);
                             again = true;
                         }
                         Err(errs) => {
-                            errors.extend(errs.0);
-                            again = false;
+                            errors.extend(errs.errors);
                         }
                     }
                 }
@@ -366,7 +411,7 @@ fn parse_call_args(lexer: LexerPeekRef) -> Result<Vec<Expr>, ParseErrors> {
     }
 
     if !errors.is_empty() {
-        Err(ParseErrors(errors))
+        Err(ParseErrors { errors })
     } else {
         Ok(arguments)
     }
@@ -380,7 +425,7 @@ fn parse_func_literal(lexer: LexerPeekRef) -> Result<ExprBase, ParseErrors> {
     let identifiers = match parse_function_parameters(lexer.clone()) {
         Ok(identifiers) => Some(identifiers),
         Err(e) => {
-            errors.extend(e.0);
+            errors.extend(e.errors);
             None
         }
     };
@@ -390,7 +435,7 @@ fn parse_func_literal(lexer: LexerPeekRef) -> Result<ExprBase, ParseErrors> {
     let body = match parse_statements(lexer.clone()) {
         Ok(statements) => Some(Scope::new(statements)),
         Err(e) => {
-            errors.extend(e.0);
+            errors.extend(e.errors);
             None
         }
     };
@@ -398,7 +443,7 @@ fn parse_func_literal(lexer: LexerPeekRef) -> Result<ExprBase, ParseErrors> {
         errors.push(e);
     }
     if !errors.is_empty() {
-        Err(ParseErrors(errors))
+        Err(ParseErrors { errors })
     } else {
         Ok(ExprBase::FuncLiteral(FnLiteral {
             parameters: identifiers
@@ -409,6 +454,8 @@ fn parse_func_literal(lexer: LexerPeekRef) -> Result<ExprBase, ParseErrors> {
 }
 
 fn parse_function_parameters(lexer: LexerPeekRef) -> std::result::Result<Vec<Ident>, ParseErrors> {
+    // A enum as  a state machine to track what the previous token was. This gives better options
+    // for error messages
     enum ParamState {
         Empty,
         Ident,
@@ -473,7 +520,7 @@ fn parse_function_parameters(lexer: LexerPeekRef) -> std::result::Result<Vec<Ide
     }
 
     if !errors.is_empty() {
-        Err(ParseErrors(errors))
+        Err(ParseErrors { errors })
     } else {
         Ok(identifiers)
     }
@@ -494,8 +541,8 @@ fn parse_grouped_expression(lexer: LexerPeekRef) -> Result<ExprBase, ParseErrors
             }
             Expr::NonTerminated(exp) => Some(exp),
         },
-        Err(e) => {
-            errors.extend(e.0);
+        Err(errs) => {
+            errors.extend(errs.errors);
             None
         }
     };
@@ -503,7 +550,7 @@ fn parse_grouped_expression(lexer: LexerPeekRef) -> Result<ExprBase, ParseErrors
         errors.push(e);
     }
     if !errors.is_empty() {
-        Err(ParseErrors(errors))
+        Err(ParseErrors { errors })
     } else {
         Ok(exp.expect("If there are no errors then the expression is present"))
     }
@@ -525,7 +572,7 @@ fn parse_if_expression(lexer: LexerPeekRef) -> Result<ExprBase, ParseErrors> {
                 Expr::NonTerminated(cond_base) => Some(cond_base),
             },
             Err(e) => {
-                errors.extend(e.0);
+                errors.extend(e.errors);
                 None
             }
         };
@@ -535,7 +582,7 @@ fn parse_if_expression(lexer: LexerPeekRef) -> Result<ExprBase, ParseErrors> {
     let consequence = match parse_statements(lexer.clone()) {
         Ok(statements) => Some(statements),
         Err(e) => {
-            errors.extend(e.0);
+            errors.extend(e.errors);
             None
         }
     };
@@ -555,7 +602,7 @@ fn parse_if_expression(lexer: LexerPeekRef) -> Result<ExprBase, ParseErrors> {
                     match parse_statements(lexer.clone()) {
                         Ok(statements) => Some(ElseIfExpr::Else(Scope::new(statements))),
                         Err(e) => {
-                            errors.extend(e.0);
+                            errors.extend(e.errors);
                             None
                         }
                     }
@@ -563,7 +610,7 @@ fn parse_if_expression(lexer: LexerPeekRef) -> Result<ExprBase, ParseErrors> {
                 Ok(_) => match parse_if_expression(lexer.clone()) {
                     Ok(if_expr) => Some(ElseIfExpr::ElseIf(Box::new(if_expr))),
                     Err(e) => {
-                        errors.extend(e.0);
+                        errors.extend(e.errors);
                         None
                     }
                 },
@@ -571,7 +618,7 @@ fn parse_if_expression(lexer: LexerPeekRef) -> Result<ExprBase, ParseErrors> {
         }
     };
     if !errors.is_empty() {
-        Err(ParseErrors(errors))
+        Err(ParseErrors { errors })
     } else {
         Ok(ExprBase::If(IfExpr {
             condition: Box::new(

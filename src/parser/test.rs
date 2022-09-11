@@ -39,6 +39,23 @@ fn single_let() {
 }
 
 #[test]
+fn assign_statement() {
+    let code: &'static str = r#"x = true;"#;
+    let lexer = Lexer::new(code.as_bytes(), code.len());
+    match parse(lexer) {
+        Ok(statements) => {
+            let expected =
+                expect_file!["./../../tests/expect_test_results/parser/assign_statement.txt"];
+            expected.assert_eq(&format!("{statements:?}"));
+        }
+        Err(e) => {
+            eprintln!("{e}");
+            assert!(false);
+        }
+    }
+}
+
+#[test]
 fn single_let_with_bool() {
     let code: &'static str = r#"let x = true;"#;
     let lexer = Lexer::new(code.as_bytes(), code.len());
@@ -355,6 +372,103 @@ fn call_expression_with_expression_args() {
         Err(e) => {
             eprintln!("{e}");
             assert!(false);
+        }
+    }
+}
+
+#[test]
+fn func_no_body() {
+    let code: &'static str = r#"fn(x,y)"#;
+    let lexer = Lexer::new(code.as_bytes(), code.len());
+    match parse(lexer) {
+        Ok(statements) => {
+            assert!(false, "Expected an error, found {statements:?}");
+        }
+        Err(e) => {
+            let remove = regex::Regex::new(r"at src.*").unwrap();
+            let err_string = format!("{e:?}");
+            let expected =
+                expect_file!["./../../tests/expect_test_results/parser/func_no_body.txt"];
+            expected.assert_eq(&remove.replace_all(&err_string, ""));
+        }
+    }
+}
+
+#[test]
+fn call_expression_bad_semicolon() {
+    let code: &'static str = r#"add(x; y)"#;
+    let lexer = Lexer::new(code.as_bytes(), code.len());
+    match parse(lexer) {
+        Ok(statements) => {
+            assert!(false, "Expected an error, found {statements:?}");
+        }
+        Err(e) => {
+            let remove = regex::Regex::new(r"at src.*").unwrap();
+            let err_string = format!("{e:?}");
+            let expected = expect_file![
+                "./../../tests/expect_test_results/parser/call_expression_bad_semicolon.txt"
+            ];
+            expected.assert_eq(&remove.replace_all(&err_string, ""));
+        }
+    }
+}
+
+#[test]
+fn new_scope_bad_semicolon() {
+    let code: &'static str = r#"
+        {
+            ;
+        }"#;
+    let lexer = Lexer::new(code.as_bytes(), code.len());
+    match parse(lexer) {
+        Ok(statements) => {
+            assert!(false, "Expected an error, found {statements:?}");
+        }
+        Err(e) => {
+            let remove = regex::Regex::new(r"at src.*").unwrap();
+            let err_string = format!("{e:?}");
+            let expected = expect_file![
+                "./../../tests/expect_test_results/parser/new_scope_bad_semicolon.txt"
+            ];
+            expected.assert_eq(&remove.replace_all(&err_string, ""));
+        }
+    }
+}
+
+#[test]
+fn assign_statement_no_semicolon() {
+    let code: &'static str = r#"x = true"#;
+    let lexer = Lexer::new(code.as_bytes(), code.len());
+    match parse(lexer) {
+        Ok(statements) => {
+            assert!(false, "Expected an error, found {statements:?}");
+        }
+        Err(e) => {
+            let remove = regex::Regex::new(r"at src.*").unwrap();
+            let err_string = format!("{e:?}");
+            let expected = expect_file![
+                "./../../tests/expect_test_results/parser/assign_statement_no_semicolon.txt"
+            ];
+            expected.assert_eq(&remove.replace_all(&err_string, ""));
+        }
+    }
+}
+
+#[test]
+fn let_statement_no_semicolon() {
+    let code: &'static str = r#"let x = true"#;
+    let lexer = Lexer::new(code.as_bytes(), code.len());
+    match parse(lexer) {
+        Ok(statements) => {
+            assert!(false, "Expected an error, found {statements:?}");
+        }
+        Err(e) => {
+            let remove = regex::Regex::new(r"at src.*").unwrap();
+            let err_string = format!("{e:?}");
+            let expected = expect_file![
+                "./../../tests/expect_test_results/parser/let_statement_no_semicolon.txt"
+            ];
+            expected.assert_eq(&remove.replace_all(&err_string, ""));
         }
     }
 }

@@ -1,0 +1,3 @@
+ParseErrors { errors: [ExpectedTerminatedExpr(NonTerminated(BoolLiteral(LocTok { line: 0, column: 8, abs_pos: 8, len: 4, token: True })))
+             
+      - 1 additional opaque attachment] }

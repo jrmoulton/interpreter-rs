@@ -48,6 +48,24 @@ pub(crate) enum Expr {
     Terminated(ExprBase),
     NonTerminated(ExprBase),
 }
+impl Expr {
+    pub fn expect_non_terminated(self) -> ExprBase {
+        match self {
+            Self::Terminated(_) => {
+                panic!("Expected to be of type NonTerminated but found Terminated")
+            }
+            Self::NonTerminated(inner) => inner,
+        }
+    }
+    pub fn expect_terminated(self) -> ExprBase {
+        match self {
+            Self::NonTerminated(_) => {
+                panic!("Expected to be of type Terminated but found NonTerminated")
+            }
+            Self::Terminated(inner) => inner,
+        }
+    }
+}
 
 #[derive(Debug)]
 pub(crate) enum ExprBase {
@@ -56,6 +74,7 @@ pub(crate) enum ExprBase {
     FuncLiteral(FnLiteral),
     CallExpression(CallExpr),
     Identifier(Ident),
+    Assign(AssignExpr),
     PrefixExpression(PreExpr),
     BinaryExpression(BinExp),
     If(IfExpr),
@@ -68,6 +87,12 @@ pub(crate) struct Parameters {}
 pub(crate) struct FnLiteral {
     pub(crate) parameters: Vec<Ident>,
     pub(crate) body: Scope,
+}
+
+#[derive(Debug)]
+pub(crate) struct AssignExpr {
+    pub(crate) ident: LocTok,
+    pub(crate) expr: Box<ExprBase>,
 }
 
 #[derive(Debug)]
@@ -99,11 +124,15 @@ impl Display for ParseError {
 impl Context for ParseError {}
 impl From<Report<ParseError>> for ParseErrors {
     fn from(parse_error: Report<ParseError>) -> Self {
-        ParseErrors(vec![parse_error])
+        ParseErrors {
+            errors: vec![parse_error],
+        }
     }
 }
 #[derive(Debug)]
-pub(crate) struct ParseErrors(pub(crate) Vec<Report<ParseError>>);
+pub(crate) struct ParseErrors {
+    pub(crate) errors: Vec<Report<ParseError>>,
+}
 impl Display for ParseErrors {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.write_fmt(format_args!("{self:?}"))
@@ -131,3 +160,20 @@ impl IntoIterator for Scope {
 }
 
 pub(crate) type LexerPeekRef<'a> = Rc<RefCell<Peekable<Lexer<'a>>>>;
+
+pub(crate) trait YeetErrToVec {
+    type Target;
+    fn yeet_to_vec(self, vec: &mut Vec<Report<ParseError>>) -> Option<Self::Target>;
+}
+// impl YeetErrToVec for Result<ExprBase, ParseErrors> {
+//     type Target = ExprBase;
+//     fn yeet_to_vec(self, vec: &mut Vec<Report<ParseError>>) -> Option<Self::Target> {
+//         match self {
+//             Err(errs) => {
+//                 vec.extend(errs.0);
+//                 None
+//             }
+//             Ok(val) => Some(val),
+//         }
+//     }
+// }
