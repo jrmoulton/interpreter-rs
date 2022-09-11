@@ -72,12 +72,16 @@ fn parse_statements(lexer: LexerPeekRef) -> Result<Vec<Statement>, ParseErrors> 
     }
 }
 
-fn parse_return_statement(lexer: LexerPeekRef) -> Result<Expr, ParseErrors> {
+fn parse_return_statement(lexer: LexerPeekRef) -> Result<Option<Expr>, ParseErrors> {
     lexer
         .borrow_mut()
         .next()
         .expect("The return keyword was already peeked and matched");
     let mut errors = Vec::new();
+    if expect_peek(lexer.clone(), Token::Semicolon).is_ok() {
+        // A return with no expression is valid if there is a semicolon
+        return Ok(None);
+    }
     let expr = match parse_expression(lexer.clone(), Precedence::Lowest, true) {
         Ok(expr) => match expr {
             Expr::Terminated(_) => Some(expr),
@@ -95,7 +99,7 @@ fn parse_return_statement(lexer: LexerPeekRef) -> Result<Expr, ParseErrors> {
         }
     };
     if errors.is_empty() {
-        Ok(expr.expect("Expression there because there are no errors"))
+        Ok(expr)
     } else {
         Err(ParseErrors { errors })
     }
@@ -342,6 +346,7 @@ fn parse_call_expression(lexer: LexerPeekRef, function: ExprBase) -> Result<Expr
     }
 }
 
+// The only way to exit this is EOF or a right parentheses. Will that lead  to problems?
 fn parse_call_args(lexer: LexerPeekRef) -> Result<Vec<Expr>, ParseErrors> {
     // A enum as  a state machine to track what the previous token was. This gives better options
     // for error messages
@@ -390,11 +395,9 @@ fn parse_call_args(lexer: LexerPeekRef) -> Result<Vec<Expr>, ParseErrors> {
                             arg_state = ArgState::Arg;
                         }
                     };
-                    // TODO: match semicolon here?
                     match parse_expression(lexer.clone(), Precedence::Lowest, false) {
                         Ok(arg) => {
                             arguments.push(arg);
-                            again = true;
                         }
                         Err(errs) => {
                             errors.extend(errs.errors);

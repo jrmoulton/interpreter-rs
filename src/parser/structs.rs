@@ -104,7 +104,7 @@ pub(crate) struct LetStatement {
 #[derive(Debug)]
 pub(crate) enum Statement {
     Let(LetStatement),
-    Return(Expr),
+    Return(Option<Expr>),
     Expression(Expr),
     Scope(Vec<Statement>),
 }

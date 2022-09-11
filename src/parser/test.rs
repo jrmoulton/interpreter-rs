@@ -159,6 +159,23 @@ fn basic_return() {
 }
 
 #[test]
+fn return_no_expression() {
+    let code: &'static str = r#"return;"#;
+    let lexer = Lexer::new(code.as_bytes(), code.len());
+    match parse(lexer) {
+        Ok(statements) => {
+            let expected =
+                expect_file!["./../../tests/expect_test_results/parser/return_no_expression.txt"];
+            expected.assert_eq(&format!("{statements:?}"));
+        }
+        Err(e) => {
+            eprintln!("{e}");
+            assert!(false);
+        }
+    }
+}
+
+#[test]
 fn identifier_expression() {
     let code: &'static str = r#"foobar"#;
     let lexer = Lexer::new(code.as_bytes(), code.len());
@@ -467,6 +484,43 @@ fn let_statement_no_semicolon() {
             let err_string = format!("{e:?}");
             let expected = expect_file![
                 "./../../tests/expect_test_results/parser/let_statement_no_semicolon.txt"
+            ];
+            expected.assert_eq(&remove.replace_all(&err_string, ""));
+        }
+    }
+}
+
+#[test]
+fn return_no_semicolon() {
+    let code: &'static str = r#"return 5"#;
+    let lexer = Lexer::new(code.as_bytes(), code.len());
+    match parse(lexer) {
+        Ok(statements) => {
+            assert!(false, "Expected an error, found {statements:?}");
+        }
+        Err(e) => {
+            let remove = regex::Regex::new(r"at src.*").unwrap();
+            let err_string = format!("{e:?}");
+            let expected =
+                expect_file!["./../../tests/expect_test_results/parser/return_no_semicolon.txt"];
+            expected.assert_eq(&remove.replace_all(&err_string, ""));
+        }
+    }
+}
+
+#[test]
+fn return_no_expr_no_semicolon() {
+    let code: &'static str = r#"return"#;
+    let lexer = Lexer::new(code.as_bytes(), code.len());
+    match parse(lexer) {
+        Ok(statements) => {
+            assert!(false, "Expected an error, found {statements:?}");
+        }
+        Err(e) => {
+            let remove = regex::Regex::new(r"at src.*").unwrap();
+            let err_string = format!("{e:?}");
+            let expected = expect_file![
+                "./../../tests/expect_test_results/parser/return_no_expr_no_semicolon.txt"
             ];
             expected.assert_eq(&remove.replace_all(&err_string, ""));
         }
