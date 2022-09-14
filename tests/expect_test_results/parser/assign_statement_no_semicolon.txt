@@ -1,3 +1,2 @@
-ParseErrors { errors: [Eof
+ParseErrors { errors: [ExpectedTerminatedExpr(NonTerminated(BoolLiteral(LocTok { line: 0, column: 4, abs_pos: 4, len: 4, token: True })))
              
-      - Expected a Semicolon] }

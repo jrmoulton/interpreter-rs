@@ -1,1 +1,1 @@
-[Scope([Scope([])])]
+[Expression(NonTerminated(Scope([Expression(NonTerminated(Scope([])))])))]

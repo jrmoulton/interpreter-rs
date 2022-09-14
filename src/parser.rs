@@ -25,10 +25,24 @@ fn parse_statements(lexer: LexerPeekRef) -> Result<Vec<Statement>, ParseErrors> 
                 Ok(statement) => statements.push(Statement::Return(statement)),
                 Err(e) => errors.extend(e.errors),
             },
+            Token::Ident(_) => {
+                let mut lexer_clone = lexer.borrow_mut().clone();
+                let _ident = lexer_clone.next();
+                match is_peek(Rc::new(RefCell::new(lexer_clone.clone())), Token::Assign) {
+                    Ok(_) => match parse_assign_statement(lexer.clone()) {
+                        Ok(statement) => statements.push(Statement::Assign(statement)),
+                        Err(errs) => errors.extend(errs.errors),
+                    },
+                    Err(_) => match parse_expression(lexer.clone(), Precedence::Lowest, true) {
+                        Ok(statement) => statements.push(Statement::Expression(statement)),
+                        Err(e) => errors.extend(e.errors),
+                    },
+                }
+            }
             Token::Int(_)
             | Token::If
-            | Token::Ident(_)
             | Token::LParen
+            | Token::LBrace
             | Token::Minus
             | Token::Bang
             | Token::True
@@ -45,16 +59,6 @@ fn parse_statements(lexer: LexerPeekRef) -> Result<Vec<Statement>, ParseErrors> 
                     return Ok(statements);
                 }
             }
-            Token::LBrace => {
-                let _lbrace = lexer.borrow_mut().next();
-                match parse_statements(lexer.clone()) {
-                    Ok(inner_statements) => statements.push(Statement::Scope(inner_statements)),
-                    Err(e) => errors.extend(e.errors),
-                };
-                if let Err(e) = expect_peek(lexer.clone(), Token::RBrace) {
-                    errors.push(e)
-                };
-            }
             _ => {
                 errors.push(
                     Report::new(ParseError::UnexpectedToken(lok_tok))
@@ -70,6 +74,27 @@ fn parse_statements(lexer: LexerPeekRef) -> Result<Vec<Statement>, ParseErrors> 
     } else {
         Ok(statements)
     }
+}
+
+fn parse_assign_statement(lexer: LexerPeekRef) -> Result<AssignStatement, ParseErrors> {
+    let ident = lexer
+        .borrow_mut()
+        .next()
+        .expect("The ident was already peeked and matched");
+    let _assign_tok = lexer
+        .borrow_mut()
+        .next()
+        .expect("The assign token was already matched in the cloned lexer");
+    let expr = parse_expression(lexer.clone(), Precedence::Lowest, true)?;
+    let expr_base = match expr {
+        Expr::Terminated(expr) => expr,
+        Expr::NonTerminated(_) => Err(Report::new(ParseError::ExpectedTerminatedExpr(expr)))?,
+    };
+    let assign_statement = AssignStatement {
+        ident,
+        expr: Box::new(expr_base),
+    };
+    Ok(assign_statement)
 }
 
 fn parse_return_statement(lexer: LexerPeekRef) -> Result<Option<Expr>, ParseErrors> {
@@ -244,20 +269,7 @@ fn parse_expression(
                 // An ident can either be an expression all on its own or the start of an assign
                 // expression
                 lexer.borrow_mut().next();
-                match expect_peek(lexer.clone(), Token::Assign) {
-                    Ok(_) => {
-                        let assign_expr = ExprBase::Assign(AssignExpr {
-                            ident: left_lok_tok,
-                            expr: Box::new(
-                                parse_expression(lexer.clone(), Precedence::Lowest, false)?
-                                    .expect_non_terminated(),
-                            ),
-                        });
-                        is_peek(lexer.clone(), Token::Semicolon)?;
-                        assign_expr
-                    }
-                    Err(_) => ExprBase::Identifier(structs::Ident(left_lok_tok)),
-                }
+                ExprBase::Identifier(structs::Ident(left_lok_tok))
             }
             Int(_) => {
                 lexer.borrow_mut().next();
@@ -283,6 +295,10 @@ fn parse_expression(
             Func => {
                 lexer.borrow_mut().next();
                 parse_func_literal(lexer.clone())?
+            }
+            Token::LBrace => {
+                let _lbrace = lexer.borrow_mut().next();
+                ExprBase::Scope(parse_statements(lexer.clone())?)
             }
             _ => {
                 lexer.borrow_mut().next();

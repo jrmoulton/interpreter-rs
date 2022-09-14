@@ -74,7 +74,7 @@ pub(crate) enum ExprBase {
     FuncLiteral(FnLiteral),
     CallExpression(CallExpr),
     Identifier(Ident),
-    Assign(AssignExpr),
+    Scope(Vec<Statement>),
     PrefixExpression(PreExpr),
     BinaryExpression(BinExp),
     If(IfExpr),
@@ -90,7 +90,7 @@ pub(crate) struct FnLiteral {
 }
 
 #[derive(Debug)]
-pub(crate) struct AssignExpr {
+pub(crate) struct AssignStatement {
     pub(crate) ident: LocTok,
     pub(crate) expr: Box<ExprBase>,
 }
@@ -106,7 +106,7 @@ pub(crate) enum Statement {
     Let(LetStatement),
     Return(Option<Expr>),
     Expression(Expr),
-    Scope(Vec<Statement>),
+    Assign(AssignStatement),
 }
 
 #[derive(Debug)]
@@ -160,20 +160,3 @@ impl IntoIterator for Scope {
 }
 
 pub(crate) type LexerPeekRef<'a> = Rc<RefCell<Peekable<Lexer<'a>>>>;
-
-pub(crate) trait YeetErrToVec {
-    type Target;
-    fn yeet_to_vec(self, vec: &mut Vec<Report<ParseError>>) -> Option<Self::Target>;
-}
-// impl YeetErrToVec for Result<ExprBase, ParseErrors> {
-//     type Target = ExprBase;
-//     fn yeet_to_vec(self, vec: &mut Vec<Report<ParseError>>) -> Option<Self::Target> {
-//         match self {
-//             Err(errs) => {
-//                 vec.extend(errs.0);
-//                 None
-//             }
-//             Ok(val) => Some(val),
-//         }
-//     }
-// }

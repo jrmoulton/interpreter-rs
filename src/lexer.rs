@@ -101,7 +101,7 @@ pub(crate) struct LocTok {
     pub(crate) token: Token,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub(crate) struct Lexer<'a> {
     input: &'a [u8],
     len: usize,
