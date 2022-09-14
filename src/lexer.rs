@@ -32,6 +32,7 @@ pub(crate) enum Token {
 
     // keywords
     Let,
+    Mut,
     Func,
     True,
     False,
@@ -40,6 +41,10 @@ pub(crate) enum Token {
     Return,
     For,
     In,
+    Break,
+    Continue,
+    Loop,
+    While,
 
     // Ident
     Ident(String),
@@ -247,6 +252,21 @@ impl<'a> Lexer<'a> {
                         }
                         Ok("in") => {
                             token.token = Token::In;
+                        }
+                        Ok("mut") => {
+                            token.token = Token::Mut;
+                        }
+                        Ok("break") => {
+                            token.token = Token::Break;
+                        }
+                        Ok("continue") => {
+                            token.token = Token::Continue;
+                        }
+                        Ok("loop") => {
+                            token.token = Token::Loop;
+                        }
+                        Ok("while") => {
+                            token.token = Token::While;
                         }
                         Ok(ident) => {
                             token.token = Token::Ident(ident.into());

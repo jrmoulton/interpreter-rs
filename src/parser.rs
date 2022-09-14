@@ -8,10 +8,13 @@ use crate::lexer::{Lexer, LocTok, Precedence, Token};
 use structs::*;
 
 pub(crate) fn parse(lexer: Lexer) -> Result<Vec<Statement>, ParseErrors> {
-    parse_statements(Rc::new(RefCell::new(lexer.peekable())))
+    parse_statements(Rc::new(RefCell::new(lexer.peekable())), false)
 }
 
-fn parse_statements(lexer: LexerPeekRef) -> Result<Vec<Statement>, ParseErrors> {
+fn parse_statements(
+    lexer: LexerPeekRef,
+    inside_scope: bool,
+) -> Result<Vec<Statement>, ParseErrors> {
     let mut statements = Vec::new();
     let mut errors = Vec::new();
     let mut start_statement_peek = lexer.borrow_mut().peek().map(|val| val.to_owned());
@@ -53,6 +56,7 @@ fn parse_statements(lexer: LexerPeekRef) -> Result<Vec<Statement>, ParseErrors> 
             },
             Token::RBrace => {
                 // If there is a brace it is time to yeet out while keeping any errors
+                lexer.borrow_mut().next();
                 if !errors.is_empty() {
                     return Err(ParseErrors { errors });
                 } else {
@@ -68,6 +72,9 @@ fn parse_statements(lexer: LexerPeekRef) -> Result<Vec<Statement>, ParseErrors> 
             }
         };
         start_statement_peek = lexer.borrow_mut().peek().map(|val| val.to_owned());
+    }
+    if inside_scope {
+        errors.push(expect_peek(lexer.clone(), Token::RBrace).unwrap_err());
     }
     if !errors.is_empty() {
         Err(ParseErrors { errors })
@@ -88,7 +95,8 @@ fn parse_assign_statement(lexer: LexerPeekRef) -> Result<AssignStatement, ParseE
     let expr = parse_expression(lexer.clone(), Precedence::Lowest, true)?;
     let expr_base = match expr {
         Expr::Terminated(expr) => expr,
-        Expr::NonTerminated(_) => Err(Report::new(ParseError::ExpectedTerminatedExpr(expr)))?,
+        Expr::NonTerminated(_) => Err(Report::new(ParseError::ExpectedTerminatedExpr(expr))
+            .attach(Suggestion("Add a semicolon to the end of this expression")))?,
     };
     let assign_statement = AssignStatement {
         ident,
@@ -102,32 +110,17 @@ fn parse_return_statement(lexer: LexerPeekRef) -> Result<Option<Expr>, ParseErro
         .borrow_mut()
         .next()
         .expect("The return keyword was already peeked and matched");
-    let mut errors = Vec::new();
     if expect_peek(lexer.clone(), Token::Semicolon).is_ok() {
         // A return with no expression is valid if there is a semicolon
         return Ok(None);
     }
-    let expr = match parse_expression(lexer.clone(), Precedence::Lowest, true) {
-        Ok(expr) => match expr {
-            Expr::Terminated(_) => Some(expr),
-            Expr::NonTerminated(_) => {
-                errors.push(
-                    Report::new(ParseError::ExpectedTerminatedExpr(expr))
-                        .attach(Suggestion("Add a semicolon to the end of this expression")),
-                );
-                None
-            }
-        },
-        Err(e) => {
-            errors.extend(e.errors);
-            None
-        }
+    let expr = parse_expression(lexer.clone(), Precedence::Lowest, true)?;
+    let expr_base = match expr {
+        Expr::Terminated(expr) => expr,
+        Expr::NonTerminated(_) => Err(Report::new(ParseError::ExpectedTerminatedExpr(expr))
+            .attach(Suggestion("Add a semicolon to the end of this expression")))?,
     };
-    if errors.is_empty() {
-        Ok(expr)
-    } else {
-        Err(ParseErrors { errors })
-    }
+    Ok(Some(Expr::Terminated(expr_base)))
 }
 
 /// This assumes that the let keyword has already been checked and that the next token in the
@@ -138,36 +131,14 @@ fn parse_let_statement(lexer: LexerPeekRef) -> Result<LetStatement, ParseErrors>
         .next()
         .expect("The let keyword was already peeked and matched");
     let mut errors = Vec::new();
-    // fix this expect peek
-    let peek = lexer.borrow_mut().peek().map(|val| val.to_owned());
-    let ident = match peek {
-        Some(lok_tok) => {
-            if lok_tok
-                .token
-                .token_matches(&Token::Ident(String::default()))
-            {
-                match parse_identifier(lexer.clone()) {
-                    Ok(ident) => Some(ident),
-                    Err(e) => {
-                        errors.push(e);
-                        None
-                    }
-                }
-            } else {
-                errors.push(
-                    Report::new(ParseError::UnexpectedToken(lok_tok))
-                        .attach_printable("Expected an identifier"),
-                );
-                None
-            }
-        }
-        None => {
-            errors.push(Report::new(ParseError::Eof).attach_printable("Expected an identifier"));
+    let ident = match parse_identifier(lexer.clone()) {
+        Ok(ident) => Some(ident),
+        Err(e) => {
+            errors.push(e);
             None
         }
     };
-    let expect_assign = expect_peek(lexer.clone(), Token::Assign);
-    if let Err(e) = expect_assign {
+    if let Err(e) = expect_peek(lexer.clone(), Token::Assign) {
         errors.push(e);
     };
     let expr = match parse_expression(lexer.clone(), Precedence::Lowest, true) {
@@ -194,40 +165,6 @@ fn parse_let_statement(lexer: LexerPeekRef) -> Result<LetStatement, ParseErrors>
         })
     } else {
         Err(ParseErrors { errors })
-    }
-}
-
-fn expect_peek(lexer: LexerPeekRef, expected: Token) -> error_stack::Result<(), ParseError> {
-    let peek = lexer.borrow_mut().peek().map(|val| val.to_owned());
-    match peek {
-        Some(lok_tok) => {
-            if lok_tok.token.token_matches(&expected) {
-                lexer.borrow_mut().next();
-                Ok(())
-            } else {
-                Err(Report::new(ParseError::UnexpectedToken(lok_tok))
-                    .attach_printable(format!("Expected a {expected:?}")))
-            }
-        }
-        None => {
-            Err(Report::new(ParseError::Eof).attach_printable(format!("Expected a {expected:?}")))
-        }
-    }
-}
-fn is_peek(lexer: LexerPeekRef, expected: Token) -> error_stack::Result<(), ParseError> {
-    let peek = lexer.borrow_mut().peek().map(|val| val.to_owned());
-    match peek {
-        Some(lok_tok) => {
-            if lok_tok.token.token_matches(&expected) {
-                Ok(())
-            } else {
-                Err(Report::new(ParseError::UnexpectedToken(lok_tok))
-                    .attach_printable(format!("Expected a {expected:?}")))
-            }
-        }
-        None => {
-            Err(Report::new(ParseError::Eof).attach_printable(format!("Expected a {expected:?}")))
-        }
     }
 }
 
@@ -298,7 +235,7 @@ fn parse_expression(
             }
             Token::LBrace => {
                 let _lbrace = lexer.borrow_mut().next();
-                ExprBase::Scope(parse_statements(lexer.clone())?)
+                ExprBase::Scope(parse_statements(lexer.clone(), true)?)
             }
             _ => {
                 lexer.borrow_mut().next();
@@ -451,16 +388,13 @@ fn parse_func_literal(lexer: LexerPeekRef) -> Result<ExprBase, ParseErrors> {
     if let Err(e) = expect_peek(lexer.clone(), Token::LBrace) {
         errors.push(e);
     }
-    let body = match parse_statements(lexer.clone()) {
+    let body = match parse_statements(lexer.clone(), true) {
         Ok(statements) => Some(Scope::new(statements)),
         Err(e) => {
             errors.extend(e.errors);
             None
         }
     };
-    if let Err(e) = expect_peek(lexer.clone(), Token::RBrace) {
-        errors.push(e);
-    }
     if !errors.is_empty() {
         Err(ParseErrors { errors })
     } else {
@@ -598,16 +532,13 @@ fn parse_if_expression(lexer: LexerPeekRef) -> Result<ExprBase, ParseErrors> {
     if let Err(e) = expect_peek(lexer.clone(), Token::LBrace) {
         errors.push(e);
     };
-    let consequence = match parse_statements(lexer.clone()) {
+    let consequence = match parse_statements(lexer.clone(), true) {
         Ok(statements) => Some(statements),
         Err(e) => {
             errors.extend(e.errors);
             None
         }
     };
-    if let Err(e) = expect_peek(lexer.clone(), Token::RBrace) {
-        errors.push(e);
-    }
     let alternate_opt = expect_peek(lexer.clone(), Token::Else);
     let alternative = match alternate_opt {
         Err(_) => None,
@@ -618,7 +549,7 @@ fn parse_if_expression(lexer: LexerPeekRef) -> Result<ExprBase, ParseErrors> {
                     if let Err(e) = expect_peek(lexer.clone(), Token::LBrace) {
                         errors.push(e);
                     }
-                    match parse_statements(lexer.clone()) {
+                    match parse_statements(lexer.clone(), true) {
                         Ok(statements) => Some(ElseIfExpr::Else(Scope::new(statements))),
                         Err(e) => {
                             errors.extend(e.errors);
@@ -692,4 +623,39 @@ fn parse_binary_expression(lexer: LexerPeekRef, left: ExprBase) -> Result<ExprBa
         operator,
         rhs: Box::new(rhs),
     }))
+}
+
+fn expect_peek(lexer: LexerPeekRef, expected: Token) -> error_stack::Result<(), ParseError> {
+    let peek = lexer.borrow_mut().peek().map(|val| val.to_owned());
+    match peek {
+        Some(lok_tok) => {
+            if lok_tok.token.token_matches(&expected) {
+                lexer.borrow_mut().next();
+                Ok(())
+            } else {
+                Err(Report::new(ParseError::UnexpectedToken(lok_tok))
+                    .attach_printable(format!("Expected a {expected:?}")))
+            }
+        }
+        None => {
+            Err(Report::new(ParseError::Eof).attach_printable(format!("Expected a {expected:?}")))
+        }
+    }
+}
+
+fn is_peek(lexer: LexerPeekRef, expected: Token) -> error_stack::Result<(), ParseError> {
+    let peek = lexer.borrow_mut().peek().map(|val| val.to_owned());
+    match peek {
+        Some(lok_tok) => {
+            if lok_tok.token.token_matches(&expected) {
+                Ok(())
+            } else {
+                Err(Report::new(ParseError::UnexpectedToken(lok_tok))
+                    .attach_printable(format!("Expected a {expected:?}")))
+            }
+        }
+        None => {
+            Err(Report::new(ParseError::Eof).attach_printable(format!("Expected a {expected:?}")))
+        }
+    }
 }

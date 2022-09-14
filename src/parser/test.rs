@@ -341,6 +341,36 @@ fn function_literal() {
 }
 
 #[test]
+fn comprehensive() {
+    let code: &'static str = r#"
+    let x = 5;
+    foobar;
+    let y = (3 + 3) * 5;
+    if a {
+      b
+    } else if c {
+      d
+    } else {
+      e
+    }
+    let multiply = fn(x, y){x * y};
+    100 / 20
+    "#;
+    let lexer = Lexer::new(code.as_bytes(), code.len());
+    match parse(lexer) {
+        Ok(statements) => {
+            let expected =
+                expect_file!["./../../tests/expect_test_results/parser/comprehensive.txt"];
+            expected.assert_eq(&format!("{statements:?}"));
+        }
+        Err(e) => {
+            eprintln!("{e}");
+            assert!(false);
+        }
+    }
+}
+
+#[test]
 fn call_expression() {
     let code: &'static str = r#"add(x, y)"#;
     let lexer = Lexer::new(code.as_bytes(), code.len());
