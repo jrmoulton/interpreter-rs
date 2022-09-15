@@ -341,6 +341,22 @@ fn function_literal() {
 }
 
 #[test]
+fn nested_if() {
+    let code: &'static str = r#"if if true {true} else {false} {true} else {false}"#;
+    let lexer = Lexer::new(code.as_bytes(), code.len());
+    match parse(lexer) {
+        Ok(statements) => {
+            let expected = expect_file!["./../../tests/expect_test_results/parser/nested_if.txt"];
+            expected.assert_eq(&format!("{statements:?}"));
+        }
+        Err(e) => {
+            eprintln!("{e}");
+            assert!(false);
+        }
+    }
+}
+
+#[test]
 fn comprehensive() {
     let code: &'static str = r#"
     let x = 5;
