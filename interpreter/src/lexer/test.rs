@@ -8,7 +8,7 @@ use Token::*;
 fn single_expr() {
     let code: &'static str = r#"5 + 5"#;
     let correct = vec![Int(5), Plus, Int(5)];
-    let lexer = Lexer::new(code.as_bytes(), code.len());
+    let lexer = Lexer::new(code);
     assert_eq!(
         correct,
         lexer
@@ -22,7 +22,7 @@ fn single_expr() {
 fn single_let() {
     let code: &'static str = r#"let"#;
     let correct = vec![Let];
-    let lexer = Lexer::new(code.as_bytes(), code.len());
+    let lexer = Lexer::new(code);
     assert_eq!(
         correct,
         lexer
@@ -36,7 +36,7 @@ fn single_let() {
 fn single_assign() {
     let code: &'static str = r#"let five = 5;"#;
     let correct = vec![Let, Ident("five".into()), Assign, Int(5), Semicolon];
-    let lexer = Lexer::new(code.as_bytes(), code.len());
+    let lexer = Lexer::new(code);
     assert_eq!(
         correct,
         lexer
@@ -53,7 +53,7 @@ fn double_assign() {
     let correct = vec![
         Let, Ident("five".into()), Assign, Int(5), Semicolon, Let, Ident("ten".into()), Assign, Int(10), Semicolon,
     ];
-    let lexer = Lexer::new(code.as_bytes(), code.len());
+    let lexer = Lexer::new(code);
     assert_eq!(
         correct,
         lexer
@@ -74,7 +74,7 @@ fn single_func() {
         Ident("add".into()), Assign, Func, LParen, Ident("x".into()), Comma, Ident("y".into()), RParen, LBrace, Ident("x".into()),
         Minus, Ident("y".into()), RBrace, Semicolon,
     ];
-    let lexer = Lexer::new(code.as_bytes(), code.len());
+    let lexer = Lexer::new(code);
     assert_eq!(
         correct,
         lexer
@@ -91,7 +91,7 @@ fn let_ends_on_plus_space() {
         let correct = vec![
             Let, Ident("x".into()), Assign, Int(10), Plus
         ];
-    let lexer = Lexer::new(code.as_bytes(), code.len());
+    let lexer = Lexer::new(code);
     assert_eq!(
         correct,
         lexer
@@ -108,7 +108,7 @@ fn let_ends_on_plus() {
         let correct = vec![
             Let, Ident("x".into()), Assign, Int(10), Plus
         ];
-    let lexer = Lexer::new(code.as_bytes(), code.len());
+    let lexer = Lexer::new(code);
     assert_eq!(
         correct,
         lexer
@@ -152,7 +152,7 @@ fn comprehensive() {
             RBrace,
             Int(10), Eq, Int(10), Semicolon, Int(10), Ne, Int(9), Semicolon
         ];
-    let lexer = Lexer::new(code.as_bytes(), code.len());
+    let lexer = Lexer::new(code);
     assert_eq!(
         correct,
         lexer
@@ -179,9 +179,7 @@ fn comprehensive_expect_test() {
                        return false;
                 }
                 10 == 10; 10 != 9;"#;
-    let lexer = Lexer::new(code.as_bytes(), code.len())
-        .into_iter()
-        .collect::<Vec<_>>();
+    let lexer = Lexer::new(code).into_iter().collect::<Vec<_>>();
     let expected =
         expect_file!["./../../tests/expect_test_results/lexer/comprehensive_expect_test.txt"];
     expected.assert_eq(&format!("{lexer:?}"));
@@ -190,9 +188,7 @@ fn comprehensive_expect_test() {
 #[test]
 fn bad_character() {
     let code: &'static str = r#"?"#;
-    let lexer = Lexer::new(code.as_bytes(), code.len())
-        .into_iter()
-        .collect::<Vec<_>>();
+    let lexer = Lexer::new(code).into_iter().collect::<Vec<_>>();
     let expected = expect_file!["./../../tests/expect_test_results/lexer/bad_character.txt"];
     expected.assert_eq(&format!("{lexer:?}"));
 }

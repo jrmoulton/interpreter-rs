@@ -1,10 +1,13 @@
 use error_stack::{Context, IntoReport, Report, Result, ResultExt};
 use std::{fmt::Display, mem::discriminant};
 
+use crate::parser::structs::Suggestion;
+
 #[derive(Debug)]
 pub enum LexerError {
     InvalidUtf8,
     UnknownChar,
+    IntegerOverflow,
 }
 impl Display for LexerError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
@@ -50,7 +53,7 @@ pub(crate) enum Token {
     Ident(String),
 
     // Literals
-    Int(i32),
+    Int(i64),
 
     // Operators
     Assign,
@@ -115,7 +118,9 @@ pub(crate) struct Lexer<'a> {
     pos: usize,
 }
 impl<'a> Lexer<'a> {
-    pub(crate) fn new(input: &'a [u8], len: usize) -> Self {
+    pub(crate) fn new(input: &'a str) -> Self {
+        let input = input.as_bytes();
+        let len = input.len();
         Self {
             input,
             len,
@@ -155,8 +160,13 @@ impl<'a> Lexer<'a> {
                         std::str::from_utf8(&self.input[self.pos..self.pos + len])
                             .report()
                             .change_context(LexerError::InvalidUtf8)?
-                            .parse::<i32>()
-                            .expect("All character 0-9 starting optionally with `-` should be able to parse into an i32"),
+                            .parse::<i64>()
+                            .report()
+                            .change_context(LexerError::IntegerOverflow)
+                            .attach_printable("Found a number that doesn't fit into an i64")
+                            .attach(Suggestion(
+                                "The largest value that can fit into a 64 int is ...",
+                            ))?,
                     );
                     self.pos += len - 1;
                     self.column += len - 1;

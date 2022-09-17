@@ -2,7 +2,7 @@ use crate::lexer::{Lexer, LocTok};
 use error_stack::{Context, Report};
 use std::{cell::RefCell, fmt::Display, iter::Peekable, rc::Rc};
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 /// A binary epression has an operator that goes inbetween a lhs operand and a rhs operand.
 /// Both the lhs and rhs can be entire expressions themselves
 pub(crate) struct BinExp {
@@ -11,27 +11,27 @@ pub(crate) struct BinExp {
     pub(crate) rhs: Box<ExprBase>,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 /// A prefix expression has an operator before a single operand that can be an entire expression
 pub(crate) struct PreExpr {
     pub(crate) operator: LocTok,
     pub(crate) expression: Box<Expr>,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 /// The optional alterantive of an if expression
 pub(crate) enum ElseIfExpr {
     ElseIf(Box<ExprBase>),
     Else(Scope),
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub(crate) struct CallExpr {
     pub(crate) function: Box<ExprBase>,
     pub(crate) args: Vec<Expr>,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 /// A faily self explanatory If expression
 pub(crate) struct IfExpr {
     pub(crate) condition: Box<ExprBase>,
@@ -39,10 +39,10 @@ pub(crate) struct IfExpr {
     pub(crate) alternative: Option<ElseIfExpr>,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub(crate) struct Ident(pub(crate) LocTok);
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 // All of the differenct valid cases of expressions
 pub(crate) enum Expr {
     Terminated(ExprBase),
@@ -67,7 +67,7 @@ impl Expr {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub(crate) enum ExprBase {
     IntLiteral(LocTok),
     BoolLiteral(LocTok),
@@ -83,25 +83,25 @@ pub(crate) enum ExprBase {
 #[derive(Debug)]
 pub(crate) struct Parameters {}
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub(crate) struct FnLiteral {
     pub(crate) parameters: Vec<Ident>,
     pub(crate) body: Scope,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub(crate) struct AssignStatement {
     pub(crate) ident: LocTok,
     pub(crate) expr: Box<ExprBase>,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub(crate) struct LetStatement {
     pub(crate) ident: LocTok,
     pub(crate) expr: Expr,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub(crate) enum Statement {
     Let(LetStatement),
     Return(Option<Expr>),
@@ -142,7 +142,7 @@ impl Context for ParseErrors {}
 
 pub(crate) struct Suggestion(pub &'static str);
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub(crate) struct Scope {
     pub(crate) statements: Vec<Statement>,
 }

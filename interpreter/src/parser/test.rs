@@ -7,7 +7,7 @@ use expect_test::expect_file;
 #[test]
 fn simple_prefix_op_expression_statement() {
     let code: &'static str = r#"-5"#;
-    let lexer = Lexer::new(code.as_bytes(), code.len());
+    let lexer = Lexer::new(code);
     match parse(lexer) {
         Ok(statements) => {
             let expected = expect_file![
@@ -25,7 +25,7 @@ fn simple_prefix_op_expression_statement() {
 #[test]
 fn single_let() {
     let code: &'static str = r#"let x = 5;"#;
-    let lexer = Lexer::new(code.as_bytes(), code.len());
+    let lexer = Lexer::new(code);
     match parse(lexer) {
         Ok(statements) => {
             let expected = expect_file!["./../../tests/expect_test_results/parser/single_let.txt"];
@@ -41,7 +41,7 @@ fn single_let() {
 #[test]
 fn assign_statement() {
     let code: &'static str = r#"x = true;"#;
-    let lexer = Lexer::new(code.as_bytes(), code.len());
+    let lexer = Lexer::new(code);
     match parse(lexer) {
         Ok(statements) => {
             let expected =
@@ -58,7 +58,7 @@ fn assign_statement() {
 #[test]
 fn single_let_with_bool() {
     let code: &'static str = r#"let x = true;"#;
-    let lexer = Lexer::new(code.as_bytes(), code.len());
+    let lexer = Lexer::new(code);
     match parse(lexer) {
         Ok(statements) => {
             let expected =
@@ -75,7 +75,7 @@ fn single_let_with_bool() {
 #[test]
 fn single_let_with_add() {
     let code: &'static str = r#"let x = 10 + 3;"#;
-    let lexer = Lexer::new(code.as_bytes(), code.len());
+    let lexer = Lexer::new(code);
     match parse(lexer) {
         Ok(statements) => {
             let expected =
@@ -92,7 +92,7 @@ fn single_let_with_add() {
 #[test]
 fn single_operator_precedence_expression_statement() {
     let code: &'static str = r#"5 + 5 * 5"#;
-    let lexer = Lexer::new(code.as_bytes(), code.len());
+    let lexer = Lexer::new(code);
     match parse(lexer) {
         Ok(statements) => {
             let expected = expect_file![
@@ -109,7 +109,7 @@ fn single_operator_precedence_expression_statement() {
 #[test]
 fn operator_precedence_with_grouped_expressions() {
     let code: &'static str = r#"(5 + 5) * 5"#;
-    let lexer = Lexer::new(code.as_bytes(), code.len());
+    let lexer = Lexer::new(code);
     match parse(lexer) {
         Ok(statements) => {
             let expected = expect_file![
@@ -127,7 +127,7 @@ fn operator_precedence_with_grouped_expressions() {
 #[test]
 fn single_int_expression() {
     let code: &'static str = r#"35"#;
-    let lexer = Lexer::new(code.as_bytes(), code.len());
+    let lexer = Lexer::new(code);
     match parse(lexer) {
         Ok(statements) => {
             let expected =
@@ -144,7 +144,7 @@ fn single_int_expression() {
 #[test]
 fn basic_return() {
     let code: &'static str = r#"return 35;"#;
-    let lexer = Lexer::new(code.as_bytes(), code.len());
+    let lexer = Lexer::new(code);
     match parse(lexer) {
         Ok(statements) => {
             let expected =
@@ -161,7 +161,7 @@ fn basic_return() {
 #[test]
 fn return_no_expression() {
     let code: &'static str = r#"return;"#;
-    let lexer = Lexer::new(code.as_bytes(), code.len());
+    let lexer = Lexer::new(code);
     match parse(lexer) {
         Ok(statements) => {
             let expected =
@@ -178,7 +178,7 @@ fn return_no_expression() {
 #[test]
 fn identifier_expression() {
     let code: &'static str = r#"foobar"#;
-    let lexer = Lexer::new(code.as_bytes(), code.len());
+    let lexer = Lexer::new(code);
     match parse(lexer) {
         Ok(statements) => {
             let expected =
@@ -196,7 +196,7 @@ fn identifier_expression() {
 fn double_let() {
     let code: &'static str = r#"let x = 5;
         let y = 3;"#;
-    let lexer = Lexer::new(code.as_bytes(), code.len());
+    let lexer = Lexer::new(code);
     match parse(lexer) {
         Ok(statements) => {
             let expected = expect_file!["./../../tests/expect_test_results/parser/double_let.txt"];
@@ -219,7 +219,7 @@ fn if_elseif_else() {
         } else {
             foobar
         }"#;
-    let lexer = Lexer::new(code.as_bytes(), code.len());
+    let lexer = Lexer::new(code);
     match parse(lexer) {
         Ok(statements) => {
             let expected =
@@ -244,7 +244,7 @@ fn if_elseif_else_again() {
         } else {
             foobar
         }"#;
-    let lexer = Lexer::new(code.as_bytes(), code.len());
+    let lexer = Lexer::new(code);
     match parse(lexer) {
         Ok(statements) => {
             let expected =
@@ -266,7 +266,7 @@ fn if_with_bool_expr() {
         } else {
             false
         }"#;
-    let lexer = Lexer::new(code.as_bytes(), code.len());
+    let lexer = Lexer::new(code);
     match parse(lexer) {
         Ok(statements) => {
             let expected =
@@ -286,7 +286,7 @@ fn new_scope() {
         {
 
         }"#;
-    let lexer = Lexer::new(code.as_bytes(), code.len());
+    let lexer = Lexer::new(code);
     match parse(lexer) {
         Ok(statements) => {
             let expected = expect_file!["./../../tests/expect_test_results/parser/new_scope.txt"];
@@ -307,7 +307,7 @@ fn nested_scope() {
 
             }
         }"#;
-    let lexer = Lexer::new(code.as_bytes(), code.len());
+    let lexer = Lexer::new(code);
     match parse(lexer) {
         Ok(statements) => {
             let expected =
@@ -326,7 +326,7 @@ fn function_literal() {
     let code: &'static str = r#"fn(x, y) {
         x + y
     }"#;
-    let lexer = Lexer::new(code.as_bytes(), code.len());
+    let lexer = Lexer::new(code);
     match parse(lexer) {
         Ok(statements) => {
             let expected =
@@ -343,7 +343,7 @@ fn function_literal() {
 #[test]
 fn nested_if() {
     let code: &'static str = r#"if if true {true} else {false} {true} else {false}"#;
-    let lexer = Lexer::new(code.as_bytes(), code.len());
+    let lexer = Lexer::new(code);
     match parse(lexer) {
         Ok(statements) => {
             let expected = expect_file!["./../../tests/expect_test_results/parser/nested_if.txt"];
@@ -372,7 +372,7 @@ fn comprehensive() {
     let multiply = fn(x, y){x * y};
     100 / 20
     "#;
-    let lexer = Lexer::new(code.as_bytes(), code.len());
+    let lexer = Lexer::new(code);
     match parse(lexer) {
         Ok(statements) => {
             let expected =
@@ -389,7 +389,7 @@ fn comprehensive() {
 #[test]
 fn call_expression() {
     let code: &'static str = r#"add(x, y)"#;
-    let lexer = Lexer::new(code.as_bytes(), code.len());
+    let lexer = Lexer::new(code);
     match parse(lexer) {
         Ok(statements) => {
             let expected =
@@ -406,7 +406,7 @@ fn call_expression() {
 #[test]
 fn call_expression_no_args() {
     let code: &'static str = r#"add();"#;
-    let lexer = Lexer::new(code.as_bytes(), code.len());
+    let lexer = Lexer::new(code);
     match parse(lexer) {
         Ok(statements) => {
             let expected = expect_file![
@@ -424,7 +424,7 @@ fn call_expression_no_args() {
 #[test]
 fn call_expression_with_expression_args() {
     let code: &'static str = r#"call_func(2, 3, fn(x,y){x + y})"#;
-    let lexer = Lexer::new(code.as_bytes(), code.len());
+    let lexer = Lexer::new(code);
     match parse(lexer) {
         Ok(statements) => {
             let expected = expect_file![
@@ -442,13 +442,13 @@ fn call_expression_with_expression_args() {
 #[test]
 fn func_no_body() {
     let code: &'static str = r#"fn(x,y)"#;
-    let lexer = Lexer::new(code.as_bytes(), code.len());
+    let lexer = Lexer::new(code);
     match parse(lexer) {
         Ok(statements) => {
             assert!(false, "Expected an error, found {statements:?}");
         }
         Err(e) => {
-            let remove = regex::Regex::new(r"at src.*").unwrap();
+            let remove = regex::Regex::new(r"at .*src.*").unwrap();
             let err_string = format!("{e:?}");
             let expected =
                 expect_file!["./../../tests/expect_test_results/parser/func_no_body.txt"];
@@ -460,13 +460,13 @@ fn func_no_body() {
 #[test]
 fn call_expression_bad_semicolon() {
     let code: &'static str = r#"add(x; y)"#;
-    let lexer = Lexer::new(code.as_bytes(), code.len());
+    let lexer = Lexer::new(code);
     match parse(lexer) {
         Ok(statements) => {
             assert!(false, "Expected an error, found {statements:?}");
         }
         Err(e) => {
-            let remove = regex::Regex::new(r"at src.*").unwrap();
+            let remove = regex::Regex::new(r"at .*src.*").unwrap();
             let err_string = format!("{e:?}");
             let expected = expect_file![
                 "./../../tests/expect_test_results/parser/call_expression_bad_semicolon.txt"
@@ -482,13 +482,13 @@ fn new_scope_bad_semicolon() {
         {
             ;
         }"#;
-    let lexer = Lexer::new(code.as_bytes(), code.len());
+    let lexer = Lexer::new(code);
     match parse(lexer) {
         Ok(statements) => {
             assert!(false, "Expected an error, found {statements:?}");
         }
         Err(e) => {
-            let remove = regex::Regex::new(r"at src.*").unwrap();
+            let remove = regex::Regex::new(r"at .*src.*").unwrap();
             let err_string = format!("{e:?}");
             let expected = expect_file![
                 "./../../tests/expect_test_results/parser/new_scope_bad_semicolon.txt"
@@ -501,13 +501,13 @@ fn new_scope_bad_semicolon() {
 #[test]
 fn assign_statement_no_semicolon() {
     let code: &'static str = r#"x = true"#;
-    let lexer = Lexer::new(code.as_bytes(), code.len());
+    let lexer = Lexer::new(code);
     match parse(lexer) {
         Ok(statements) => {
             assert!(false, "Expected an error, found {statements:?}");
         }
         Err(e) => {
-            let remove = regex::Regex::new(r"at src.*").unwrap();
+            let remove = regex::Regex::new(r"at .*src.*").unwrap();
             let err_string = format!("{e:?}");
             let expected = expect_file![
                 "./../../tests/expect_test_results/parser/assign_statement_no_semicolon.txt"
@@ -520,13 +520,13 @@ fn assign_statement_no_semicolon() {
 #[test]
 fn let_statement_no_semicolon() {
     let code: &'static str = r#"let x = true"#;
-    let lexer = Lexer::new(code.as_bytes(), code.len());
+    let lexer = Lexer::new(code);
     match parse(lexer) {
         Ok(statements) => {
             assert!(false, "Expected an error, found {statements:?}");
         }
         Err(e) => {
-            let remove = regex::Regex::new(r"at src.*").unwrap();
+            let remove = regex::Regex::new(r"at .*src.*").unwrap();
             let err_string = format!("{e:?}");
             let expected = expect_file![
                 "./../../tests/expect_test_results/parser/let_statement_no_semicolon.txt"
@@ -539,13 +539,13 @@ fn let_statement_no_semicolon() {
 #[test]
 fn return_no_semicolon() {
     let code: &'static str = r#"return 5"#;
-    let lexer = Lexer::new(code.as_bytes(), code.len());
+    let lexer = Lexer::new(code);
     match parse(lexer) {
         Ok(statements) => {
             assert!(false, "Expected an error, found {statements:?}");
         }
         Err(e) => {
-            let remove = regex::Regex::new(r"at src.*").unwrap();
+            let remove = regex::Regex::new(r"at .*src.*").unwrap();
             let err_string = format!("{e:?}");
             let expected =
                 expect_file!["./../../tests/expect_test_results/parser/return_no_semicolon.txt"];
@@ -557,13 +557,13 @@ fn return_no_semicolon() {
 #[test]
 fn return_no_expr_no_semicolon() {
     let code: &'static str = r#"return"#;
-    let lexer = Lexer::new(code.as_bytes(), code.len());
+    let lexer = Lexer::new(code);
     match parse(lexer) {
         Ok(statements) => {
             assert!(false, "Expected an error, found {statements:?}");
         }
         Err(e) => {
-            let remove = regex::Regex::new(r"at src.*").unwrap();
+            let remove = regex::Regex::new(r"at .*src.*").unwrap();
             let err_string = format!("{e:?}");
             let expected = expect_file![
                 "./../../tests/expect_test_results/parser/return_no_expr_no_semicolon.txt"

@@ -1,4 +1,4 @@
-mod structs;
+pub mod structs;
 mod test;
 
 use error_stack::Report;
@@ -123,8 +123,6 @@ fn parse_return_statement(lexer: LexerPeekRef) -> Result<Option<Expr>, ParseErro
     Ok(Some(Expr::Terminated(expr_base)))
 }
 
-/// This assumes that the let keyword has already been checked and that the next token in the
-/// iterator is an identifier
 fn parse_let_statement(lexer: LexerPeekRef) -> Result<LetStatement, ParseErrors> {
     lexer
         .borrow_mut()
@@ -299,7 +297,7 @@ fn parse_call_expression(lexer: LexerPeekRef, function: ExprBase) -> Result<Expr
     }
 }
 
-// The only way to exit this is EOF or a right parentheses. Will that lead  to problems?
+// A function to parse the arguments to a function when it is being called
 fn parse_call_args(lexer: LexerPeekRef) -> Result<Vec<Expr>, ParseErrors> {
     // A enum as  a state machine to track what the previous token was. This gives better options
     // for error messages
@@ -406,6 +404,7 @@ fn parse_func_literal(lexer: LexerPeekRef) -> Result<ExprBase, ParseErrors> {
     }
 }
 
+// A function to parse formal parameters of a function definition
 fn parse_function_parameters(lexer: LexerPeekRef) -> std::result::Result<Vec<Ident>, ParseErrors> {
     // A enum as  a state machine to track what the previous token was. This gives better options
     // for error messages
@@ -625,6 +624,7 @@ fn parse_binary_expression(lexer: LexerPeekRef, left: ExprBase) -> Result<ExprBa
     }))
 }
 
+// A function that
 fn expect_peek(lexer: LexerPeekRef, expected: Token) -> error_stack::Result<(), ParseError> {
     let peek = lexer.borrow_mut().peek().map(|val| val.to_owned());
     match peek {

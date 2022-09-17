@@ -28,6 +28,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "derive-object"
+version = "0.1.0"
+dependencies = [
+ "quote",
+ "syn",
+]
+
+[[package]]
 name = "diff"
 version = "0.1.13"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -38,6 +46,18 @@ name = "dissimilar"
 version = "1.0.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "8c97b9233581d84b8e1e689cdd3a47b6f69770084fc246e86a7f78b0d9c1d4a5"
+
+[[package]]
+name = "enum_dispatch"
+version = "0.3.8"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "0eb359f1476bf611266ac1f5355bc14aeca37b299d0ebccc038ee7058891c9cb"
+dependencies = [
+ "once_cell",
+ "proc-macro2",
+ "quote",
+ "syn",
+]
 
 [[package]]
 name = "error-stack"
@@ -59,10 +79,12 @@ dependencies = [
 ]
 
 [[package]]
-name = "interpreter-rs"
+name = "interpreter"
 version = "0.1.0"
 dependencies = [
  "assert_matches",
+ "derive-object",
+ "enum_dispatch",
  "error-stack",
  "expect-test",
  "pretty_assertions",

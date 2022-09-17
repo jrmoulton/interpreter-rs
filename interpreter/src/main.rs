@@ -1,4 +1,4 @@
-use interpreter_rs::repl;
+use interpreter::repl;
 
 fn main() {
     repl::start();
