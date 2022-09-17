@@ -183,3 +183,47 @@ fn false_equal_to_true() {
         Some(&false)
     );
 }
+
+#[test]
+fn if_true() {
+    let code: &'static str = r#"if true {10}"#;
+    let lexer = Lexer::new(code);
+    let statements = parse(lexer).unwrap();
+    assert_eq!(
+        eval(statements).unwrap().inner().downcast_ref::<i64>(),
+        Some(&10)
+    );
+}
+
+#[test]
+fn if_false_else() {
+    let code: &'static str = r#"if false {10} else {22}"#;
+    let lexer = Lexer::new(code);
+    let statements = parse(lexer).unwrap();
+    assert_eq!(
+        eval(statements).unwrap().inner().downcast_ref::<i64>(),
+        Some(&22)
+    );
+}
+
+#[test]
+fn else_if() {
+    let code: &'static str = r#"if false {10} else if false {22} else {56}"#;
+    let lexer = Lexer::new(code);
+    let statements = parse(lexer).unwrap();
+    assert_eq!(
+        eval(statements).unwrap().inner().downcast_ref::<i64>(),
+        Some(&56)
+    );
+}
+
+#[test]
+fn early_return() {
+    let code: &'static str = r#"5 * 5 * 5; return 10; 9 * 9 * 9;"#;
+    let lexer = Lexer::new(code);
+    let statements = parse(lexer).unwrap();
+    assert_eq!(
+        eval(statements).unwrap().inner().downcast_ref::<i64>(),
+        Some(&10)
+    );
+}

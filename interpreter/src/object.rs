@@ -16,6 +16,7 @@ pub(crate) trait ObjectTrait: Display + Debug {
 pub(crate) enum Object {
     Integer,
     Boolean,
+    Empty,
 }
 impl Display for Object {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
@@ -24,6 +25,7 @@ impl Display for Object {
             match self {
                 Object::Integer(inner) => format!("{}", inner),
                 Object::Boolean(inner) => format!("{}", inner),
+                Object::Empty(inner) => format!("{}", inner),
             }
         ))
     }
@@ -33,18 +35,13 @@ impl Display for Object {
 pub(crate) struct Integer {
     pub value: i64,
 }
-impl ObjectTrait for Integer {
-    fn inner(&self) -> &dyn std::any::Any {
-        &self.value
-    }
-}
 
 #[derive(Debug, Object)]
 pub(crate) struct Boolean {
     pub value: bool,
 }
-impl ObjectTrait for Boolean {
-    fn inner(&self) -> &dyn std::any::Any {
-        &self.value
-    }
+
+#[derive(Debug, Object)]
+pub(crate) struct Empty {
+    pub value: (),
 }
