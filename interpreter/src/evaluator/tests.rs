@@ -12,14 +12,18 @@ use crate::{
     parser::parse,
 };
 
-#[test]
-fn single_int_expr() {
-    let code: &'static str = r#"5"#;
+fn get_inner_helper(code: &'static str) -> object::Object {
     let lexer = Lexer::new(code);
     let env: Environment = Rc::new(RefCell::new(HashMap::new()));
     let statements = parse(lexer).unwrap();
+    eval(statements, env).unwrap()
+}
+
+#[test]
+fn single_int_expr() {
+    let code: &'static str = r#"5"#;
     assert_eq!(
-        eval(statements, env).unwrap().inner().downcast_ref::<i64>(),
+        get_inner_helper(code).inner().downcast_ref::<i64>(),
         Some(&5)
     );
 }
@@ -27,11 +31,8 @@ fn single_int_expr() {
 #[test]
 fn bang_prefix_int_expr() {
     let code: &'static str = r#"!3"#;
-    let lexer = Lexer::new(code);
-    let env: Environment = Rc::new(RefCell::new(HashMap::new()));
-    let statements = parse(lexer).unwrap();
     assert_eq!(
-        eval(statements, env).unwrap().inner().downcast_ref::<i64>(),
+        get_inner_helper(code).inner().downcast_ref::<i64>(),
         Some(&-4)
     );
 }
@@ -39,14 +40,8 @@ fn bang_prefix_int_expr() {
 #[test]
 fn single_bool_expr() {
     let code: &'static str = r#"false"#;
-    let lexer = Lexer::new(code);
-    let env: Environment = Rc::new(RefCell::new(HashMap::new()));
-    let statements = parse(lexer).unwrap();
     assert_eq!(
-        eval(statements, env)
-            .unwrap()
-            .inner()
-            .downcast_ref::<bool>(),
+        get_inner_helper(code).inner().downcast_ref::<bool>(),
         Some(&false)
     );
 }
@@ -54,14 +49,8 @@ fn single_bool_expr() {
 #[test]
 fn bang_prefix_bool_expr() {
     let code: &'static str = r#"!true"#;
-    let lexer = Lexer::new(code);
-    let env: Environment = Rc::new(RefCell::new(HashMap::new()));
-    let statements = parse(lexer).unwrap();
     assert_eq!(
-        eval(statements, env)
-            .unwrap()
-            .inner()
-            .downcast_ref::<bool>(),
+        get_inner_helper(code).inner().downcast_ref::<bool>(),
         Some(&false)
     );
 }
@@ -69,14 +58,8 @@ fn bang_prefix_bool_expr() {
 #[test]
 fn recursive_bang_prefix_bool_expr() {
     let code: &'static str = r#"!!true"#;
-    let lexer = Lexer::new(code);
-    let env: Environment = Rc::new(RefCell::new(HashMap::new()));
-    let statements = parse(lexer).unwrap();
     assert_eq!(
-        eval(statements, env)
-            .unwrap()
-            .inner()
-            .downcast_ref::<bool>(),
+        get_inner_helper(code).inner().downcast_ref::<bool>(),
         Some(&true)
     );
 }
@@ -84,11 +67,8 @@ fn recursive_bang_prefix_bool_expr() {
 #[test]
 fn minus_prefix_int_expr() {
     let code: &'static str = r#"-5"#;
-    let lexer = Lexer::new(code);
-    let env: Environment = Rc::new(RefCell::new(HashMap::new()));
-    let statements = parse(lexer).unwrap();
     assert_eq!(
-        eval(statements, env).unwrap().inner().downcast_ref::<i64>(),
+        get_inner_helper(code).inner().downcast_ref::<i64>(),
         Some(&-5)
     );
 }
@@ -96,11 +76,8 @@ fn minus_prefix_int_expr() {
 #[test]
 fn recursive_minus_prefix_int_expr() {
     let code: &'static str = r#"----5"#;
-    let lexer = Lexer::new(code);
-    let env: Environment = Rc::new(RefCell::new(HashMap::new()));
-    let statements = parse(lexer).unwrap();
     assert_eq!(
-        eval(statements, env).unwrap().inner().downcast_ref::<i64>(),
+        get_inner_helper(code).inner().downcast_ref::<i64>(),
         Some(&5)
     );
 }
@@ -108,11 +85,8 @@ fn recursive_minus_prefix_int_expr() {
 #[test]
 fn int_binary_expression() {
     let code: &'static str = r#"(5 + 10 * 2 + 15 / 3) * 2 + -10"#;
-    let lexer = Lexer::new(code);
-    let env: Environment = Rc::new(RefCell::new(HashMap::new()));
-    let statements = parse(lexer).unwrap();
     assert_eq!(
-        eval(statements, env).unwrap().inner().downcast_ref::<i64>(),
+        get_inner_helper(code).inner().downcast_ref::<i64>(),
         Some(&50)
     );
 }
@@ -120,14 +94,8 @@ fn int_binary_expression() {
 #[test]
 fn int_greater_than_int() {
     let code: &'static str = r#"3 > 5"#;
-    let lexer = Lexer::new(code);
-    let env: Environment = Rc::new(RefCell::new(HashMap::new()));
-    let statements = parse(lexer).unwrap();
     assert_eq!(
-        eval(statements, env)
-            .unwrap()
-            .inner()
-            .downcast_ref::<bool>(),
+        get_inner_helper(code).inner().downcast_ref::<bool>(),
         Some(&false)
     );
 }
@@ -135,14 +103,8 @@ fn int_greater_than_int() {
 #[test]
 fn int_less_than_int() {
     let code: &'static str = r#"3 < 5"#;
-    let lexer = Lexer::new(code);
-    let env: Environment = Rc::new(RefCell::new(HashMap::new()));
-    let statements = parse(lexer).unwrap();
     assert_eq!(
-        eval(statements, env)
-            .unwrap()
-            .inner()
-            .downcast_ref::<bool>(),
+        get_inner_helper(code).inner().downcast_ref::<bool>(),
         Some(&true)
     );
 }
@@ -150,14 +112,9 @@ fn int_less_than_int() {
 #[test]
 fn int_equal_to_int() {
     let code: &'static str = r#"3 == 5"#;
-    let lexer = Lexer::new(code);
-    let env: Environment = Rc::new(RefCell::new(HashMap::new()));
-    let statements = parse(lexer).unwrap();
+
     assert_eq!(
-        eval(statements, env)
-            .unwrap()
-            .inner()
-            .downcast_ref::<bool>(),
+        get_inner_helper(code).inner().downcast_ref::<bool>(),
         Some(&false)
     );
 }
@@ -165,14 +122,8 @@ fn int_equal_to_int() {
 #[test]
 fn int_not_equal_to_int() {
     let code: &'static str = r#"3 != 5"#;
-    let lexer = Lexer::new(code);
-    let env: Environment = Rc::new(RefCell::new(HashMap::new()));
-    let statements = parse(lexer).unwrap();
     assert_eq!(
-        eval(statements, env)
-            .unwrap()
-            .inner()
-            .downcast_ref::<bool>(),
+        get_inner_helper(code).inner().downcast_ref::<bool>(),
         Some(&true)
     );
 }
@@ -180,14 +131,9 @@ fn int_not_equal_to_int() {
 #[test]
 fn true_equal_to_true() {
     let code: &'static str = r#"true == true"#;
-    let lexer = Lexer::new(code);
-    let env: Environment = Rc::new(RefCell::new(HashMap::new()));
-    let statements = parse(lexer).unwrap();
+
     assert_eq!(
-        eval(statements, env)
-            .unwrap()
-            .inner()
-            .downcast_ref::<bool>(),
+        get_inner_helper(code).inner().downcast_ref::<bool>(),
         Some(&true)
     );
 }
@@ -195,14 +141,8 @@ fn true_equal_to_true() {
 #[test]
 fn true_not_equal_to_true() {
     let code: &'static str = r#"true != true"#;
-    let lexer = Lexer::new(code);
-    let env: Environment = Rc::new(RefCell::new(HashMap::new()));
-    let statements = parse(lexer).unwrap();
     assert_eq!(
-        eval(statements, env)
-            .unwrap()
-            .inner()
-            .downcast_ref::<bool>(),
+        get_inner_helper(code).inner().downcast_ref::<bool>(),
         Some(&false)
     );
 }
@@ -210,14 +150,8 @@ fn true_not_equal_to_true() {
 #[test]
 fn false_equal_to_false() {
     let code: &'static str = r#"false == false"#;
-    let lexer = Lexer::new(code);
-    let env: Environment = Rc::new(RefCell::new(HashMap::new()));
-    let statements = parse(lexer).unwrap();
     assert_eq!(
-        eval(statements, env)
-            .unwrap()
-            .inner()
-            .downcast_ref::<bool>(),
+        get_inner_helper(code).inner().downcast_ref::<bool>(),
         Some(&true)
     );
 }
@@ -225,14 +159,8 @@ fn false_equal_to_false() {
 #[test]
 fn false_equal_to_true() {
     let code: &'static str = r#"false == true"#;
-    let lexer = Lexer::new(code);
-    let env: Environment = Rc::new(RefCell::new(HashMap::new()));
-    let statements = parse(lexer).unwrap();
     assert_eq!(
-        eval(statements, env)
-            .unwrap()
-            .inner()
-            .downcast_ref::<bool>(),
+        get_inner_helper(code).inner().downcast_ref::<bool>(),
         Some(&false)
     );
 }
@@ -240,11 +168,8 @@ fn false_equal_to_true() {
 #[test]
 fn if_true() {
     let code: &'static str = r#"if true {10}"#;
-    let lexer = Lexer::new(code);
-    let env: Environment = Rc::new(RefCell::new(HashMap::new()));
-    let statements = parse(lexer).unwrap();
     assert_eq!(
-        eval(statements, env).unwrap().inner().downcast_ref::<i64>(),
+        get_inner_helper(code).inner().downcast_ref::<i64>(),
         Some(&10)
     );
 }
@@ -252,11 +177,8 @@ fn if_true() {
 #[test]
 fn if_false_else() {
     let code: &'static str = r#"if false {10} else {22}"#;
-    let lexer = Lexer::new(code);
-    let env: Environment = Rc::new(RefCell::new(HashMap::new()));
-    let statements = parse(lexer).unwrap();
     assert_eq!(
-        eval(statements, env).unwrap().inner().downcast_ref::<i64>(),
+        get_inner_helper(code).inner().downcast_ref::<i64>(),
         Some(&22)
     );
 }
@@ -264,11 +186,8 @@ fn if_false_else() {
 #[test]
 fn else_if() {
     let code: &'static str = r#"if false {10} else if false {22} else {56}"#;
-    let lexer = Lexer::new(code);
-    let env: Environment = Rc::new(RefCell::new(HashMap::new()));
-    let statements = parse(lexer).unwrap();
     assert_eq!(
-        eval(statements, env).unwrap().inner().downcast_ref::<i64>(),
+        get_inner_helper(code).inner().downcast_ref::<i64>(),
         Some(&56)
     );
 }
@@ -276,11 +195,8 @@ fn else_if() {
 #[test]
 fn early_return() {
     let code: &'static str = r#"5 * 5 * 5; return 10; 9 * 9 * 9;"#;
-    let lexer = Lexer::new(code);
-    let env: Environment = Rc::new(RefCell::new(HashMap::new()));
-    let statements = parse(lexer).unwrap();
     assert_eq!(
-        eval(statements, env).unwrap().inner().downcast_ref::<i64>(),
+        get_inner_helper(code).inner().downcast_ref::<i64>(),
         Some(&10)
     );
 }
@@ -288,11 +204,8 @@ fn early_return() {
 #[test]
 fn let_ident_x() {
     let code: &'static str = r#"let x = 29; x"#;
-    let lexer = Lexer::new(code);
-    let env: Environment = Rc::new(RefCell::new(HashMap::new()));
-    let statements = parse(lexer).unwrap();
     assert_eq!(
-        eval(statements, env).unwrap().inner().downcast_ref::<i64>(),
+        get_inner_helper(code).inner().downcast_ref::<i64>(),
         Some(&29)
     );
 }
@@ -300,11 +213,17 @@ fn let_ident_x() {
 #[test]
 fn let_idents_x_y() {
     let code: &'static str = r#"let x = 29; let y = 29; x / y"#;
-    let lexer = Lexer::new(code);
-    let env: Environment = Rc::new(RefCell::new(HashMap::new()));
-    let statements = parse(lexer).unwrap();
     assert_eq!(
-        eval(statements, env).unwrap().inner().downcast_ref::<i64>(),
+        get_inner_helper(code).inner().downcast_ref::<i64>(),
         Some(&1)
+    );
+}
+
+#[test]
+fn function_with_call() {
+    let code: &'static str = r#"let add = fn(a, b, c, d) {a + b + c + d}; add(1, 2, 3, 4)"#;
+    assert_eq!(
+        get_inner_helper(code).inner().downcast_ref::<i64>(),
+        Some(&10)
     );
 }

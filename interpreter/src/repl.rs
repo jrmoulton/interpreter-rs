@@ -6,10 +6,11 @@ use std::rc::Rc;
 use crate::evaluator::eval;
 use crate::evaluator::Environment;
 use crate::lexer::Lexer;
+use crate::object::Object;
 use crate::parser::parse;
 
 pub fn start() {
-    println!("Welcome to the Diamond Lang REPL!");
+    println!("Welcome to Awesome Name Lang REPL!");
     print!(">> ");
     std::io::stdout().flush().unwrap();
     let stdin = std::io::stdin().lock();
@@ -25,11 +26,16 @@ pub fn start() {
             }
         };
         if let Some(ast) = ast {
-            let res = match eval(ast, env.clone()) {
-                Ok(obj) => obj.to_string(),
-                Err(errs) => format!("{:?}", errs),
+            match eval(ast, env.clone()) {
+                Ok(obj) => {
+                    if let Object::Empty(_) = obj {
+                        // Don't print anything
+                    } else {
+                        println!("{}", obj);
+                    }
+                }
+                Err(errs) => println!("{:?}", errs),
             };
-            println!("{res}");
         }
         print!(">> ");
         std::io::stdout().flush().unwrap();
