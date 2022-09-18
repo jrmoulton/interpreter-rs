@@ -48,24 +48,6 @@ pub(crate) enum Expr {
     Terminated(ExprBase),
     NonTerminated(ExprBase),
 }
-impl Expr {
-    pub fn expect_non_terminated(self) -> ExprBase {
-        match self {
-            Self::Terminated(_) => {
-                panic!("Expected to be of type NonTerminated but found Terminated")
-            }
-            Self::NonTerminated(inner) => inner,
-        }
-    }
-    pub fn expect_terminated(self) -> ExprBase {
-        match self {
-            Self::NonTerminated(_) => {
-                panic!("Expected to be of type Terminated but found NonTerminated")
-            }
-            Self::Terminated(inner) => inner,
-        }
-    }
-}
 
 #[derive(Debug, Clone)]
 pub(crate) enum ExprBase {
