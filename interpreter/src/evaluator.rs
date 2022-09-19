@@ -1,13 +1,11 @@
-use std::{cell::RefCell, collections::HashMap, fmt::Display, rc::Rc};
+use std::{cell::RefCell, collections::HashMap, fmt::{Display, Write as _}, rc::Rc, ops::{Deref, DerefMut}};
 
 use error_stack::{Context, Report, Result};
 
 use crate::{
     lexer::{LocTok, Token},
-    object::{self, ObjectTrait},
-    parser::structs::{
-        self as pstructs, AssignStatement, BinExp, ExprBase, Ident, IfExpr, PreExpr,
-    },
+    object::{self, FuncIntern, Object, ObjectTrait},
+    parser::structs::*,
 };
 
 mod tests;
@@ -15,11 +13,20 @@ mod tests;
 #[derive(Debug)]
 pub(crate) enum EvalError {
     UnsupportedOperation(ExprBase),
-    IdentifierNotFound,
+    IdentifierNotFound(String),
+    InvalidIfCondition(ExprBase),
+    MismatchedNumOfFunctionParams,
 }
 impl Display for EvalError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.write_fmt(format_args!("{self:?}"))
+        let format = match self {
+            Self::IdentifierNotFound(ident_string) => format!("Identifier `{ident_string}` not found"),
+            Self::UnsupportedOperation(expr) => format!("Unsupported Operation: {expr}"),
+            Self::InvalidIfCondition(expr) => format!("Invalid if condition: {expr}"),
+            Self::MismatchedNumOfFunctionParams => "Mismatched number of function parameters".into(),
+
+        };
+        f.write_str(&format)
     }
 }
 impl Context for EvalError {}
@@ -35,18 +42,90 @@ impl From<Report<EvalError>> for EvalErrors {
         }
     }
 }
+impl Display for EvalErrors {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let mut ret_str = String::from("[ ");
+        self.errors.iter().for_each(|val| {let _ = write!(ret_str, "{}", val);} );
+        ret_str.push_str(" ]");
+        f.write_str(&ret_str)
+    }
+}
 
-pub(crate) type Environment = Rc<RefCell<HashMap<String, object::Object>>>;
+
+// need to make find method look in outer environment
+
+#[derive(Debug)]
+pub(crate) struct EnvWrapper{ 
+    pub env: HashMap<String, Object> ,
+    pub outer: Option<Box<EnvWrapper>>
+}
+impl Deref for EnvWrapper {
+    type Target = HashMap<String, Object>;
+    fn deref(&self) -> &Self::Target {
+        &self.env
+    }
+}
+impl DerefMut for EnvWrapper {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.env
+    }
+}
+impl EnvWrapper {
+    pub fn new() -> Self {
+        Self {
+            env:HashMap::new(),
+            outer: None
+        }
+    }
+    pub fn new_from_map(map: HashMap<String, Object>) -> Self {
+        Self {
+            env: map,
+            outer: None
+        }
+    }
+    pub fn find(&self, key: &String) -> Option<&Object> {
+        if !self.env.contains_key(key) {
+            match &self.outer {
+                Some(outer) => outer.find(key),
+                None => None,
+            }
+        } else {
+            self.get(key) 
+        }
+    }
+}
+
+#[derive(Clone, Debug)]
+pub(crate) struct Environment(pub Rc<RefCell<EnvWrapper>>);
+impl Deref for Environment {
+    type Target = Rc<RefCell<EnvWrapper>>;
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+impl DerefMut for Environment {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.0
+    }
+}
+impl Environment {
+    pub fn new() -> Self {
+        Environment(Rc::new(RefCell::new(EnvWrapper::new())))
+    }
+    pub fn new_from_map(map: HashMap<String, Object>) -> Self {
+        Environment(Rc::new(RefCell::new(EnvWrapper::new_from_map(map))))
+    }
+}
 
 pub(crate) fn eval(
-    statements: Vec<pstructs::Statement>,
+    statements: Vec<Statement>,
     env: Environment,
-) -> std::result::Result<object::Object, EvalErrors> {
+) -> std::result::Result<Object, EvalErrors> {
     let mut errors = Vec::new();
     let mut last_obj_tup = None;
     for statement in statements {
         let temp_res = match statement {
-            pstructs::Statement::Let(let_statement) => {
+            Statement::Let(let_statement) => {
                 let expr_obj = eval_expression(let_statement.expr, env.clone())?.0;
                 let ident_string = match let_statement.ident.token {
                     Token::Ident(inner) => inner,
@@ -55,7 +134,7 @@ pub(crate) fn eval(
                 env.borrow_mut().insert(ident_string, expr_obj);
                 Ok((object::Empty::new(()).into(), true))
             }
-            pstructs::Statement::Return(expr) => {
+            Statement::Return(expr) => {
                 match expr {
                     Some(expr) => {
                         last_obj_tup = match eval_expression(expr, env.clone()) {
@@ -77,25 +156,27 @@ pub(crate) fn eval(
                 }
                 break;
             }
-            pstructs::Statement::Expression(expr) => eval_expression(expr, env.clone()),
-            pstructs::Statement::Assign(AssignStatement {
-                ident:
-                    LocTok {
-                        token: Token::Ident(ident_string),
-                        ..
-                    },
+            Statement::Expression(expr) => eval_expression(expr, env.clone()),
+            Statement::Assign(AssignStatement {
+                ident,
                 expr,
             }) => {
-                let key_exists = env.borrow_mut().contains_key(&ident_string);
+                let ident_string = match ident {
+                    LocTok {
+                        token: Token::Ident(ref ident_string),
+                        ..
+                    } => ident_string,
+                    _ => unreachable!()
+                    };
+                let key_exists = env.borrow_mut().contains_key(&ident_string.to_string());
                 let expr_obj = eval_expr_base(*expr, env.clone())?;
                 if key_exists {
-                    env.borrow_mut().insert(ident_string, expr_obj);
+                    env.borrow_mut().insert(ident_string.into(), expr_obj);
                 } else {
-                    Err(Report::new(EvalError::IdentifierNotFound))?
+                    Err(Report::new(EvalError::IdentifierNotFound(ident_string.clone())).attach(ident))?
                 }
                 Ok((object::Empty::new(()).into(), true))
             }
-            pstructs::Statement::Assign(_) => unreachable!("Assign statement matched above"),
         };
         last_obj_tup = match temp_res {
             Ok(obj) => Some(obj),
@@ -110,7 +191,7 @@ pub(crate) fn eval(
             if !obj.1 || obj.0.is_return() {
                 Ok(obj.0)
             } else {
-                Ok(object::Object::Empty(object::Empty::new(())))
+                Ok(Object::Empty(object::Empty::new(())))
             }
         } else {
             Err(EvalErrors { errors })
@@ -121,44 +202,45 @@ pub(crate) fn eval(
 }
 
 fn eval_expression(
-    expr: pstructs::Expr,
+    expr: Expr,
     env: Environment,
-) -> std::result::Result<(object::Object, bool), EvalErrors> {
+) -> std::result::Result<(Object, bool), EvalErrors> {
     match expr {
-        pstructs::Expr::Terminated(expr_base) => {
-            Ok((eval_expr_base(expr_base, env.clone())?, true))
-        }
-        pstructs::Expr::NonTerminated(expr_base) => {
-            Ok((eval_expr_base(expr_base, env.clone())?, false))
-        }
+        Expr::Terminated(expr_base) => Ok((eval_expr_base(expr_base, env.clone())?, true)),
+        Expr::NonTerminated(expr_base) => Ok((eval_expr_base(expr_base, env.clone())?, false)),
     }
 }
 
 fn eval_expr_base(
     expr_base: ExprBase,
     env: Environment,
-) -> std::result::Result<object::Object, EvalErrors> {
+) -> std::result::Result<Object, EvalErrors> {
     match expr_base {
         ExprBase::IntLiteral(LocTok {
             token: Token::Int(int),
             ..
-        }) => Ok(object::Object::Integer(object::Integer::new(int))),
+        }) => Ok(Object::Integer(object::Integer::new(int))),
         ExprBase::BoolLiteral(LocTok { token, .. }) => match token {
-            Token::True => Ok(object::Object::Boolean(object::Boolean::new(true))),
-            Token::False => Ok(object::Object::Boolean(object::Boolean::new(false))),
+            Token::True => Ok(Object::Boolean(object::Boolean::new(true))),
+            Token::False => Ok(Object::Boolean(object::Boolean::new(false))),
             _ => {
                 unreachable!("BoolLiteral will never have a token that is not either true or false")
             }
         },
-        ExprBase::FuncLiteral(_) => unimplemented!(),
-        ExprBase::CallExpression(_) => unimplemented!(),
+        ExprBase::FuncLiteral(FnLiteral { parameters, body }) => Ok(Object::Function(object::Function::new(FuncIntern::new(parameters, body, env.clone())))),
+        ExprBase::CallExpression(CallExpr { function, args }) => {
+            let function_obj = eval_expr_base(*function, env.clone())?;
+            let args: std::result::Result<Vec<(Object, bool)>, EvalErrors> = args.iter().map(|arg| eval_expression(arg.clone(), env.clone())).collect();
+            let args: Vec<Object> = args?.iter().map(|val| val.clone().0).collect();
+            Ok(apply_function(function_obj, args)?)
+        },
         ExprBase::Identifier(Ident(LocTok {
-            token: Token::Ident(ident_string),
+            token: Token::Ident(ref ident_string),
             ..
         })) => {
-                match env.borrow_mut().get(&ident_string) {
+                match env.borrow_mut().find(ident_string) {
                     Some(obj) => Ok(obj.clone()),
-                    None => Err(Report::new(EvalError::IdentifierNotFound))?
+                    None => Err(Report::new(EvalError::IdentifierNotFound(ident_string.clone())).attach(expr_base))?
                 }
         }
         ExprBase::Scope(_) => unimplemented!(),
@@ -168,7 +250,7 @@ fn eval_expr_base(
         }) => {
             let right = eval_expression((**expression).clone(), env.clone())?.0;
             Ok(eval_prefix_expr(&operator.token, right, expr_base.clone())?)
-        }
+        } 
         ExprBase::BinaryExpression(BinExp {
             ref lhs,
             ref operator,
@@ -197,58 +279,77 @@ fn eval_expr_base(
     }
 }
 
+fn apply_function(function_obj: Object, args: Vec<Object>) -> std::result::Result<Object, EvalErrors> {
+    let mut new_env = HashMap::new();
+    match function_obj {
+        Object::Function(function_obj) => {
+            let fn_literal = function_obj.value;
+            let param_strings: Vec<String> = fn_literal.parameters.iter().map(|param_ident| {match &param_ident.0.token {
+                Token::Ident(ident_string) => ident_string.clone(),
+                _ => unreachable!()
+            }}).collect();
+            if param_strings.len() != args.len() {
+                Err(Report::new(EvalError::MismatchedNumOfFunctionParams))?
+            }
+            param_strings.iter().zip(args).for_each(|(param, object)| {new_env.insert(param.clone(), object);});
+            eval(fn_literal.body.statements, Environment::new_from_map(new_env))
+        },
+        _ => unreachable!("No other objects match to calling this function")
+    }
+}
+
 fn eval_if_expr(
     condition: &ExprBase,
-    consequence: pstructs::Scope,
-    alternative: Option<pstructs::ElseIfExpr>,
+    consequence: Scope,
+    alternative: Option<ElseIfExpr>,
     env: Environment,
-) -> std::result::Result<object::Object, EvalErrors> {
+) -> std::result::Result<Object, EvalErrors> {
     let cond_bool = eval_expr_base((*condition).clone(), env.clone())?;
     match cond_bool {
-        object::Object::Boolean(object::Boolean { value, .. }) => {
+        Object::Boolean(object::Boolean { value, .. }) => {
             if value {
                 eval(consequence.statements, env.clone())
             } else if let Some(alt) = alternative {
                 match alt {
-                    pstructs::ElseIfExpr::ElseIf(else_expr_base) => {
+                    ElseIfExpr::ElseIf(else_expr_base) => {
                         eval_expr_base(*else_expr_base, env.clone())
                     }
-                    pstructs::ElseIfExpr::Else(if_expr) => eval(if_expr.statements, env.clone()),
+                    ElseIfExpr::Else(if_expr) => eval(if_expr.statements, env.clone()),
                 }
             } else {
-                Ok(object::Object::Empty(object::Empty::new(())))
+                Ok(Object::Empty(object::Empty::new(())))
             }
         }
-        _ => unreachable!(),
+        _ => Err(Report::new(EvalError::InvalidIfCondition(condition.clone())))?,
     }
 }
 
 #[allow(unreachable_patterns)]
 fn eval_binary_expr(
     operator: &Token,
-    left: object::Object,
-    right: object::Object,
+    left: Object,
+    right: Object,
     expr_base: ExprBase,
-) -> Result<object::Object, EvalError> {
+) -> Result<Object, EvalError> {
     match left {
-        object::Object::Integer(_) => eval_int_binary_expr(operator, left, right, expr_base),
-        object::Object::Boolean(_) => eval_bool_binary_expr(operator, left, right, expr_base),
+        Object::Integer(_) => eval_int_binary_expr(operator, left, right, expr_base),
+        Object::Boolean(_) => eval_bool_binary_expr(operator, left, right, expr_base),
         _ => unimplemented!(),
     }
 }
 
 fn eval_bool_binary_expr(
     operator: &Token,
-    left: object::Object,
-    right: object::Object,
+    left: Object,
+    right: Object,
     expr_base: ExprBase,
-) -> Result<object::Object, EvalError> {
+) -> Result<Object, EvalError> {
     let left = match left {
-        object::Object::Boolean(object::Boolean { value, .. }) => value,
+        Object::Boolean(object::Boolean { value, .. }) => value,
         _ => unreachable!("boolean was already matched"),
     };
     let right = match right {
-        object::Object::Boolean(object::Boolean { value, .. }) => value,
+        Object::Boolean(object::Boolean { value, .. }) => value,
         _ => unimplemented!("Here I would add support for operator overloading"),
     };
     match operator {
@@ -260,16 +361,16 @@ fn eval_bool_binary_expr(
 
 fn eval_int_binary_expr(
     operator: &Token,
-    left: object::Object,
-    right: object::Object,
+    left: Object,
+    right: Object,
     expr_base: ExprBase,
-) -> Result<object::Object, EvalError> {
+) -> Result<Object, EvalError> {
     let left = match left {
-        object::Object::Integer(object::Integer { value, .. }) => value,
+        Object::Integer(object::Integer { value, .. }) => value,
         _ => unreachable!(),
     };
     let right = match right {
-        object::Object::Integer(object::Integer { value, .. }) => value,
+        Object::Integer(object::Integer { value, .. }) => value,
         _ => unimplemented!("Here I would add support for operator overloading"),
     };
     match operator {
@@ -287,9 +388,9 @@ fn eval_int_binary_expr(
 
 fn eval_prefix_expr(
     operator: &Token,
-    right: object::Object,
+    right: Object,
     expr_base: ExprBase,
-) -> Result<object::Object, EvalError> {
+) -> Result<Object, EvalError> {
     match operator {
         Token::Minus => eval_minux_prefix_op(right, expr_base),
         Token::Bang => eval_bang_prefix_op(right, expr_base),
@@ -297,29 +398,17 @@ fn eval_prefix_expr(
     }
 }
 
-fn eval_minux_prefix_op(
-    right: object::Object,
-    expr_base: ExprBase,
-) -> Result<object::Object, EvalError> {
+fn eval_minux_prefix_op(right: Object, expr_base: ExprBase) -> Result<Object, EvalError> {
     match right {
-        object::Object::Integer(object::Integer { value, .. }) => {
-            Ok(object::Integer::new(-value).into())
-        }
+        Object::Integer(object::Integer { value, .. }) => Ok(object::Integer::new(-value).into()),
         _ => Err(Report::new(EvalError::UnsupportedOperation(expr_base))),
     }
 }
 
-fn eval_bang_prefix_op(
-    right: object::Object,
-    expr_base: ExprBase,
-) -> Result<object::Object, EvalError> {
+fn eval_bang_prefix_op(right: Object, expr_base: ExprBase) -> Result<Object, EvalError> {
     match right {
-        object::Object::Integer(object::Integer { value, .. }) => {
-            Ok(object::Integer::new(!value).into())
-        }
-        object::Object::Boolean(object::Boolean { value, .. }) => {
-            Ok(object::Boolean::new(!value).into())
-        }
+        Object::Integer(object::Integer { value, .. }) => Ok(object::Integer::new(!value).into()),
+        Object::Boolean(object::Boolean { value, .. }) => Ok(object::Boolean::new(!value).into()),
         _ => Err(Report::new(EvalError::UnsupportedOperation(expr_base))),
     }
 }

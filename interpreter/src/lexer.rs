@@ -102,11 +102,16 @@ impl Token {
 
 #[derive(Debug, Clone)]
 pub(crate) struct LocTok {
-    line: u32,
-    column: usize,
-    abs_pos: usize,
-    len: usize,
-    pub(crate) token: Token,
+    pub line: u32,
+    pub column: usize,
+    pub abs_pos: usize,
+    pub len: usize,
+    pub token: Token,
+}
+impl Display for LocTok {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_fmt(format_args!("{:?}", self.token))
+    }
 }
 
 #[derive(Debug, Clone)]

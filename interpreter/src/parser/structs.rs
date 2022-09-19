@@ -48,6 +48,22 @@ pub(crate) enum Expr {
     Terminated(ExprBase),
     NonTerminated(ExprBase),
 }
+impl Display for Expr {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Expr::Terminated(expr_base) | Expr::NonTerminated(expr_base) => {
+                f.write_fmt(format_args!("{expr_base}"))
+            }
+        }
+    }
+}
+impl Expr {
+    fn type_string(&self) -> String {
+        match self {
+            Expr::Terminated(expr_base) | Expr::NonTerminated(expr_base) => expr_base.type_string(),
+        }
+    }
+}
 
 #[derive(Debug, Clone)]
 pub(crate) enum ExprBase {
@@ -60,6 +76,53 @@ pub(crate) enum ExprBase {
     PrefixExpression(PreExpr),
     BinaryExpression(BinExp),
     If(IfExpr),
+}
+impl Display for ExprBase {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let ret_str = match self {
+            ExprBase::IntLiteral(lok_tok) | ExprBase::BoolLiteral(lok_tok) => {
+                format!(
+                    "{lok_tok} at line:{} column:{}",
+                    lok_tok.line + 1,
+                    lok_tok.column + 1
+                )
+            }
+            ExprBase::FuncLiteral(_fn_literal) => todo!(),
+            ExprBase::CallExpression(_call_expr) => todo!(),
+            ExprBase::Identifier(_ident) => todo!(),
+            ExprBase::Scope(_statements) => todo!(),
+            ExprBase::PrefixExpression(PreExpr {
+                operator,
+                expression,
+            }) => {
+                format!(
+                    "Op: {operator} for {}: {}",
+                    expression.type_string(),
+                    expression
+                )
+            }
+            ExprBase::BinaryExpression(_bin_expr) => todo!(),
+            ExprBase::If(IfExpr { condition, .. }) => {
+                format!("{condition}")
+            }
+        };
+        f.write_str(&ret_str)
+    }
+}
+impl ExprBase {
+    fn type_string(&self) -> String {
+        match self {
+            ExprBase::IntLiteral(_) => "Integer".into(),
+            ExprBase::BoolLiteral(_) => "Boolean".into(),
+            ExprBase::FuncLiteral(_) => "Function".into(),
+            ExprBase::CallExpression(_) => "Function Call".into(),
+            ExprBase::Identifier(_) => "Identifier".into(),
+            ExprBase::Scope(_) => "Scope".into(),
+            ExprBase::PrefixExpression(_) => "Prefix Expression".into(),
+            ExprBase::BinaryExpression(_) => "Binary Expression".into(),
+            ExprBase::If(_) => "If Expression".into(),
+        }
+    }
 }
 
 #[derive(Debug)]

@@ -6,7 +6,7 @@ use std::rc::Rc;
 
 #[allow(unused_imports)]
 use crate::{
-    evaluator::eval,
+    evaluator::{eval, EnvWrapper},
     lexer::Lexer,
     object::{self, ObjectTrait},
     parser::parse,
@@ -14,7 +14,7 @@ use crate::{
 
 fn get_inner_helper(code: &'static str) -> object::Object {
     let lexer = Lexer::new(code);
-    let env: Environment = Rc::new(RefCell::new(HashMap::new()));
+    let env = Environment::new();
     let statements = parse(lexer).unwrap();
     eval(statements, env).unwrap()
 }
