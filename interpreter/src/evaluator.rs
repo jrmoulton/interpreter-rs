@@ -142,7 +142,7 @@ pub(crate) fn eval(
             Statement::Return(expr) => {
                 match expr {
                     Some(expr) => {
-                        last_obj_tup = match eval_expression(expr, env.clone()) {
+                        last_obj_tup = match eval_expression(expr, env) {
                             Ok(mut obj) => {
                                 // This makes it so that even though the expresson is terminated it
                                 // will still be passed back out
@@ -211,8 +211,8 @@ fn eval_expression(
     env: Rc<Environment>,
 ) -> std::result::Result<(Object, bool), EvalErrors> {
     match expr {
-        Expr::Terminated(expr_base) => Ok((eval_expr_base(expr_base, env.clone())?, true)),
-        Expr::NonTerminated(expr_base) => Ok((eval_expr_base(expr_base, env.clone())?, false)),
+        Expr::Terminated(expr_base) => Ok((eval_expr_base(expr_base, env)?, true)),
+        Expr::NonTerminated(expr_base) => Ok((eval_expr_base(expr_base, env)?, false)),
     }
 }
 
@@ -244,7 +244,7 @@ fn eval_expr_base(
             ..
         })) => {
                 match env.find(ident_string) {
-                    Some(obj) => Ok(obj.clone()),
+                    Some(obj) => Ok(obj),
                     None => Err(Report::new(EvalError::IdentifierNotFound(ident_string.clone())).attach(expr_base))?
                 }
         }
@@ -253,7 +253,7 @@ fn eval_expr_base(
             ref operator,
             ref expression,
         }) => {
-            let right = eval_expression((**expression).clone(), env.clone())?.0;
+            let right = eval_expression((**expression).clone(), env)?.0;
             Ok(eval_prefix_expr(&operator.token, right, expr_base.clone())?)
         } 
         ExprBase::BinaryExpression(BinExp {
@@ -262,7 +262,7 @@ fn eval_expr_base(
             ref rhs,
         }) => {
             let left = eval_expr_base((**lhs).clone(), env.clone())?;
-            let right = eval_expr_base((**rhs).clone(), env.clone())?;
+            let right = eval_expr_base((**rhs).clone(), env)?;
             Ok(eval_binary_expr(
                 &operator.token,
                 left,
@@ -274,7 +274,7 @@ fn eval_expr_base(
             ref condition,
             consequence,
             alternative,
-        }) => eval_if_expr(condition, consequence, alternative, env.clone()),
+        }) => eval_if_expr(condition, consequence, alternative, env),
         ExprBase::IntLiteral(_) => unreachable!(
             "Int token matched above. An IntLiteral will never have a token that is not an Int"
         ),
@@ -313,13 +313,13 @@ fn eval_if_expr(
     match cond_bool {
         Object::Boolean(object::Boolean { value, .. }) => {
             if value {
-                eval(consequence.statements, env.clone())
+                eval(consequence.statements, env)
             } else if let Some(alt) = alternative {
                 match alt {
                     ElseIfExpr::ElseIf(else_expr_base) => {
-                        eval_expr_base(*else_expr_base, env.clone())
+                        eval_expr_base(*else_expr_base, env)
                     }
-                    ElseIfExpr::Else(if_expr) => eval(if_expr.statements, env.clone()),
+                    ElseIfExpr::Else(if_expr) => eval(if_expr.statements, env),
                 }
             } else {
                 Ok(Object::Empty(object::Empty::new(())))
@@ -360,6 +360,8 @@ fn eval_bool_binary_expr(
     match operator {
         Token::Eq => Ok(object::Boolean::new(left == right).into()),
         Token::Ne => Ok(object::Boolean::new(left != right).into()),
+        Token::Or => Ok(object::Boolean::new(left || right).into()),
+        Token::And => Ok(object::Boolean::new(left && right).into()),
         _ => Err(Report::new(EvalError::UnsupportedOperation(expr_base))),
     }
 }

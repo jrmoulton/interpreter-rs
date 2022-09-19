@@ -438,6 +438,91 @@ fn call_expression_with_expression_args() {
         }
     }
 }
+#[test]
+fn bool_and() {
+    let code: &'static str = r#"3 == 3 && 5 == 6"#;
+    let lexer = Lexer::new(code);
+    match parse(lexer) {
+        Ok(statements) => {
+            let expected = expect_file!["./../../tests/expect_test_results/parser/bool_and.txt"];
+            expected.assert_eq(&format!("{statements:?}"));
+        }
+        Err(e) => {
+            eprintln!("{e}");
+            assert!(false);
+        }
+    }
+}
+
+#[test]
+fn bool_or() {
+    let code: &'static str = r#"3 == 3 || 5 == 6"#;
+    let lexer = Lexer::new(code);
+    match parse(lexer) {
+        Ok(statements) => {
+            let expected = expect_file!["./../../tests/expect_test_results/parser/bool_or.txt"];
+            expected.assert_eq(&format!("{statements:?}"));
+        }
+        Err(e) => {
+            eprintln!("{e}");
+            assert!(false);
+        }
+    }
+}
+
+#[test]
+fn bit_and() {
+    let code: &'static str = r#"3 & 6"#;
+    let lexer = Lexer::new(code);
+    match parse(lexer) {
+        Ok(statements) => {
+            let expected = expect_file!["./../../tests/expect_test_results/parser/bit_and.txt"];
+            expected.assert_eq(&format!("{statements:?}"));
+        }
+        Err(e) => {
+            eprintln!("{e}");
+            assert!(false);
+        }
+    }
+}
+
+#[test]
+fn bit_or() {
+    let code: &'static str = r#"3 | 6"#;
+    let lexer = Lexer::new(code);
+    match parse(lexer) {
+        Ok(statements) => {
+            let expected = expect_file!["./../../tests/expect_test_results/parser/bit_or.txt"];
+            expected.assert_eq(&format!("{statements:?}"));
+        }
+        Err(e) => {
+            eprintln!("{e}");
+            assert!(false);
+        }
+    }
+}
+
+#[test]
+fn operator_precedence() {
+    let code: &'static str = r#"5 + 5 * 3 | 2 && 4 - -2 || 3 | 1"#;
+    let lexer = Lexer::new(code);
+    match parse(lexer) {
+        Ok(statements) => {
+            let expected =
+                expect_file!["./../../tests/expect_test_results/parser/operator_precedence.txt"];
+            let mut ret_str = String::from("[ ");
+            for statement in statements {
+                ret_str.push_str(&format!("{statement}"));
+            }
+            ret_str.push_str(" ]");
+            expected.assert_eq(&ret_str);
+        }
+        Err(e) => {
+            eprintln!("{e}");
+            assert!(false);
+        }
+    }
+}
 
 #[test]
 fn func_no_body() {

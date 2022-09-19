@@ -1,3 +1,3 @@
-ParseErrors { errors: [Eof
+ParseErrors { errors: [Unexpected end of input
              
       - Expected an expression] }

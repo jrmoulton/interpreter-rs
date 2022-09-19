@@ -1,0 +1,1 @@
+[Expression(NonTerminated(BinaryExpression(BinExp { lhs: IntLiteral(LocTok { line: 0, column: 0, abs_pos: 0, len: 1, token: Int(3) }), operator: LocTok { line: 0, column: 2, abs_pos: 2, len: 1, token: BitOr }, rhs: IntLiteral(LocTok { line: 0, column: 4, abs_pos: 4, len: 1, token: Int(6) }) })))]

@@ -47,6 +47,62 @@ fn single_assign() {
 }
 
 #[test]
+fn bool_or() {
+    let code: &'static str = r#"3 == 3 || 5 == 6"#;
+    let correct = vec![Int(3), Eq, Int(3), Or, Int(5), Eq, Int(6)];
+    let lexer = Lexer::new(code);
+    assert_eq!(
+        correct,
+        lexer
+            .into_iter()
+            .map(|lok_tok| lok_tok.token)
+            .collect::<Vec<_>>()
+    );
+}
+
+#[test]
+fn bit_or() {
+    let code: &'static str = r#"3 | 5"#;
+    let correct = vec![Int(3), BitOr, Int(5)];
+    let lexer = Lexer::new(code);
+    assert_eq!(
+        correct,
+        lexer
+            .into_iter()
+            .map(|lok_tok| lok_tok.token)
+            .collect::<Vec<_>>()
+    );
+}
+
+#[test]
+fn bool_and() {
+    let code: &'static str = r#"3 == 3 && 5 == 6"#;
+    let correct = vec![Int(3), Eq, Int(3), And, Int(5), Eq, Int(6)];
+    let lexer = Lexer::new(code);
+    assert_eq!(
+        correct,
+        lexer
+            .into_iter()
+            .map(|lok_tok| lok_tok.token)
+            .collect::<Vec<_>>()
+    );
+}
+
+#[test]
+fn bit_and() {
+    let code: &'static str = r#"3 & 5"#;
+    let correct = vec![Int(3), BitAnd, Int(5)];
+    let lexer = Lexer::new(code);
+    assert_eq!(
+        correct,
+        lexer
+            .into_iter()
+            .map(|lok_tok| lok_tok.token)
+            .collect::<Vec<_>>()
+    );
+}
+
+#[test]
 fn double_assign() {
     let code: &'static str = r#"let five = 5;let ten = 10;"#;
     #[rustfmt::skip]
@@ -178,6 +234,10 @@ fn comprehensive_expect_test() {
                    } else {
                        return false;
                 }
+                3 | 6;
+                2 & 2;
+                1 == 2 && false;
+                2 == 2 || false;
                 10 == 10; 10 != 9;"#;
     let lexer = Lexer::new(code).into_iter().collect::<Vec<_>>();
     let expected =

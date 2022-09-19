@@ -19,12 +19,16 @@ impl Context for LexerError {}
 #[derive(PartialEq, PartialOrd)]
 pub(crate) enum Precedence {
     Lowest = 0,
-    Equals = 1,
-    LessGreat = 2,
-    Sum = 3,
-    Product = 4,
-    Prefix = 5,
-    Call = 6,
+    LogicOr = 1,
+    LogicAnd = 2,
+    BitOr = 3,
+    BitAnd = 4,
+    Equals = 5,
+    LessGreat = 6,
+    Sum = 7,
+    Product = 8,
+    Prefix = 9,
+    Call = 10,
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -62,6 +66,11 @@ pub(crate) enum Token {
     Slash,
     Asterisk,
     Bang,
+    BitAnd,
+    BitOr,
+
+    Or,
+    And,
 
     // Comparators
     LT,
@@ -76,6 +85,11 @@ pub(crate) enum Token {
     RParen,
     LBrace,
     RBrace,
+}
+impl Display for Token {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_fmt(format_args!("{self:?}"))
+    }
 }
 impl Token {
     /// Checks if the token type matches without checking the internal data
@@ -95,6 +109,10 @@ impl Token {
             GT => LessGreat,
             Eq => Equals,
             Ne => Equals,
+            Or => LogicOr,
+            And => LogicAnd,
+            Token::BitOr => Precedence::BitOr,
+            Token::BitAnd => Precedence::BitAnd,
             _ => Lowest,
         }
     }
@@ -231,6 +249,26 @@ impl<'a> Lexer<'a> {
                 }
                 '>' => {
                     token.token = Token::GT;
+                }
+                '&' => {
+                    if self.input[self.pos + 1] as char == '&' {
+                        token.token = Token::And;
+                        token.len = 2;
+                        self.pos += 1;
+                        self.column += 1;
+                    } else {
+                        token.token = Token::BitAnd;
+                    }
+                }
+                '|' => {
+                    if self.input[self.pos + 1] as char == '|' {
+                        token.token = Token::Or;
+                        token.len = 2;
+                        self.pos += 1;
+                        self.column += 1;
+                    } else {
+                        token.token = Token::BitOr;
+                    }
                 }
                 'A'..='Z' | 'a'..='z' => {
                     let mut len = 1;

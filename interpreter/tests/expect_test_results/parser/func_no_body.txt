@@ -1,5 +1,5 @@
-ParseErrors { errors: [Eof
+ParseErrors { errors: [Unexpected end of input
              
-      - Expected a LBrace, Eof
+      - Expected a LBrace, Unexpected end of input
              
       - Expected a RBrace] }

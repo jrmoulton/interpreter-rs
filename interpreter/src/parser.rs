@@ -253,9 +253,8 @@ fn parse_expression(
             // All binary tokens should be matched here. This includes LParen but LParen will match
             // to a different function because it is the start of a function call which needs
             // a few more checks than just regular binary expressions
-            Plus | Minus | Slash | Asterisk | Eq | Ne | LT | GT | Assign => {
-                parse_binary_expression(lexer.clone(), left_exp)?
-            }
+            Plus | Minus | Slash | Asterisk | Eq | Ne | LT | GT | Assign | BitOr | Or | BitAnd
+            | And => parse_binary_expression(lexer.clone(), left_exp)?,
             LParen => parse_call_expression(lexer.clone(), left_exp)?,
             _ => Err(Report::new(ParseError::UnexpectedToken(peek_op_token))
                 .attach_printable("Expected a binary operator"))?,
