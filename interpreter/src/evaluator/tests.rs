@@ -1,12 +1,9 @@
 #![cfg(test)]
-use crate::evaluator::Environment;
-use std::cell::RefCell;
-use std::collections::HashMap;
 use std::rc::Rc;
 
 #[allow(unused_imports)]
 use crate::{
-    evaluator::{eval, EnvWrapper},
+    evaluator::{eval, Environment},
     lexer::Lexer,
     object::{self, ObjectTrait},
     parser::parse,
@@ -14,9 +11,9 @@ use crate::{
 
 fn get_inner_helper(code: &'static str) -> object::Object {
     let lexer = Lexer::new(code);
-    let env = Environment::new();
+    let env = Rc::new(Environment::new());
     let statements = parse(lexer).unwrap();
-    eval(statements, env).unwrap()
+    eval(statements, env.clone()).unwrap()
 }
 
 #[test]
@@ -225,5 +222,15 @@ fn function_with_call() {
     assert_eq!(
         get_inner_helper(code).inner().downcast_ref::<i64>(),
         Some(&10)
+    );
+}
+
+#[test]
+fn closure_call() {
+    let code: &'static str =
+        r#"let new_adder = fn(x) { fn(y) {x + y}}; let add_two = new_adder(2); add_two(2)"#;
+    assert_eq!(
+        get_inner_helper(code).inner().downcast_ref::<i64>(),
+        Some(&4)
     );
 }

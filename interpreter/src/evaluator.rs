@@ -51,75 +51,80 @@ impl Display for EvalErrors {
     }
 }
 
-
-// need to make find method look in outer environment
-
 #[derive(Debug)]
-pub(crate) struct EnvWrapper{ 
-    pub env: HashMap<String, Object> ,
-    pub outer: Option<Box<EnvWrapper>>
+pub(crate) struct EnvWrapper(pub HashMap<String, Object>);
+impl EnvWrapper {
+    pub fn new() -> Self {
+        Self(HashMap::new())
+    }
+    pub fn new_from_map(map: HashMap<String, Object>) -> Self {
+        Self(map)
+    }
 }
 impl Deref for EnvWrapper {
     type Target = HashMap<String, Object>;
     fn deref(&self) -> &Self::Target {
-        &self.env
+        &self.0
     }
 }
 impl DerefMut for EnvWrapper {
     fn deref_mut(&mut self) -> &mut Self::Target {
-        &mut self.env
+        &mut self.0
     }
 }
-impl EnvWrapper {
+
+#[derive(Debug)]
+pub(crate) struct Environment{ 
+    pub env: RefCell<EnvWrapper> ,
+    pub outer: Option<Rc<Environment>>
+}
+impl Environment {
     pub fn new() -> Self {
         Self {
-            env:HashMap::new(),
+            env: RefCell::new(EnvWrapper::new()),
             outer: None
         }
     }
     pub fn new_from_map(map: HashMap<String, Object>) -> Self {
         Self {
-            env: map,
+            env: RefCell::new(EnvWrapper::new_from_map(map)),
             outer: None
         }
     }
-    pub fn find(&self, key: &String) -> Option<&Object> {
-        if !self.env.contains_key(key) {
+    pub fn new_from_map_and_outer(map: HashMap<String, Object>, outer: Rc<Environment>) -> Self {
+        Self {
+            env: RefCell::new(EnvWrapper::new_from_map(map)),
+            outer: Some(outer)
+        }
+    }
+    pub fn find(&self, key: &String) -> Option<Object> {
+        if !self.env.borrow().contains_key(key) {
             match &self.outer {
                 Some(outer) => outer.find(key),
                 None => None,
             }
         } else {
-            self.get(key) 
+            self.env.borrow().get(key).cloned()
         }
     }
-}
-
-#[derive(Clone, Debug)]
-pub(crate) struct Environment(pub Rc<RefCell<EnvWrapper>>);
-impl Deref for Environment {
-    type Target = Rc<RefCell<EnvWrapper>>;
-    fn deref(&self) -> &Self::Target {
-        &self.0
+    pub fn set(&self, key: String, value: Object) {
+        self.env.borrow_mut().insert(key, value);
     }
-}
-impl DerefMut for Environment {
-    fn deref_mut(&mut self) -> &mut Self::Target {
-        &mut self.0
-    }
-}
-impl Environment {
-    pub fn new() -> Self {
-        Environment(Rc::new(RefCell::new(EnvWrapper::new())))
-    }
-    pub fn new_from_map(map: HashMap<String, Object>) -> Self {
-        Environment(Rc::new(RefCell::new(EnvWrapper::new_from_map(map))))
+    pub fn has(&self, key: &String) -> bool {
+        if !self.env.borrow().contains_key(key) {
+            match &self.outer {
+                Some(outer) => outer.has(key),
+                None => false,
+            }
+        } else {
+            true
+        }
     }
 }
 
 pub(crate) fn eval(
     statements: Vec<Statement>,
-    env: Environment,
+    env: Rc<Environment>,
 ) -> std::result::Result<Object, EvalErrors> {
     let mut errors = Vec::new();
     let mut last_obj_tup = None;
@@ -131,7 +136,7 @@ pub(crate) fn eval(
                     Token::Ident(inner) => inner,
                     _ => unreachable!(),
                 };
-                env.borrow_mut().insert(ident_string, expr_obj);
+                env.set(ident_string, expr_obj);
                 Ok((object::Empty::new(()).into(), true))
             }
             Statement::Return(expr) => {
@@ -168,10 +173,10 @@ pub(crate) fn eval(
                     } => ident_string,
                     _ => unreachable!()
                     };
-                let key_exists = env.borrow_mut().contains_key(&ident_string.to_string());
+                let key_exists = env.has(&ident_string.to_string());
                 let expr_obj = eval_expr_base(*expr, env.clone())?;
                 if key_exists {
-                    env.borrow_mut().insert(ident_string.into(), expr_obj);
+                    env.set(ident_string.into(), expr_obj);
                 } else {
                     Err(Report::new(EvalError::IdentifierNotFound(ident_string.clone())).attach(ident))?
                 }
@@ -203,7 +208,7 @@ pub(crate) fn eval(
 
 fn eval_expression(
     expr: Expr,
-    env: Environment,
+    env: Rc<Environment>,
 ) -> std::result::Result<(Object, bool), EvalErrors> {
     match expr {
         Expr::Terminated(expr_base) => Ok((eval_expr_base(expr_base, env.clone())?, true)),
@@ -213,7 +218,7 @@ fn eval_expression(
 
 fn eval_expr_base(
     expr_base: ExprBase,
-    env: Environment,
+    env: Rc<Environment>,
 ) -> std::result::Result<Object, EvalErrors> {
     match expr_base {
         ExprBase::IntLiteral(LocTok {
@@ -238,7 +243,7 @@ fn eval_expr_base(
             token: Token::Ident(ref ident_string),
             ..
         })) => {
-                match env.borrow_mut().find(ident_string) {
+                match env.find(ident_string) {
                     Some(obj) => Ok(obj.clone()),
                     None => Err(Report::new(EvalError::IdentifierNotFound(ident_string.clone())).attach(expr_base))?
                 }
@@ -280,7 +285,6 @@ fn eval_expr_base(
 }
 
 fn apply_function(function_obj: Object, args: Vec<Object>) -> std::result::Result<Object, EvalErrors> {
-    let mut new_env = HashMap::new();
     match function_obj {
         Object::Function(function_obj) => {
             let fn_literal = function_obj.value;
@@ -291,10 +295,11 @@ fn apply_function(function_obj: Object, args: Vec<Object>) -> std::result::Resul
             if param_strings.len() != args.len() {
                 Err(Report::new(EvalError::MismatchedNumOfFunctionParams))?
             }
+            let mut new_env = HashMap::new();
             param_strings.iter().zip(args).for_each(|(param, object)| {new_env.insert(param.clone(), object);});
-            eval(fn_literal.body.statements, Environment::new_from_map(new_env))
+            eval(fn_literal.body.statements, Rc::new(Environment::new_from_map_and_outer(new_env, fn_literal.env.clone())))
         },
-        _ => unreachable!("No other objects match to calling this function")
+        _ => unreachable!("No other objects match to calling this function {function_obj}")
     }
 }
 
@@ -302,7 +307,7 @@ fn eval_if_expr(
     condition: &ExprBase,
     consequence: Scope,
     alternative: Option<ElseIfExpr>,
-    env: Environment,
+    env: Rc<Environment>,
 ) -> std::result::Result<Object, EvalErrors> {
     let cond_bool = eval_expr_base((*condition).clone(), env.clone())?;
     match cond_bool {

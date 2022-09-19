@@ -1,6 +1,7 @@
 use std::{
     any::Any,
     fmt::{Debug, Display},
+    rc::Rc,
 };
 
 use enum_dispatch::enum_dispatch;
@@ -17,10 +18,10 @@ mod literal_types_macro;
 pub(crate) struct FuncIntern {
     pub parameters: Vec<Ident>,
     pub body: Scope,
-    pub env: Environment,
+    pub env: Rc<Environment>,
 }
 impl FuncIntern {
-    pub fn new(parameters: Vec<Ident>, body: Scope, env: Environment) -> Self {
+    pub fn new(parameters: Vec<Ident>, body: Scope, env: Rc<Environment>) -> Self {
         Self {
             parameters,
             body,

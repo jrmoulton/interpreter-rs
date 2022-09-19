@@ -1,4 +1,5 @@
 use std::io::{BufRead, Write};
+use std::rc::Rc;
 
 use crate::evaluator::eval;
 use crate::evaluator::Environment;
@@ -11,7 +12,7 @@ pub fn start() {
     print!(">> ");
     std::io::stdout().flush().unwrap();
     let stdin = std::io::stdin().lock();
-    let env: Environment = Environment::new();
+    let env = Rc::new(Environment::new());
     for line in stdin.lines() {
         let line = line.unwrap();
         let lexer = Lexer::new(&line);
