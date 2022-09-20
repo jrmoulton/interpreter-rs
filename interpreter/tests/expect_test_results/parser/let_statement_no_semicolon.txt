@@ -1,3 +1,36 @@
-ParseErrors { errors: [Expected ';' after expression: True
-             
-      - 1 additional opaque attachment] }
+ParseErrors {
+    errors: [
+        Report {
+            frames: [
+                Frame {
+                    location: Location {
+                        file: "interpreter/src/parser/mod.rs",
+                        line: 148,
+                        col: 26,
+                    },
+                    attachment: "Opaque",
+                },
+                Frame {
+                    location: Location {
+                        file: "interpreter/src/parser/mod.rs",
+                        line: 147,
+                        col: 21,
+                    },
+                    context: ExpectedTerminatedExpr(
+                        NonTerminated(
+                            BoolLiteral(
+                                LocTok {
+                                    line: 0,
+                                    column: 8,
+                                    abs_pos: 8,
+                                    len: 4,
+                                    token: True,
+                                },
+                            ),
+                        ),
+                    ),
+                },
+            ],
+        },
+    ],
+}

@@ -13,7 +13,7 @@ fn simple_prefix_op_expression_statement() {
             let expected = expect_file![
                 "./../../tests/expect_test_results/parser/simple_prefix_op_expression_statement.txt"
             ];
-            expected.assert_eq(&format!("{statements:?}"));
+            expected.assert_eq(&format!("{statements:#?}"));
         }
         Err(e) => {
             eprintln!("{e}");
@@ -29,7 +29,7 @@ fn single_let() {
     match parse(lexer) {
         Ok(statements) => {
             let expected = expect_file!["./../../tests/expect_test_results/parser/single_let.txt"];
-            expected.assert_eq(&format!("{statements:?}"));
+            expected.assert_eq(&format!("{statements:#?}"));
         }
         Err(e) => {
             eprintln!("{e}");
@@ -46,7 +46,7 @@ fn assign_statement() {
         Ok(statements) => {
             let expected =
                 expect_file!["./../../tests/expect_test_results/parser/assign_statement.txt"];
-            expected.assert_eq(&format!("{statements:?}"));
+            expected.assert_eq(&format!("{statements:#?}"));
         }
         Err(e) => {
             eprintln!("{e}");
@@ -63,7 +63,7 @@ fn single_let_with_bool() {
         Ok(statements) => {
             let expected =
                 expect_file!["./../../tests/expect_test_results/parser/single_let_with_bool.txt"];
-            expected.assert_eq(&format!("{statements:?}"));
+            expected.assert_eq(&format!("{statements:#?}"));
         }
         Err(e) => {
             eprintln!("{e}");
@@ -80,7 +80,7 @@ fn single_let_with_add() {
         Ok(statements) => {
             let expected =
                 expect_file!["./../../tests/expect_test_results/parser/single_let_with_add.txt"];
-            expected.assert_eq(&format!("{statements:?}"));
+            expected.assert_eq(&format!("{statements:#?}"));
         }
         Err(e) => {
             eprintln!("{e}");
@@ -98,7 +98,7 @@ fn single_operator_precedence_expression_statement() {
             let expected = expect_file![
                 "./../../tests/expect_test_results/parser/single_operator_precedence_expression_statement.txt"
             ];
-            expected.assert_eq(&format!("{statements:?}"));
+            expected.assert_eq(&format!("{statements:#?}"));
         }
         Err(e) => {
             eprintln!("{e}");
@@ -115,7 +115,7 @@ fn operator_precedence_with_grouped_expressions() {
             let expected = expect_file![
                 "./../../tests/expect_test_results/parser/operator_precedence_with_grouped_expressions.txt"
             ];
-            expected.assert_eq(&format!("{statements:?}"));
+            expected.assert_eq(&format!("{statements:#?}"));
         }
         Err(e) => {
             eprintln!("{e}");
@@ -132,7 +132,7 @@ fn single_int_expression() {
         Ok(statements) => {
             let expected =
                 expect_file!["./../../tests/expect_test_results/parser/single_int_expression.txt"];
-            expected.assert_eq(&format!("{statements:?}"));
+            expected.assert_eq(&format!("{statements:#?}"));
         }
         Err(e) => {
             eprintln!("{e}");
@@ -149,7 +149,7 @@ fn basic_return() {
         Ok(statements) => {
             let expected =
                 expect_file!["./../../tests/expect_test_results/parser/basic_return.txt"];
-            expected.assert_eq(&format!("{statements:?}"));
+            expected.assert_eq(&format!("{statements:#?}"));
         }
         Err(e) => {
             eprintln!("{e}");
@@ -166,7 +166,7 @@ fn return_no_expression() {
         Ok(statements) => {
             let expected =
                 expect_file!["./../../tests/expect_test_results/parser/return_no_expression.txt"];
-            expected.assert_eq(&format!("{statements:?}"));
+            expected.assert_eq(&format!("{statements:#?}"));
         }
         Err(e) => {
             eprintln!("{e}");
@@ -183,7 +183,7 @@ fn identifier_expression() {
         Ok(statements) => {
             let expected =
                 expect_file!["./../../tests/expect_test_results/parser/identifier_expression.txt"];
-            expected.assert_eq(&format!("{statements:?}"));
+            expected.assert_eq(&format!("{statements:#?}"));
         }
         Err(e) => {
             eprintln!("{e}");
@@ -200,7 +200,7 @@ fn double_let() {
     match parse(lexer) {
         Ok(statements) => {
             let expected = expect_file!["./../../tests/expect_test_results/parser/double_let.txt"];
-            expected.assert_eq(&format!("{statements:?}"));
+            expected.assert_eq(&format!("{statements:#?}"));
         }
         Err(e) => {
             eprintln!("{e}");
@@ -224,7 +224,7 @@ fn if_elseif_else() {
         Ok(statements) => {
             let expected =
                 expect_file!["./../../tests/expect_test_results/parser/if_elseif_else.txt"];
-            expected.assert_eq(&format!("{statements:?}"));
+            expected.assert_eq(&format!("{statements:#?}"));
         }
         Err(e) => {
             eprintln!("{e}");
@@ -249,7 +249,7 @@ fn if_elseif_else_again() {
         Ok(statements) => {
             let expected =
                 expect_file!["./../../tests/expect_test_results/parser/if_elseif_else_again.txt"];
-            expected.assert_eq(&format!("{statements:?}"));
+            expected.assert_eq(&format!("{statements:#?}"));
         }
         Err(e) => {
             eprintln!("{e}");
@@ -271,7 +271,7 @@ fn if_with_bool_expr() {
         Ok(statements) => {
             let expected =
                 expect_file!["./../../tests/expect_test_results/parser/if_with_bool_expr.txt"];
-            expected.assert_eq(&format!("{statements:?}"));
+            expected.assert_eq(&format!("{statements:#?}"));
         }
         Err(e) => {
             eprintln!("{e}");
@@ -290,7 +290,7 @@ fn new_scope() {
     match parse(lexer) {
         Ok(statements) => {
             let expected = expect_file!["./../../tests/expect_test_results/parser/new_scope.txt"];
-            expected.assert_eq(&format!("{statements:?}"));
+            expected.assert_eq(&format!("{statements:#?}"));
         }
         Err(e) => {
             eprintln!("{e}");
@@ -312,7 +312,7 @@ fn nested_scope() {
         Ok(statements) => {
             let expected =
                 expect_file!["./../../tests/expect_test_results/parser/nested_scope.txt"];
-            expected.assert_eq(&format!("{statements:?}"));
+            expected.assert_eq(&format!("{statements:#?}"));
         }
         Err(e) => {
             eprintln!("{e}");
@@ -331,7 +331,7 @@ fn function_literal() {
         Ok(statements) => {
             let expected =
                 expect_file!["./../../tests/expect_test_results/parser/function_literal.txt"];
-            expected.assert_eq(&format!("{statements:?}"));
+            expected.assert_eq(&format!("{statements:#?}"));
         }
         Err(e) => {
             eprintln!("{e}");
@@ -347,7 +347,7 @@ fn nested_if() {
     match parse(lexer) {
         Ok(statements) => {
             let expected = expect_file!["./../../tests/expect_test_results/parser/nested_if.txt"];
-            expected.assert_eq(&format!("{statements:?}"));
+            expected.assert_eq(&format!("{statements:#?}"));
         }
         Err(e) => {
             eprintln!("{e}");
@@ -377,7 +377,7 @@ fn comprehensive() {
         Ok(statements) => {
             let expected =
                 expect_file!["./../../tests/expect_test_results/parser/comprehensive.txt"];
-            expected.assert_eq(&format!("{statements:?}"));
+            expected.assert_eq(&format!("{statements:#?}"));
         }
         Err(e) => {
             eprintln!("{e}");
@@ -394,7 +394,7 @@ fn call_expression() {
         Ok(statements) => {
             let expected =
                 expect_file!["./../../tests/expect_test_results/parser/call_expression.txt"];
-            expected.assert_eq(&format!("{statements:?}"));
+            expected.assert_eq(&format!("{statements:#?}"));
         }
         Err(e) => {
             eprintln!("{e}");
@@ -412,7 +412,7 @@ fn call_expression_no_args() {
             let expected = expect_file![
                 "./../../tests/expect_test_results/parser/call_expression_no_args.txt"
             ];
-            expected.assert_eq(&format!("{statements:?}"));
+            expected.assert_eq(&format!("{statements:#?}"));
         }
         Err(e) => {
             eprintln!("{e}");
@@ -430,7 +430,7 @@ fn call_expression_with_expression_args() {
             let expected = expect_file![
                 "./../../tests/expect_test_results/parser/call_expression_with_expression_args.txt"
             ];
-            expected.assert_eq(&format!("{statements:?}"));
+            expected.assert_eq(&format!("{statements:#?}"));
         }
         Err(e) => {
             eprintln!("{e}");
@@ -445,7 +445,7 @@ fn bool_and() {
     match parse(lexer) {
         Ok(statements) => {
             let expected = expect_file!["./../../tests/expect_test_results/parser/bool_and.txt"];
-            expected.assert_eq(&format!("{statements:?}"));
+            expected.assert_eq(&format!("{statements:#?}"));
         }
         Err(e) => {
             eprintln!("{e}");
@@ -461,7 +461,7 @@ fn bool_or() {
     match parse(lexer) {
         Ok(statements) => {
             let expected = expect_file!["./../../tests/expect_test_results/parser/bool_or.txt"];
-            expected.assert_eq(&format!("{statements:?}"));
+            expected.assert_eq(&format!("{statements:#?}"));
         }
         Err(e) => {
             eprintln!("{e}");
@@ -477,7 +477,7 @@ fn bit_and() {
     match parse(lexer) {
         Ok(statements) => {
             let expected = expect_file!["./../../tests/expect_test_results/parser/bit_and.txt"];
-            expected.assert_eq(&format!("{statements:?}"));
+            expected.assert_eq(&format!("{statements:#?}"));
         }
         Err(e) => {
             eprintln!("{e}");
@@ -493,7 +493,7 @@ fn bit_or() {
     match parse(lexer) {
         Ok(statements) => {
             let expected = expect_file!["./../../tests/expect_test_results/parser/bit_or.txt"];
-            expected.assert_eq(&format!("{statements:?}"));
+            expected.assert_eq(&format!("{statements:#?}"));
         }
         Err(e) => {
             eprintln!("{e}");
@@ -530,11 +530,11 @@ fn func_no_body() {
     let lexer = Lexer::new(code);
     match parse(lexer) {
         Ok(statements) => {
-            assert!(false, "Expected an error, found {statements:?}");
+            assert!(false, "Expected an error, found {statements:#?}");
         }
         Err(e) => {
             let remove = regex::Regex::new(r"at .*src.*").unwrap();
-            let err_string = format!("{e:?}");
+            let err_string = format!("{e:#?}");
             let expected =
                 expect_file!["./../../tests/expect_test_results/parser/func_no_body.txt"];
             expected.assert_eq(&remove.replace_all(&err_string, ""));
@@ -548,11 +548,11 @@ fn call_expression_bad_semicolon() {
     let lexer = Lexer::new(code);
     match parse(lexer) {
         Ok(statements) => {
-            assert!(false, "Expected an error, found {statements:?}");
+            assert!(false, "Expected an error, found {statements:#?}");
         }
         Err(e) => {
             let remove = regex::Regex::new(r"at .*src.*").unwrap();
-            let err_string = format!("{e:?}");
+            let err_string = format!("{e:#?}");
             let expected = expect_file![
                 "./../../tests/expect_test_results/parser/call_expression_bad_semicolon.txt"
             ];
@@ -570,11 +570,11 @@ fn new_scope_bad_semicolon() {
     let lexer = Lexer::new(code);
     match parse(lexer) {
         Ok(statements) => {
-            assert!(false, "Expected an error, found {statements:?}");
+            assert!(false, "Expected an error, found {statements:#?}");
         }
         Err(e) => {
             let remove = regex::Regex::new(r"at .*src.*").unwrap();
-            let err_string = format!("{e:?}");
+            let err_string = format!("{e:#?}");
             let expected = expect_file![
                 "./../../tests/expect_test_results/parser/new_scope_bad_semicolon.txt"
             ];
@@ -589,11 +589,11 @@ fn assign_statement_no_semicolon() {
     let lexer = Lexer::new(code);
     match parse(lexer) {
         Ok(statements) => {
-            assert!(false, "Expected an error, found {statements:?}");
+            assert!(false, "Expected an error, found {statements:#?}");
         }
         Err(e) => {
             let remove = regex::Regex::new(r"at .*src.*").unwrap();
-            let err_string = format!("{e:?}");
+            let err_string = format!("{e:#?}");
             let expected = expect_file![
                 "./../../tests/expect_test_results/parser/assign_statement_no_semicolon.txt"
             ];
@@ -608,11 +608,11 @@ fn let_statement_no_semicolon() {
     let lexer = Lexer::new(code);
     match parse(lexer) {
         Ok(statements) => {
-            assert!(false, "Expected an error, found {statements:?}");
+            assert!(false, "Expected an error, found {statements:#?}");
         }
         Err(e) => {
             let remove = regex::Regex::new(r"at .*src.*").unwrap();
-            let err_string = format!("{e:?}");
+            let err_string = format!("{e:#?}");
             let expected = expect_file![
                 "./../../tests/expect_test_results/parser/let_statement_no_semicolon.txt"
             ];
@@ -627,11 +627,11 @@ fn return_no_semicolon() {
     let lexer = Lexer::new(code);
     match parse(lexer) {
         Ok(statements) => {
-            assert!(false, "Expected an error, found {statements:?}");
+            assert!(false, "Expected an error, found {statements:#?}");
         }
         Err(e) => {
             let remove = regex::Regex::new(r"at .*src.*").unwrap();
-            let err_string = format!("{e:?}");
+            let err_string = format!("{e:#?}");
             let expected =
                 expect_file!["./../../tests/expect_test_results/parser/return_no_semicolon.txt"];
             expected.assert_eq(&remove.replace_all(&err_string, ""));
@@ -645,11 +645,11 @@ fn return_no_expr_no_semicolon() {
     let lexer = Lexer::new(code);
     match parse(lexer) {
         Ok(statements) => {
-            assert!(false, "Expected an error, found {statements:?}");
+            assert!(false, "Expected an error, found {statements:#?}");
         }
         Err(e) => {
             let remove = regex::Regex::new(r"at .*src.*").unwrap();
-            let err_string = format!("{e:?}");
+            let err_string = format!("{e:#?}");
             let expected = expect_file![
                 "./../../tests/expect_test_results/parser/return_no_expr_no_semicolon.txt"
             ];

@@ -1,1 +1,61 @@
-[Expression(NonTerminated(If(IfExpr { condition: Identifier(Ident(LocTok { line: 1, column: 11, abs_pos: 12, len: 1, token: Ident("x") })), consequence: Scope { statements: [Expression(NonTerminated(BoolLiteral(LocTok { line: 2, column: 12, abs_pos: 28, len: 4, token: True })))] }, alternative: Some(Else(Scope { statements: [Expression(NonTerminated(BoolLiteral(LocTok { line: 4, column: 12, abs_pos: 62, len: 5, token: False })))] })) })))]
+[
+    Expression(
+        NonTerminated(
+            If(
+                IfExpr {
+                    condition: Identifier(
+                        Ident(
+                            LocTok {
+                                line: 1,
+                                column: 11,
+                                abs_pos: 12,
+                                len: 1,
+                                token: Ident(
+                                    "x",
+                                ),
+                            },
+                        ),
+                    ),
+                    consequence: Scope {
+                        statements: [
+                            Expression(
+                                NonTerminated(
+                                    BoolLiteral(
+                                        LocTok {
+                                            line: 2,
+                                            column: 12,
+                                            abs_pos: 28,
+                                            len: 4,
+                                            token: True,
+                                        },
+                                    ),
+                                ),
+                            ),
+                        ],
+                    },
+                    alternative: Some(
+                        Else(
+                            Scope {
+                                statements: [
+                                    Expression(
+                                        NonTerminated(
+                                            BoolLiteral(
+                                                LocTok {
+                                                    line: 4,
+                                                    column: 12,
+                                                    abs_pos: 62,
+                                                    len: 5,
+                                                    token: False,
+                                                },
+                                            ),
+                                        ),
+                                    ),
+                                ],
+                            },
+                        ),
+                    ),
+                },
+            ),
+        ),
+    ),
+]

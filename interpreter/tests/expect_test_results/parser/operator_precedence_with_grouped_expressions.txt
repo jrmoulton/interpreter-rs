@@ -1,1 +1,61 @@
-[Expression(NonTerminated(BinaryExpression(BinExp { lhs: BinaryExpression(BinExp { lhs: IntLiteral(LocTok { line: 0, column: 1, abs_pos: 1, len: 1, token: Int(5) }), operator: LocTok { line: 0, column: 3, abs_pos: 3, len: 1, token: Plus }, rhs: IntLiteral(LocTok { line: 0, column: 5, abs_pos: 5, len: 1, token: Int(5) }) }), operator: LocTok { line: 0, column: 8, abs_pos: 8, len: 1, token: Asterisk }, rhs: IntLiteral(LocTok { line: 0, column: 10, abs_pos: 10, len: 1, token: Int(5) }) })))]
+[
+    Expression(
+        NonTerminated(
+            BinaryExpression(
+                BinExp {
+                    lhs: BinaryExpression(
+                        BinExp {
+                            lhs: IntLiteral(
+                                LocTok {
+                                    line: 0,
+                                    column: 1,
+                                    abs_pos: 1,
+                                    len: 1,
+                                    token: Int(
+                                        5,
+                                    ),
+                                },
+                            ),
+                            operator: LocTok {
+                                line: 0,
+                                column: 3,
+                                abs_pos: 3,
+                                len: 1,
+                                token: Plus,
+                            },
+                            rhs: IntLiteral(
+                                LocTok {
+                                    line: 0,
+                                    column: 5,
+                                    abs_pos: 5,
+                                    len: 1,
+                                    token: Int(
+                                        5,
+                                    ),
+                                },
+                            ),
+                        },
+                    ),
+                    operator: LocTok {
+                        line: 0,
+                        column: 8,
+                        abs_pos: 8,
+                        len: 1,
+                        token: Asterisk,
+                    },
+                    rhs: IntLiteral(
+                        LocTok {
+                            line: 0,
+                            column: 10,
+                            abs_pos: 10,
+                            len: 1,
+                            token: Int(
+                                5,
+                            ),
+                        },
+                    ),
+                },
+            ),
+        ),
+    ),
+]

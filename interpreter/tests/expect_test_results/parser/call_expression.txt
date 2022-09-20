@@ -1,1 +1,55 @@
-[Expression(NonTerminated(CallExpression(CallExpr { function: Identifier(Ident(LocTok { line: 0, column: 0, abs_pos: 0, len: 3, token: Ident("add") })), args: [NonTerminated(Identifier(Ident(LocTok { line: 0, column: 4, abs_pos: 4, len: 1, token: Ident("x") }))), NonTerminated(Identifier(Ident(LocTok { line: 0, column: 7, abs_pos: 7, len: 1, token: Ident("y") })))] })))]
+[
+    Expression(
+        NonTerminated(
+            CallExpression(
+                CallExpr {
+                    function: Identifier(
+                        Ident(
+                            LocTok {
+                                line: 0,
+                                column: 0,
+                                abs_pos: 0,
+                                len: 3,
+                                token: Ident(
+                                    "add",
+                                ),
+                            },
+                        ),
+                    ),
+                    args: [
+                        NonTerminated(
+                            Identifier(
+                                Ident(
+                                    LocTok {
+                                        line: 0,
+                                        column: 4,
+                                        abs_pos: 4,
+                                        len: 1,
+                                        token: Ident(
+                                            "x",
+                                        ),
+                                    },
+                                ),
+                            ),
+                        ),
+                        NonTerminated(
+                            Identifier(
+                                Ident(
+                                    LocTok {
+                                        line: 0,
+                                        column: 7,
+                                        abs_pos: 7,
+                                        len: 1,
+                                        token: Ident(
+                                            "y",
+                                        ),
+                                    },
+                                ),
+                            ),
+                        ),
+                    ],
+                },
+            ),
+        ),
+    ),
+]

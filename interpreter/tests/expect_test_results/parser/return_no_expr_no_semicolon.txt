@@ -1,3 +1,24 @@
-ParseErrors { errors: [Unexpected end of input
-             
-      - Expected an expression] }
+ParseErrors {
+    errors: [
+        Report {
+            frames: [
+                Frame {
+                    location: Location {
+                        file: "interpreter/src/parser/mod.rs",
+                        line: 244,
+                        col: 50,
+                    },
+                    attachment: "Expected an expression",
+                },
+                Frame {
+                    location: Location {
+                        file: "interpreter/src/parser/mod.rs",
+                        line: 244,
+                        col: 21,
+                    },
+                    context: Eof,
+                },
+            ],
+        },
+    ],
+}

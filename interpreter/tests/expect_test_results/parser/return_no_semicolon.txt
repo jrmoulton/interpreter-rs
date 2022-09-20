@@ -1,3 +1,38 @@
-ParseErrors { errors: [Expected ';' after expression: Int(5)
-             
-      - 1 additional opaque attachment] }
+ParseErrors {
+    errors: [
+        Report {
+            frames: [
+                Frame {
+                    location: Location {
+                        file: "interpreter/src/parser/mod.rs",
+                        line: 121,
+                        col: 14,
+                    },
+                    attachment: "Opaque",
+                },
+                Frame {
+                    location: Location {
+                        file: "interpreter/src/parser/mod.rs",
+                        line: 120,
+                        col: 39,
+                    },
+                    context: ExpectedTerminatedExpr(
+                        NonTerminated(
+                            IntLiteral(
+                                LocTok {
+                                    line: 0,
+                                    column: 7,
+                                    abs_pos: 7,
+                                    len: 1,
+                                    token: Int(
+                                        5,
+                                    ),
+                                },
+                            ),
+                        ),
+                    ),
+                },
+            ],
+        },
+    ],
+}

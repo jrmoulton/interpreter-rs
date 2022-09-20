@@ -1,1 +1,30 @@
-[Expression(NonTerminated(PrefixExpression(PreExpr { operator: LocTok { line: 0, column: 0, abs_pos: 0, len: 1, token: Minus }, expression: NonTerminated(IntLiteral(LocTok { line: 0, column: 1, abs_pos: 1, len: 1, token: Int(5) })) })))]
+[
+    Expression(
+        NonTerminated(
+            PrefixExpression(
+                PreExpr {
+                    operator: LocTok {
+                        line: 0,
+                        column: 0,
+                        abs_pos: 0,
+                        len: 1,
+                        token: Minus,
+                    },
+                    expression: NonTerminated(
+                        IntLiteral(
+                            LocTok {
+                                line: 0,
+                                column: 1,
+                                abs_pos: 1,
+                                len: 1,
+                                token: Int(
+                                    5,
+                                ),
+                            },
+                        ),
+                    ),
+                },
+            ),
+        ),
+    ),
+]

@@ -1,1 +1,126 @@
-[Expression(NonTerminated(CallExpression(CallExpr { function: Identifier(Ident(LocTok { line: 0, column: 0, abs_pos: 0, len: 9, token: Ident("call_func") })), args: [NonTerminated(IntLiteral(LocTok { line: 0, column: 10, abs_pos: 10, len: 1, token: Int(2) })), NonTerminated(IntLiteral(LocTok { line: 0, column: 13, abs_pos: 13, len: 1, token: Int(3) })), NonTerminated(FuncLiteral(FnLiteral { parameters: [Ident(LocTok { line: 0, column: 19, abs_pos: 19, len: 1, token: Ident("x") }), Ident(LocTok { line: 0, column: 21, abs_pos: 21, len: 1, token: Ident("y") })], body: Scope { statements: [Expression(NonTerminated(BinaryExpression(BinExp { lhs: Identifier(Ident(LocTok { line: 0, column: 24, abs_pos: 24, len: 1, token: Ident("x") })), operator: LocTok { line: 0, column: 26, abs_pos: 26, len: 1, token: Plus }, rhs: Identifier(Ident(LocTok { line: 0, column: 28, abs_pos: 28, len: 1, token: Ident("y") })) })))] } }))] })))]
+[
+    Expression(
+        NonTerminated(
+            CallExpression(
+                CallExpr {
+                    function: Identifier(
+                        Ident(
+                            LocTok {
+                                line: 0,
+                                column: 0,
+                                abs_pos: 0,
+                                len: 9,
+                                token: Ident(
+                                    "call_func",
+                                ),
+                            },
+                        ),
+                    ),
+                    args: [
+                        NonTerminated(
+                            IntLiteral(
+                                LocTok {
+                                    line: 0,
+                                    column: 10,
+                                    abs_pos: 10,
+                                    len: 1,
+                                    token: Int(
+                                        2,
+                                    ),
+                                },
+                            ),
+                        ),
+                        NonTerminated(
+                            IntLiteral(
+                                LocTok {
+                                    line: 0,
+                                    column: 13,
+                                    abs_pos: 13,
+                                    len: 1,
+                                    token: Int(
+                                        3,
+                                    ),
+                                },
+                            ),
+                        ),
+                        NonTerminated(
+                            FuncLiteral(
+                                FnLiteral {
+                                    parameters: [
+                                        Ident(
+                                            LocTok {
+                                                line: 0,
+                                                column: 19,
+                                                abs_pos: 19,
+                                                len: 1,
+                                                token: Ident(
+                                                    "x",
+                                                ),
+                                            },
+                                        ),
+                                        Ident(
+                                            LocTok {
+                                                line: 0,
+                                                column: 21,
+                                                abs_pos: 21,
+                                                len: 1,
+                                                token: Ident(
+                                                    "y",
+                                                ),
+                                            },
+                                        ),
+                                    ],
+                                    body: Scope {
+                                        statements: [
+                                            Expression(
+                                                NonTerminated(
+                                                    BinaryExpression(
+                                                        BinExp {
+                                                            lhs: Identifier(
+                                                                Ident(
+                                                                    LocTok {
+                                                                        line: 0,
+                                                                        column: 24,
+                                                                        abs_pos: 24,
+                                                                        len: 1,
+                                                                        token: Ident(
+                                                                            "x",
+                                                                        ),
+                                                                    },
+                                                                ),
+                                                            ),
+                                                            operator: LocTok {
+                                                                line: 0,
+                                                                column: 26,
+                                                                abs_pos: 26,
+                                                                len: 1,
+                                                                token: Plus,
+                                                            },
+                                                            rhs: Identifier(
+                                                                Ident(
+                                                                    LocTok {
+                                                                        line: 0,
+                                                                        column: 28,
+                                                                        abs_pos: 28,
+                                                                        len: 1,
+                                                                        token: Ident(
+                                                                            "y",
+                                                                        ),
+                                                                    },
+                                                                ),
+                                                            ),
+                                                        },
+                                                    ),
+                                                ),
+                                            ),
+                                        ],
+                                    },
+                                },
+                            ),
+                        ),
+                    ],
+                },
+            ),
+        ),
+    ),
+]
