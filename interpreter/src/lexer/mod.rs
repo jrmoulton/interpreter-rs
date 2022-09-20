@@ -3,6 +3,8 @@ use std::{fmt::Display, mem::discriminant};
 
 use crate::parser::structs::Suggestion;
 
+mod tests;
+
 #[derive(Debug)]
 pub enum LexerError {
     InvalidUtf8,
@@ -349,6 +351,3 @@ impl<'a> Iterator for Lexer<'a> {
         self.next_token().unwrap()
     }
 }
-
-#[cfg(test)]
-mod test;

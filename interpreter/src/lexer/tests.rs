@@ -1,3 +1,4 @@
+#![cfg(test)]
 use super::*;
 use expect_test::expect_file;
 use pretty_assertions::assert_eq;

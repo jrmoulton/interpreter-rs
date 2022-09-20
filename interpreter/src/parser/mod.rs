@@ -1,5 +1,5 @@
 pub mod structs;
-mod test;
+mod tests;
 
 use error_stack::Report;
 use std::{cell::RefCell, rc::Rc};
