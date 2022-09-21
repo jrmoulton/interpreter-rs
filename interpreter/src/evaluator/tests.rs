@@ -234,3 +234,12 @@ fn closure_call() {
         Some(&4)
     );
 }
+
+#[test]
+fn string() {
+    let code: &'static str = r#"let x = "foo bar"; x"#;
+    assert_eq!(
+        get_inner_helper(code).inner().downcast_ref::<String>(),
+        Some(&"foo bar".into())
+    );
+}
