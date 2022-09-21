@@ -1,0 +1,26 @@
+ParseErrors {
+    errors: [
+        Report {
+            frames: [
+                Frame {
+                    location: Location {
+                        file: "parser/src/lib.rs",
+                        
+                        
+                    },
+                    attachment: "Identifiers should be separated by commas",
+                },
+                Frame {
+                    location: Location {
+                        file: "parser/src/lib.rs",
+                        
+                        
+                    },
+                    context: UnexpectedToken(
+                        Semicolon,
+                    ),
+                },
+            ],
+        },
+    ],
+}

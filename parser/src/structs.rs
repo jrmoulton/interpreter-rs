@@ -1,12 +1,12 @@
-use crate::lexer::{Lexer, LocTok};
 use error_stack::{Context, Report};
+use lexer::{Lexer, LocTok};
 use std::fmt::Write;
 use std::{cell::RefCell, fmt::Display, iter::Peekable, rc::Rc};
 
 #[derive(Debug, Clone)]
 /// A binary epression has an operator that goes inbetween a lhs operand and a rhs operand.
 /// Both the lhs and rhs can be entire expressions themselves
-pub(crate) struct BinExp {
+pub struct BinExp {
     pub(crate) lhs: Box<ExprBase>,
     pub(crate) operator: LocTok,
     pub(crate) rhs: Box<ExprBase>,
@@ -14,7 +14,7 @@ pub(crate) struct BinExp {
 
 #[derive(Debug, Clone)]
 /// A prefix expression has an operator before a single operand that can be an entire expression
-pub(crate) struct PreExpr {
+pub struct PreExpr {
     pub(crate) operator: LocTok,
     pub(crate) expression: Box<Expr>,
 }
@@ -27,21 +27,21 @@ pub(crate) enum ElseIfExpr {
 }
 
 #[derive(Debug, Clone)]
-pub(crate) struct CallExpr {
+pub struct CallExpr {
     pub(crate) function: Box<ExprBase>,
     pub(crate) args: Vec<Expr>,
 }
 
 #[derive(Debug, Clone)]
 /// A faily self explanatory If expression
-pub(crate) struct IfExpr {
+pub struct IfExpr {
     pub(crate) condition: Box<ExprBase>,
     pub(crate) consequence: Scope,
     pub(crate) alternative: Option<ElseIfExpr>,
 }
 
 #[derive(Debug, Clone)]
-pub(crate) struct Ident(pub(crate) LocTok);
+pub struct Ident(pub(crate) LocTok);
 impl Display for Ident {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.write_fmt(format_args!("{}", self.0))
@@ -50,7 +50,7 @@ impl Display for Ident {
 
 #[derive(Debug, Clone)]
 // All of the differenct valid cases of expressions
-pub(crate) enum Expr {
+pub enum Expr {
     Terminated(ExprBase),
     NonTerminated(ExprBase),
 }
@@ -72,7 +72,7 @@ impl Expr {
 }
 
 #[derive(Debug, Clone)]
-pub(crate) enum ExprBase {
+pub enum ExprBase {
     IntLiteral(LocTok),
     BoolLiteral(LocTok),
     FuncLiteral(FnLiteral),
@@ -140,13 +140,13 @@ impl ExprBase {
 pub(crate) struct Parameters {}
 
 #[derive(Debug, Clone)]
-pub(crate) struct FnLiteral {
+pub struct FnLiteral {
     pub(crate) parameters: Vec<Ident>,
     pub(crate) body: Scope,
 }
 
 #[derive(Debug, Clone)]
-pub(crate) struct AssignStatement {
+pub struct AssignStatement {
     pub(crate) ident: LocTok,
     pub(crate) expr: Box<ExprBase>,
 }
@@ -157,7 +157,7 @@ impl Display for AssignStatement {
 }
 
 #[derive(Debug, Clone)]
-pub(crate) struct LetStatement {
+pub struct LetStatement {
     pub(crate) ident: LocTok,
     pub(crate) expr: Expr,
 }
@@ -168,7 +168,7 @@ impl Display for LetStatement {
 }
 
 #[derive(Debug, Clone)]
-pub(crate) enum Statement {
+pub enum Statement {
     Let(LetStatement),
     Return(Option<Expr>),
     Expression(Expr),
@@ -220,7 +220,7 @@ impl From<Report<ParseError>> for ParseErrors {
     }
 }
 #[derive(Debug)]
-pub(crate) struct ParseErrors {
+pub struct ParseErrors {
     pub(crate) errors: Vec<Report<ParseError>>,
 }
 impl Display for ParseErrors {

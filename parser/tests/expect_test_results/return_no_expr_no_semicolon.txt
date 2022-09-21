@@ -1,0 +1,24 @@
+ParseErrors {
+    errors: [
+        Report {
+            frames: [
+                Frame {
+                    location: Location {
+                        file: "parser/src/lib.rs",
+                        
+                        
+                    },
+                    attachment: "Expected an expression",
+                },
+                Frame {
+                    location: Location {
+                        file: "parser/src/lib.rs",
+                        
+                        
+                    },
+                    context: Eof,
+                },
+            ],
+        },
+    ],
+}

@@ -1,0 +1,11 @@
+[
+    Return(
+        Some(
+            Terminated(
+                IntLiteral(
+                    Int(35),
+                ),
+            ),
+        ),
+    ),
+]

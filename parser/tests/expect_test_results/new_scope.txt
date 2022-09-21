@@ -1,0 +1,9 @@
+[
+    Expression(
+        NonTerminated(
+            Scope(
+                [],
+            ),
+        ),
+    ),
+]

@@ -1,0 +1,44 @@
+ParseErrors {
+    errors: [
+        Report {
+            frames: [
+                Frame {
+                    location: Location {
+                        file: "parser/src/lib.rs",
+                        
+                        
+                    },
+                    attachment: "Expected a LBrace",
+                },
+                Frame {
+                    location: Location {
+                        file: "parser/src/lib.rs",
+                        
+                        
+                    },
+                    context: Eof,
+                },
+            ],
+        },
+        Report {
+            frames: [
+                Frame {
+                    location: Location {
+                        file: "parser/src/lib.rs",
+                        
+                        
+                    },
+                    attachment: "Expected a RBrace",
+                },
+                Frame {
+                    location: Location {
+                        file: "parser/src/lib.rs",
+                        
+                        
+                    },
+                    context: Eof,
+                },
+            ],
+        },
+    ],
+}

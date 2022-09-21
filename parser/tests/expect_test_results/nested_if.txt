@@ -1,0 +1,69 @@
+[
+    Expression(
+        NonTerminated(
+            If(
+                IfExpr {
+                    condition: If(
+                        IfExpr {
+                            condition: BoolLiteral(
+                                True,
+                            ),
+                            consequence: Scope {
+                                statements: [
+                                    Expression(
+                                        NonTerminated(
+                                            BoolLiteral(
+                                                True,
+                                            ),
+                                        ),
+                                    ),
+                                ],
+                            },
+                            alternative: Some(
+                                Else(
+                                    Scope {
+                                        statements: [
+                                            Expression(
+                                                NonTerminated(
+                                                    BoolLiteral(
+                                                        False,
+                                                    ),
+                                                ),
+                                            ),
+                                        ],
+                                    },
+                                ),
+                            ),
+                        },
+                    ),
+                    consequence: Scope {
+                        statements: [
+                            Expression(
+                                NonTerminated(
+                                    BoolLiteral(
+                                        True,
+                                    ),
+                                ),
+                            ),
+                        ],
+                    },
+                    alternative: Some(
+                        Else(
+                            Scope {
+                                statements: [
+                                    Expression(
+                                        NonTerminated(
+                                            BoolLiteral(
+                                                False,
+                                            ),
+                                        ),
+                                    ),
+                                ],
+                            },
+                        ),
+                    ),
+                },
+            ),
+        ),
+    ),
+]

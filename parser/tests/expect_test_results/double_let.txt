@@ -1,0 +1,22 @@
+[
+    Let(
+        LetStatement {
+            ident: Ident("x"),
+            expr: Terminated(
+                IntLiteral(
+                    Int(5),
+                ),
+            ),
+        },
+    ),
+    Let(
+        LetStatement {
+            ident: Ident("y"),
+            expr: Terminated(
+                IntLiteral(
+                    Int(3),
+                ),
+            ),
+        },
+    ),
+]

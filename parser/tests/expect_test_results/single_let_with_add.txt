@@ -1,0 +1,20 @@
+[
+    Let(
+        LetStatement {
+            ident: Ident("x"),
+            expr: Terminated(
+                BinaryExpression(
+                    BinExp {
+                        lhs: IntLiteral(
+                            Int(10),
+                        ),
+                        operator: Plus,
+                        rhs: IntLiteral(
+                            Int(3),
+                        ),
+                    },
+                ),
+            ),
+        },
+    ),
+]

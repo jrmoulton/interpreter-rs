@@ -1,0 +1,11 @@
+[
+    Expression(
+        NonTerminated(
+            Identifier(
+                Ident(
+                    Ident("foobar"),
+                ),
+            ),
+        ),
+    ),
+]

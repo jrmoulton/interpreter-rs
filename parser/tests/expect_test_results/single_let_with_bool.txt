@@ -1,0 +1,12 @@
+[
+    Let(
+        LetStatement {
+            ident: Ident("x"),
+            expr: Terminated(
+                BoolLiteral(
+                    True,
+                ),
+            ),
+        },
+    ),
+]

@@ -1,0 +1,41 @@
+[
+    Expression(
+        NonTerminated(
+            FuncLiteral(
+                FnLiteral {
+                    parameters: [
+                        Ident(
+                            Ident("x"),
+                        ),
+                        Ident(
+                            Ident("y"),
+                        ),
+                    ],
+                    body: Scope {
+                        statements: [
+                            Expression(
+                                NonTerminated(
+                                    BinaryExpression(
+                                        BinExp {
+                                            lhs: Identifier(
+                                                Ident(
+                                                    Ident("x"),
+                                                ),
+                                            ),
+                                            operator: Plus,
+                                            rhs: Identifier(
+                                                Ident(
+                                                    Ident("y"),
+                                                ),
+                                            ),
+                                        },
+                                    ),
+                                ),
+                            ),
+                        ],
+                    },
+                },
+            ),
+        ),
+    ),
+]

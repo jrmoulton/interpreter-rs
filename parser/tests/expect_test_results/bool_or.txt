@@ -1,0 +1,33 @@
+[
+    Expression(
+        NonTerminated(
+            BinaryExpression(
+                BinExp {
+                    lhs: BinaryExpression(
+                        BinExp {
+                            lhs: IntLiteral(
+                                Int(3),
+                            ),
+                            operator: Eq,
+                            rhs: IntLiteral(
+                                Int(3),
+                            ),
+                        },
+                    ),
+                    operator: Or,
+                    rhs: BinaryExpression(
+                        BinExp {
+                            lhs: IntLiteral(
+                                Int(5),
+                            ),
+                            operator: Eq,
+                            rhs: IntLiteral(
+                                Int(6),
+                            ),
+                        },
+                    ),
+                },
+            ),
+        ),
+    ),
+]

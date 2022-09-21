@@ -1,0 +1,30 @@
+ParseErrors {
+    errors: [
+        Report {
+            frames: [
+                Frame {
+                    location: Location {
+                        file: "parser/src/lib.rs",
+                        
+                        
+                    },
+                    attachment: "Opaque",
+                },
+                Frame {
+                    location: Location {
+                        file: "parser/src/lib.rs",
+                        
+                        
+                    },
+                    context: ExpectedTerminatedExpr(
+                        NonTerminated(
+                            IntLiteral(
+                                Int(5),
+                            ),
+                        ),
+                    ),
+                },
+            ],
+        },
+    ],
+}

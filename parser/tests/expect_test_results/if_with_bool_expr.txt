@@ -1,0 +1,41 @@
+[
+    Expression(
+        NonTerminated(
+            If(
+                IfExpr {
+                    condition: Identifier(
+                        Ident(
+                            Ident("x"),
+                        ),
+                    ),
+                    consequence: Scope {
+                        statements: [
+                            Expression(
+                                NonTerminated(
+                                    BoolLiteral(
+                                        True,
+                                    ),
+                                ),
+                            ),
+                        ],
+                    },
+                    alternative: Some(
+                        Else(
+                            Scope {
+                                statements: [
+                                    Expression(
+                                        NonTerminated(
+                                            BoolLiteral(
+                                                False,
+                                            ),
+                                        ),
+                                    ),
+                                ],
+                            },
+                        ),
+                    ),
+                },
+            ),
+        ),
+    ),
+]

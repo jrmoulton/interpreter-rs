@@ -1,0 +1,17 @@
+[
+    Expression(
+        NonTerminated(
+            BinaryExpression(
+                BinExp {
+                    lhs: IntLiteral(
+                        Int(3),
+                    ),
+                    operator: BitAnd,
+                    rhs: IntLiteral(
+                        Int(6),
+                    ),
+                },
+            ),
+        ),
+    ),
+]

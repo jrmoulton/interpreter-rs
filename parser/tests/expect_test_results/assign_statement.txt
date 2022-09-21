@@ -1,0 +1,10 @@
+[
+    Assign(
+        AssignStatement {
+            ident: Ident("x"),
+            expr: BoolLiteral(
+                True,
+            ),
+        },
+    ),
+]

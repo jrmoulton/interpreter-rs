@@ -4,8 +4,6 @@ use std::{
     mem::discriminant,
 };
 
-use crate::parser::structs::Suggestion;
-
 mod tests;
 
 #[derive(Debug)]
@@ -22,7 +20,7 @@ impl Display for LexerError {
 impl Context for LexerError {}
 
 #[derive(PartialEq, PartialOrd)]
-pub(crate) enum Precedence {
+pub enum Precedence {
     Lowest = 0,
     LogicOr = 1,
     LogicAnd = 2,
@@ -37,7 +35,7 @@ pub(crate) enum Precedence {
 }
 
 #[derive(Debug, Clone, PartialEq)]
-pub(crate) enum Token {
+pub enum Token {
     // Extra stuff
     Illegal,
     Eof,
@@ -99,10 +97,10 @@ impl Display for Token {
 }
 impl Token {
     /// Checks if the token type matches without checking the internal data
-    pub(crate) fn token_matches(&self, other: &Self) -> bool {
+    pub fn token_matches(&self, other: &Self) -> bool {
         discriminant(self) == discriminant(other)
     }
-    pub(crate) fn precedence(&self) -> Precedence {
+    pub fn precedence(&self) -> Precedence {
         use Precedence::*;
         use Token::*;
         match self {
@@ -125,7 +123,7 @@ impl Token {
 }
 
 #[derive(Clone)]
-pub(crate) struct LocTok {
+pub struct LocTok {
     pub line: u32,
     pub column: usize,
     pub abs_pos: usize,
@@ -144,7 +142,7 @@ impl Display for LocTok {
 }
 
 #[derive(Debug, Clone)]
-pub(crate) struct Lexer<'a> {
+pub struct Lexer<'a> {
     input: &'a [u8],
     len: usize,
     line: u32,
@@ -152,7 +150,7 @@ pub(crate) struct Lexer<'a> {
     pos: usize,
 }
 impl<'a> Lexer<'a> {
-    pub(crate) fn new(input: &'a str) -> Self {
+    pub fn new(input: &'a str) -> Self {
         let input = input.as_bytes();
         let len = input.len();
         Self {
@@ -197,10 +195,7 @@ impl<'a> Lexer<'a> {
                             .parse::<i64>()
                             .report()
                             .change_context(LexerError::IntegerOverflow)
-                            .attach_printable("Found a number that doesn't fit into an i64")
-                            .attach(Suggestion(
-                                "The largest value that can fit into a 64 int is ...",
-                            ))?,
+                            .attach_printable("Found a number that doesn't fit into an i64")?,
                     );
                     self.pos += len - 1;
                     self.column += len - 1;

@@ -1,0 +1,9 @@
+[
+    Expression(
+        NonTerminated(
+            IntLiteral(
+                Int(35),
+            ),
+        ),
+    ),
+]

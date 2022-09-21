@@ -1,0 +1,71 @@
+[
+    Expression(
+        NonTerminated(
+            If(
+                IfExpr {
+                    condition: Identifier(
+                        Ident(
+                            Ident("x"),
+                        ),
+                    ),
+                    consequence: Scope {
+                        statements: [
+                            Expression(
+                                NonTerminated(
+                                    Identifier(
+                                        Ident(
+                                            Ident("x"),
+                                        ),
+                                    ),
+                                ),
+                            ),
+                        ],
+                    },
+                    alternative: Some(
+                        ElseIf(
+                            If(
+                                IfExpr {
+                                    condition: Identifier(
+                                        Ident(
+                                            Ident("y"),
+                                        ),
+                                    ),
+                                    consequence: Scope {
+                                        statements: [
+                                            Expression(
+                                                NonTerminated(
+                                                    Identifier(
+                                                        Ident(
+                                                            Ident("y"),
+                                                        ),
+                                                    ),
+                                                ),
+                                            ),
+                                        ],
+                                    },
+                                    alternative: Some(
+                                        Else(
+                                            Scope {
+                                                statements: [
+                                                    Expression(
+                                                        NonTerminated(
+                                                            Identifier(
+                                                                Ident(
+                                                                    Ident("foobar"),
+                                                                ),
+                                                            ),
+                                                        ),
+                                                    ),
+                                                ],
+                                            },
+                                        ),
+                                    ),
+                                },
+                            ),
+                        ),
+                    ),
+                },
+            ),
+        ),
+    ),
+]

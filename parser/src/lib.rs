@@ -4,10 +4,10 @@ mod tests;
 use error_stack::Report;
 use std::{cell::RefCell, rc::Rc};
 
-use crate::lexer::{Lexer, LocTok, Precedence, Token};
+use lexer::{Lexer, LocTok, Precedence, Token};
 use structs::*;
 
-pub(crate) fn parse(lexer: Lexer) -> Result<Vec<Statement>, ParseErrors> {
+pub fn parse(lexer: Lexer) -> Result<Vec<Statement>, ParseErrors> {
     parse_statements(Rc::new(RefCell::new(lexer.peekable())), false)
 }
 

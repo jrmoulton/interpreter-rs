@@ -1,0 +1,31 @@
+[
+    Expression(
+        NonTerminated(
+            CallExpression(
+                CallExpr {
+                    function: Identifier(
+                        Ident(
+                            Ident("add"),
+                        ),
+                    ),
+                    args: [
+                        NonTerminated(
+                            Identifier(
+                                Ident(
+                                    Ident("x"),
+                                ),
+                            ),
+                        ),
+                        NonTerminated(
+                            Identifier(
+                                Ident(
+                                    Ident("y"),
+                                ),
+                            ),
+                        ),
+                    ],
+                },
+            ),
+        ),
+    ),
+]

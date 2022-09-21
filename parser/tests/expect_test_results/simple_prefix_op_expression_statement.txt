@@ -1,0 +1,16 @@
+[
+    Expression(
+        NonTerminated(
+            PrefixExpression(
+                PreExpr {
+                    operator: Minus,
+                    expression: NonTerminated(
+                        IntLiteral(
+                            Int(5),
+                        ),
+                    ),
+                },
+            ),
+        ),
+    ),
+]

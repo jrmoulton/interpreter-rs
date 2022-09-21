@@ -1,0 +1,25 @@
+[
+    Expression(
+        NonTerminated(
+            BinaryExpression(
+                BinExp {
+                    lhs: IntLiteral(
+                        Int(5),
+                    ),
+                    operator: Plus,
+                    rhs: BinaryExpression(
+                        BinExp {
+                            lhs: IntLiteral(
+                                Int(5),
+                            ),
+                            operator: Asterisk,
+                            rhs: IntLiteral(
+                                Int(5),
+                            ),
+                        },
+                    ),
+                },
+            ),
+        ),
+    ),
+]

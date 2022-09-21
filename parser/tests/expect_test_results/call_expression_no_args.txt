@@ -1,0 +1,16 @@
+[
+    Expression(
+        Terminated(
+            CallExpression(
+                CallExpr {
+                    function: Identifier(
+                        Ident(
+                            Ident("add"),
+                        ),
+                    ),
+                    args: [],
+                },
+            ),
+        ),
+    ),
+]

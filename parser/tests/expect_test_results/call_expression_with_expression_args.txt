@@ -1,0 +1,64 @@
+[
+    Expression(
+        NonTerminated(
+            CallExpression(
+                CallExpr {
+                    function: Identifier(
+                        Ident(
+                            Ident("call_func"),
+                        ),
+                    ),
+                    args: [
+                        NonTerminated(
+                            IntLiteral(
+                                Int(2),
+                            ),
+                        ),
+                        NonTerminated(
+                            IntLiteral(
+                                Int(3),
+                            ),
+                        ),
+                        NonTerminated(
+                            FuncLiteral(
+                                FnLiteral {
+                                    parameters: [
+                                        Ident(
+                                            Ident("x"),
+                                        ),
+                                        Ident(
+                                            Ident("y"),
+                                        ),
+                                    ],
+                                    body: Scope {
+                                        statements: [
+                                            Expression(
+                                                NonTerminated(
+                                                    BinaryExpression(
+                                                        BinExp {
+                                                            lhs: Identifier(
+                                                                Ident(
+                                                                    Ident("x"),
+                                                                ),
+                                                            ),
+                                                            operator: Plus,
+                                                            rhs: Identifier(
+                                                                Ident(
+                                                                    Ident("y"),
+                                                                ),
+                                                            ),
+                                                        },
+                                                    ),
+                                                ),
+                                            ),
+                                        ],
+                                    },
+                                },
+                            ),
+                        ),
+                    ],
+                },
+            ),
+        ),
+    ),
+]

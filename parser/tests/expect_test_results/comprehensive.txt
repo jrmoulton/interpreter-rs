@@ -1,0 +1,173 @@
+[
+    Let(
+        LetStatement {
+            ident: Ident("x"),
+            expr: Terminated(
+                IntLiteral(
+                    Int(5),
+                ),
+            ),
+        },
+    ),
+    Expression(
+        Terminated(
+            Identifier(
+                Ident(
+                    Ident("foobar"),
+                ),
+            ),
+        ),
+    ),
+    Let(
+        LetStatement {
+            ident: Ident("y"),
+            expr: Terminated(
+                BinaryExpression(
+                    BinExp {
+                        lhs: BinaryExpression(
+                            BinExp {
+                                lhs: IntLiteral(
+                                    Int(3),
+                                ),
+                                operator: Plus,
+                                rhs: IntLiteral(
+                                    Int(3),
+                                ),
+                            },
+                        ),
+                        operator: Asterisk,
+                        rhs: IntLiteral(
+                            Int(5),
+                        ),
+                    },
+                ),
+            ),
+        },
+    ),
+    Expression(
+        NonTerminated(
+            If(
+                IfExpr {
+                    condition: Identifier(
+                        Ident(
+                            Ident("a"),
+                        ),
+                    ),
+                    consequence: Scope {
+                        statements: [
+                            Expression(
+                                NonTerminated(
+                                    Identifier(
+                                        Ident(
+                                            Ident("b"),
+                                        ),
+                                    ),
+                                ),
+                            ),
+                        ],
+                    },
+                    alternative: Some(
+                        ElseIf(
+                            If(
+                                IfExpr {
+                                    condition: Identifier(
+                                        Ident(
+                                            Ident("c"),
+                                        ),
+                                    ),
+                                    consequence: Scope {
+                                        statements: [
+                                            Expression(
+                                                NonTerminated(
+                                                    Identifier(
+                                                        Ident(
+                                                            Ident("d"),
+                                                        ),
+                                                    ),
+                                                ),
+                                            ),
+                                        ],
+                                    },
+                                    alternative: Some(
+                                        Else(
+                                            Scope {
+                                                statements: [
+                                                    Expression(
+                                                        NonTerminated(
+                                                            Identifier(
+                                                                Ident(
+                                                                    Ident("e"),
+                                                                ),
+                                                            ),
+                                                        ),
+                                                    ),
+                                                ],
+                                            },
+                                        ),
+                                    ),
+                                },
+                            ),
+                        ),
+                    ),
+                },
+            ),
+        ),
+    ),
+    Let(
+        LetStatement {
+            ident: Ident("multiply"),
+            expr: Terminated(
+                FuncLiteral(
+                    FnLiteral {
+                        parameters: [
+                            Ident(
+                                Ident("x"),
+                            ),
+                            Ident(
+                                Ident("y"),
+                            ),
+                        ],
+                        body: Scope {
+                            statements: [
+                                Expression(
+                                    NonTerminated(
+                                        BinaryExpression(
+                                            BinExp {
+                                                lhs: Identifier(
+                                                    Ident(
+                                                        Ident("x"),
+                                                    ),
+                                                ),
+                                                operator: Asterisk,
+                                                rhs: Identifier(
+                                                    Ident(
+                                                        Ident("y"),
+                                                    ),
+                                                ),
+                                            },
+                                        ),
+                                    ),
+                                ),
+                            ],
+                        },
+                    },
+                ),
+            ),
+        },
+    ),
+    Expression(
+        NonTerminated(
+            BinaryExpression(
+                BinExp {
+                    lhs: IntLiteral(
+                        Int(100),
+                    ),
+                    operator: Slash,
+                    rhs: IntLiteral(
+                        Int(20),
+                    ),
+                },
+            ),
+        ),
+    ),
+]
