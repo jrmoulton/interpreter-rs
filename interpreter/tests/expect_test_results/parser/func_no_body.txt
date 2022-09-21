@@ -5,16 +5,16 @@ ParseErrors {
                 Frame {
                     location: Location {
                         file: "interpreter/src/parser/mod.rs",
-                        line: 640,
-                        col: 46,
+                        
+                        
                     },
                     attachment: "Expected a LBrace",
                 },
                 Frame {
                     location: Location {
                         file: "interpreter/src/parser/mod.rs",
-                        line: 640,
-                        col: 17,
+                        
+                        
                     },
                     context: Eof,
                 },
@@ -25,16 +25,16 @@ ParseErrors {
                 Frame {
                     location: Location {
                         file: "interpreter/src/parser/mod.rs",
-                        line: 640,
-                        col: 46,
+                        
+                        
                     },
                     attachment: "Expected a RBrace",
                 },
                 Frame {
                     location: Location {
                         file: "interpreter/src/parser/mod.rs",
-                        line: 640,
-                        col: 17,
+                        
+                        
                     },
                     context: Eof,
                 },

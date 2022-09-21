@@ -5,15 +5,7 @@
                 IfExpr {
                     condition: Identifier(
                         Ident(
-                            LocTok {
-                                line: 1,
-                                column: 11,
-                                abs_pos: 12,
-                                len: 1,
-                                token: Ident(
-                                    "x",
-                                ),
-                            },
+                            Ident("x"),
                         ),
                     ),
                     consequence: Scope {
@@ -22,15 +14,7 @@
                                 NonTerminated(
                                     Identifier(
                                         Ident(
-                                            LocTok {
-                                                line: 2,
-                                                column: 12,
-                                                abs_pos: 28,
-                                                len: 1,
-                                                token: Ident(
-                                                    "x",
-                                                ),
-                                            },
+                                            Ident("x"),
                                         ),
                                     ),
                                 ),
@@ -43,15 +27,7 @@
                                 IfExpr {
                                     condition: Identifier(
                                         Ident(
-                                            LocTok {
-                                                line: 3,
-                                                column: 19,
-                                                abs_pos: 49,
-                                                len: 1,
-                                                token: Ident(
-                                                    "y",
-                                                ),
-                                            },
+                                            Ident("y"),
                                         ),
                                     ),
                                     consequence: Scope {
@@ -60,15 +36,7 @@
                                                 NonTerminated(
                                                     Identifier(
                                                         Ident(
-                                                            LocTok {
-                                                                line: 4,
-                                                                column: 12,
-                                                                abs_pos: 66,
-                                                                len: 1,
-                                                                token: Ident(
-                                                                    "y",
-                                                                ),
-                                                            },
+                                                            Ident("y"),
                                                         ),
                                                     ),
                                                 ),
@@ -83,15 +51,7 @@
                                                         NonTerminated(
                                                             Identifier(
                                                                 Ident(
-                                                                    LocTok {
-                                                                        line: 6,
-                                                                        column: 12,
-                                                                        abs_pos: 97,
-                                                                        len: 6,
-                                                                        token: Ident(
-                                                                            "foobar",
-                                                                        ),
-                                                                    },
+                                                                    Ident("foobar"),
                                                                 ),
                                                             ),
                                                         ),

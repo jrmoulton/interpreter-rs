@@ -20,6 +20,48 @@ fn single_expr() {
 }
 
 #[test]
+fn single_string() {
+    let code: &'static str = r#" "foo bar" "#;
+    let correct = vec![String("foo bar".into())];
+    let lexer = Lexer::new(code);
+    assert_eq!(
+        correct,
+        lexer
+            .into_iter()
+            .map(|lok_tok| lok_tok.token)
+            .collect::<Vec<_>>()
+    );
+}
+
+#[test]
+fn escaped_quote() {
+    let code: &'static str = r#" "foo \" bar" "#;
+    let correct = vec![String("foo \\\" bar".into())];
+    let lexer = Lexer::new(code);
+    assert_eq!(
+        correct,
+        lexer
+            .into_iter()
+            .map(|lok_tok| lok_tok.token)
+            .collect::<Vec<_>>()
+    );
+}
+
+#[test]
+fn let_ident_string() {
+    let code: &'static str = r#" let x = "foo bar" "#;
+    let correct = vec![Let, Ident("x".into()), Assign, String("foo bar".into())];
+    let lexer = Lexer::new(code);
+    assert_eq!(
+        correct,
+        lexer
+            .into_iter()
+            .map(|lok_tok| lok_tok.token)
+            .collect::<Vec<_>>()
+    );
+}
+
+#[test]
 fn single_let() {
     let code: &'static str = r#"let"#;
     let correct = vec![Let];

@@ -50,7 +50,8 @@ fn parse_statements(
             | Token::Bang
             | Token::True
             | Token::False
-            | Token::Func => match parse_expression(lexer.clone(), Precedence::Lowest, true) {
+            | Token::Func
+            | Token::String(_) => match parse_expression(lexer.clone(), Precedence::Lowest, true) {
                 Ok(statement) => statements.push(Statement::Expression(statement)),
                 Err(e) => errors.extend(e.errors),
             },
@@ -214,6 +215,10 @@ fn parse_expression(
                 lexer.borrow_mut().next(); // The token was only peeked but we are now handling it
                                            // so skip it here
                 ExprBase::BoolLiteral(left_lok_tok)
+            }
+            String(_) => {
+                lexer.borrow_mut().next();
+                ExprBase::StringLiteral(left_lok_tok)
             }
             Bang | Token::Minus => {
                 // Don't skip the operator because it is needed

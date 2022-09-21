@@ -3,15 +3,7 @@
         Some(
             Terminated(
                 IntLiteral(
-                    LocTok {
-                        line: 0,
-                        column: 7,
-                        abs_pos: 7,
-                        len: 2,
-                        token: Int(
-                            35,
-                        ),
-                    },
+                    Int(35),
                 ),
             ),
         ),

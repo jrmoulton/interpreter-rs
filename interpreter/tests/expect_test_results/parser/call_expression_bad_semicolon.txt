@@ -5,25 +5,19 @@ ParseErrors {
                 Frame {
                     location: Location {
                         file: "interpreter/src/parser/mod.rs",
-                        line: 340,
-                        col: 38,
+                        
+                        
                     },
                     attachment: "Identifiers should be separated by commas",
                 },
                 Frame {
                     location: Location {
                         file: "interpreter/src/parser/mod.rs",
-                        line: 339,
-                        col: 33,
+                        
+                        
                     },
                     context: UnexpectedToken(
-                        LocTok {
-                            line: 0,
-                            column: 5,
-                            abs_pos: 5,
-                            len: 1,
-                            token: Semicolon,
-                        },
+                        Semicolon,
                     ),
                 },
             ],

@@ -1,26 +1,10 @@
 [
     Let(
         LetStatement {
-            ident: LocTok {
-                line: 1,
-                column: 8,
-                abs_pos: 9,
-                len: 1,
-                token: Ident(
-                    "x",
-                ),
-            },
+            ident: Ident("x"),
             expr: Terminated(
                 IntLiteral(
-                    LocTok {
-                        line: 1,
-                        column: 12,
-                        abs_pos: 13,
-                        len: 1,
-                        token: Int(
-                            5,
-                        ),
-                    },
+                    Int(5),
                 ),
             ),
         },
@@ -29,83 +13,31 @@
         Terminated(
             Identifier(
                 Ident(
-                    LocTok {
-                        line: 2,
-                        column: 4,
-                        abs_pos: 20,
-                        len: 6,
-                        token: Ident(
-                            "foobar",
-                        ),
-                    },
+                    Ident("foobar"),
                 ),
             ),
         ),
     ),
     Let(
         LetStatement {
-            ident: LocTok {
-                line: 3,
-                column: 8,
-                abs_pos: 36,
-                len: 1,
-                token: Ident(
-                    "y",
-                ),
-            },
+            ident: Ident("y"),
             expr: Terminated(
                 BinaryExpression(
                     BinExp {
                         lhs: BinaryExpression(
                             BinExp {
                                 lhs: IntLiteral(
-                                    LocTok {
-                                        line: 3,
-                                        column: 13,
-                                        abs_pos: 41,
-                                        len: 1,
-                                        token: Int(
-                                            3,
-                                        ),
-                                    },
+                                    Int(3),
                                 ),
-                                operator: LocTok {
-                                    line: 3,
-                                    column: 15,
-                                    abs_pos: 43,
-                                    len: 1,
-                                    token: Plus,
-                                },
+                                operator: Plus,
                                 rhs: IntLiteral(
-                                    LocTok {
-                                        line: 3,
-                                        column: 17,
-                                        abs_pos: 45,
-                                        len: 1,
-                                        token: Int(
-                                            3,
-                                        ),
-                                    },
+                                    Int(3),
                                 ),
                             },
                         ),
-                        operator: LocTok {
-                            line: 3,
-                            column: 20,
-                            abs_pos: 48,
-                            len: 1,
-                            token: Asterisk,
-                        },
+                        operator: Asterisk,
                         rhs: IntLiteral(
-                            LocTok {
-                                line: 3,
-                                column: 22,
-                                abs_pos: 50,
-                                len: 1,
-                                token: Int(
-                                    5,
-                                ),
-                            },
+                            Int(5),
                         ),
                     },
                 ),
@@ -118,15 +50,7 @@
                 IfExpr {
                     condition: Identifier(
                         Ident(
-                            LocTok {
-                                line: 4,
-                                column: 7,
-                                abs_pos: 60,
-                                len: 1,
-                                token: Ident(
-                                    "a",
-                                ),
-                            },
+                            Ident("a"),
                         ),
                     ),
                     consequence: Scope {
@@ -135,15 +59,7 @@
                                 NonTerminated(
                                     Identifier(
                                         Ident(
-                                            LocTok {
-                                                line: 5,
-                                                column: 6,
-                                                abs_pos: 70,
-                                                len: 1,
-                                                token: Ident(
-                                                    "b",
-                                                ),
-                                            },
+                                            Ident("b"),
                                         ),
                                     ),
                                 ),
@@ -156,15 +72,7 @@
                                 IfExpr {
                                     condition: Identifier(
                                         Ident(
-                                            LocTok {
-                                                line: 6,
-                                                column: 14,
-                                                abs_pos: 86,
-                                                len: 1,
-                                                token: Ident(
-                                                    "c",
-                                                ),
-                                            },
+                                            Ident("c"),
                                         ),
                                     ),
                                     consequence: Scope {
@@ -173,15 +81,7 @@
                                                 NonTerminated(
                                                     Identifier(
                                                         Ident(
-                                                            LocTok {
-                                                                line: 7,
-                                                                column: 6,
-                                                                abs_pos: 96,
-                                                                len: 1,
-                                                                token: Ident(
-                                                                    "d",
-                                                                ),
-                                                            },
+                                                            Ident("d"),
                                                         ),
                                                     ),
                                                 ),
@@ -196,15 +96,7 @@
                                                         NonTerminated(
                                                             Identifier(
                                                                 Ident(
-                                                                    LocTok {
-                                                                        line: 9,
-                                                                        column: 6,
-                                                                        abs_pos: 117,
-                                                                        len: 1,
-                                                                        token: Ident(
-                                                                            "e",
-                                                                        ),
-                                                                    },
+                                                                    Ident("e"),
                                                                 ),
                                                             ),
                                                         ),
@@ -223,40 +115,16 @@
     ),
     Let(
         LetStatement {
-            ident: LocTok {
-                line: 11,
-                column: 8,
-                abs_pos: 133,
-                len: 8,
-                token: Ident(
-                    "multiply",
-                ),
-            },
+            ident: Ident("multiply"),
             expr: Terminated(
                 FuncLiteral(
                     FnLiteral {
                         parameters: [
                             Ident(
-                                LocTok {
-                                    line: 11,
-                                    column: 22,
-                                    abs_pos: 147,
-                                    len: 1,
-                                    token: Ident(
-                                        "x",
-                                    ),
-                                },
+                                Ident("x"),
                             ),
                             Ident(
-                                LocTok {
-                                    line: 11,
-                                    column: 25,
-                                    abs_pos: 150,
-                                    len: 1,
-                                    token: Ident(
-                                        "y",
-                                    ),
-                                },
+                                Ident("y"),
                             ),
                         ],
                         body: Scope {
@@ -267,35 +135,13 @@
                                             BinExp {
                                                 lhs: Identifier(
                                                     Ident(
-                                                        LocTok {
-                                                            line: 11,
-                                                            column: 28,
-                                                            abs_pos: 153,
-                                                            len: 1,
-                                                            token: Ident(
-                                                                "x",
-                                                            ),
-                                                        },
+                                                        Ident("x"),
                                                     ),
                                                 ),
-                                                operator: LocTok {
-                                                    line: 11,
-                                                    column: 30,
-                                                    abs_pos: 155,
-                                                    len: 1,
-                                                    token: Asterisk,
-                                                },
+                                                operator: Asterisk,
                                                 rhs: Identifier(
                                                     Ident(
-                                                        LocTok {
-                                                            line: 11,
-                                                            column: 32,
-                                                            abs_pos: 157,
-                                                            len: 1,
-                                                            token: Ident(
-                                                                "y",
-                                                            ),
-                                                        },
+                                                        Ident("y"),
                                                     ),
                                                 ),
                                             },
@@ -314,33 +160,11 @@
             BinaryExpression(
                 BinExp {
                     lhs: IntLiteral(
-                        LocTok {
-                            line: 12,
-                            column: 4,
-                            abs_pos: 165,
-                            len: 3,
-                            token: Int(
-                                100,
-                            ),
-                        },
+                        Int(100),
                     ),
-                    operator: LocTok {
-                        line: 12,
-                        column: 8,
-                        abs_pos: 169,
-                        len: 1,
-                        token: Slash,
-                    },
+                    operator: Slash,
                     rhs: IntLiteral(
-                        LocTok {
-                            line: 12,
-                            column: 10,
-                            abs_pos: 171,
-                            len: 2,
-                            token: Int(
-                                20,
-                            ),
-                        },
+                        Int(20),
                     ),
                 },
             ),

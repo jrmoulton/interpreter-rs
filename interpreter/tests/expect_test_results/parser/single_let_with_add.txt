@@ -1,46 +1,16 @@
 [
     Let(
         LetStatement {
-            ident: LocTok {
-                line: 0,
-                column: 4,
-                abs_pos: 4,
-                len: 1,
-                token: Ident(
-                    "x",
-                ),
-            },
+            ident: Ident("x"),
             expr: Terminated(
                 BinaryExpression(
                     BinExp {
                         lhs: IntLiteral(
-                            LocTok {
-                                line: 0,
-                                column: 8,
-                                abs_pos: 8,
-                                len: 2,
-                                token: Int(
-                                    10,
-                                ),
-                            },
+                            Int(10),
                         ),
-                        operator: LocTok {
-                            line: 0,
-                            column: 11,
-                            abs_pos: 11,
-                            len: 1,
-                            token: Plus,
-                        },
+                        operator: Plus,
                         rhs: IntLiteral(
-                            LocTok {
-                                line: 0,
-                                column: 13,
-                                abs_pos: 13,
-                                len: 1,
-                                token: Int(
-                                    3,
-                                ),
-                            },
+                            Int(3),
                         ),
                     },
                 ),

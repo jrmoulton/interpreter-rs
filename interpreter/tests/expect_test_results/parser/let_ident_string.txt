@@ -3,8 +3,8 @@
         LetStatement {
             ident: Ident("x"),
             expr: Terminated(
-                BoolLiteral(
-                    True,
+                StringLiteral(
+                    String("foo bar"),
                 ),
             ),
         },

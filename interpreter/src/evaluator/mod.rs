@@ -232,6 +232,7 @@ fn eval_expr_base(
                 unreachable!("BoolLiteral will never have a token that is not either true or false")
             }
         },
+        ExprBase::StringLiteral(LocTok {token: Token::String(inner_str), ..}) => Ok(Object::String(object::String::new(inner_str))),
         ExprBase::FuncLiteral(FnLiteral { parameters, body }) => Ok(Object::Function(object::Function::new(FuncIntern::new(parameters, body, env.clone())))),
         ExprBase::CallExpression(CallExpr { function, args }) => {
             let function_obj = eval_expr_base(*function, env.clone())?;
@@ -280,6 +281,9 @@ fn eval_expr_base(
         ),
         ExprBase::Identifier(_) => unreachable!(
             "Identifier token matched above. An Identifier will never have a token that is not an Ident"
+        ),
+        ExprBase::StringLiteral(_) => unreachable!(
+            "String token matched above. An String will never have a token that is not an String"
         ),
     }
 }

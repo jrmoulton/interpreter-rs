@@ -341,6 +341,23 @@ fn function_literal() {
 }
 
 #[test]
+fn let_ident_string() {
+    let code: &'static str = r#"let x = "foo bar"; "#;
+    let lexer = Lexer::new(code);
+    match parse(lexer) {
+        Ok(statements) => {
+            let expected =
+                expect_file!["./../../tests/expect_test_results/parser/let_ident_string.txt"];
+            expected.assert_eq(&format!("{statements:#?}"));
+        }
+        Err(e) => {
+            eprintln!("{e}");
+            assert!(false);
+        }
+    }
+}
+
+#[test]
 fn nested_if() {
     let code: &'static str = r#"if if true {true} else {false} {true} else {false}"#;
     let lexer = Lexer::new(code);
@@ -533,7 +550,7 @@ fn func_no_body() {
             assert!(false, "Expected an error, found {statements:#?}");
         }
         Err(e) => {
-            let remove = regex::Regex::new(r"at .*src.*").unwrap();
+            let remove = regex::Regex::new(r"(at .*src.*)?(line:.*)?(col:.*)?").unwrap();
             let err_string = format!("{e:#?}");
             let expected =
                 expect_file!["./../../tests/expect_test_results/parser/func_no_body.txt"];
@@ -551,7 +568,7 @@ fn call_expression_bad_semicolon() {
             assert!(false, "Expected an error, found {statements:#?}");
         }
         Err(e) => {
-            let remove = regex::Regex::new(r"at .*src.*").unwrap();
+            let remove = regex::Regex::new(r"(at .*src.*)?(line:.*)?(col:.*)?").unwrap();
             let err_string = format!("{e:#?}");
             let expected = expect_file![
                 "./../../tests/expect_test_results/parser/call_expression_bad_semicolon.txt"
@@ -573,7 +590,7 @@ fn new_scope_bad_semicolon() {
             assert!(false, "Expected an error, found {statements:#?}");
         }
         Err(e) => {
-            let remove = regex::Regex::new(r"at .*src.*").unwrap();
+            let remove = regex::Regex::new(r"(at .*src.*)?(line:.*)?(col:.*)?").unwrap();
             let err_string = format!("{e:#?}");
             let expected = expect_file![
                 "./../../tests/expect_test_results/parser/new_scope_bad_semicolon.txt"
@@ -592,7 +609,7 @@ fn assign_statement_no_semicolon() {
             assert!(false, "Expected an error, found {statements:#?}");
         }
         Err(e) => {
-            let remove = regex::Regex::new(r"at .*src.*").unwrap();
+            let remove = regex::Regex::new(r"(at .*src.*)?(line:.*)?(col:.*)?").unwrap();
             let err_string = format!("{e:#?}");
             let expected = expect_file![
                 "./../../tests/expect_test_results/parser/assign_statement_no_semicolon.txt"
@@ -611,7 +628,7 @@ fn let_statement_no_semicolon() {
             assert!(false, "Expected an error, found {statements:#?}");
         }
         Err(e) => {
-            let remove = regex::Regex::new(r"at .*src.*").unwrap();
+            let remove = regex::Regex::new(r"(at .*src.*)?(line:.*)?(col:.*)?").unwrap();
             let err_string = format!("{e:#?}");
             let expected = expect_file![
                 "./../../tests/expect_test_results/parser/let_statement_no_semicolon.txt"
@@ -630,7 +647,7 @@ fn return_no_semicolon() {
             assert!(false, "Expected an error, found {statements:#?}");
         }
         Err(e) => {
-            let remove = regex::Regex::new(r"at .*src.*").unwrap();
+            let remove = regex::Regex::new(r"(at .*src.*)?(line:.*)?(col:.*)?").unwrap();
             let err_string = format!("{e:#?}");
             let expected =
                 expect_file!["./../../tests/expect_test_results/parser/return_no_semicolon.txt"];
@@ -648,7 +665,7 @@ fn return_no_expr_no_semicolon() {
             assert!(false, "Expected an error, found {statements:#?}");
         }
         Err(e) => {
-            let remove = regex::Regex::new(r"at .*src.*").unwrap();
+            let remove = regex::Regex::new(r"(at .*src.*)?(line:.*)?(col:.*)?").unwrap();
             let err_string = format!("{e:#?}");
             let expected = expect_file![
                 "./../../tests/expect_test_results/parser/return_no_expr_no_semicolon.txt"

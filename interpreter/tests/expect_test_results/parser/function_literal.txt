@@ -5,26 +5,10 @@
                 FnLiteral {
                     parameters: [
                         Ident(
-                            LocTok {
-                                line: 0,
-                                column: 3,
-                                abs_pos: 3,
-                                len: 1,
-                                token: Ident(
-                                    "x",
-                                ),
-                            },
+                            Ident("x"),
                         ),
                         Ident(
-                            LocTok {
-                                line: 0,
-                                column: 6,
-                                abs_pos: 6,
-                                len: 1,
-                                token: Ident(
-                                    "y",
-                                ),
-                            },
+                            Ident("y"),
                         ),
                     ],
                     body: Scope {
@@ -35,35 +19,13 @@
                                         BinExp {
                                             lhs: Identifier(
                                                 Ident(
-                                                    LocTok {
-                                                        line: 1,
-                                                        column: 8,
-                                                        abs_pos: 19,
-                                                        len: 1,
-                                                        token: Ident(
-                                                            "x",
-                                                        ),
-                                                    },
+                                                    Ident("x"),
                                                 ),
                                             ),
-                                            operator: LocTok {
-                                                line: 1,
-                                                column: 10,
-                                                abs_pos: 21,
-                                                len: 1,
-                                                token: Plus,
-                                            },
+                                            operator: Plus,
                                             rhs: Identifier(
                                                 Ident(
-                                                    LocTok {
-                                                        line: 1,
-                                                        column: 12,
-                                                        abs_pos: 23,
-                                                        len: 1,
-                                                        token: Ident(
-                                                            "y",
-                                                        ),
-                                                    },
+                                                    Ident("y"),
                                                 ),
                                             ),
                                         },

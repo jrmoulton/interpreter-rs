@@ -34,7 +34,8 @@ make_literal_types!(
     (Integer, i64),
     (Boolean, bool),
     (Empty, ()),
-    (Function, FuncIntern)
+    (Function, FuncIntern),
+    (String, std::string::String)
 );
 
 #[enum_dispatch(Object)]

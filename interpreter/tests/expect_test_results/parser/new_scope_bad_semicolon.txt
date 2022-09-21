@@ -5,25 +5,19 @@ ParseErrors {
                 Frame {
                     location: Location {
                         file: "interpreter/src/parser/mod.rs",
-                        line: 69,
-                        col: 26,
+                        
+                        
                     },
                     attachment: "Expected a statement or an expression",
                 },
                 Frame {
                     location: Location {
                         file: "interpreter/src/parser/mod.rs",
-                        line: 68,
-                        col: 21,
+                        
+                        
                     },
                     context: UnexpectedToken(
-                        LocTok {
-                            line: 2,
-                            column: 12,
-                            abs_pos: 23,
-                            len: 1,
-                            token: Semicolon,
-                        },
+                        Semicolon,
                     ),
                 },
             ],

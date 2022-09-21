@@ -1,23 +1,9 @@
 [
     Assign(
         AssignStatement {
-            ident: LocTok {
-                line: 0,
-                column: 0,
-                abs_pos: 0,
-                len: 1,
-                token: Ident(
-                    "x",
-                ),
-            },
+            ident: Ident("x"),
             expr: BoolLiteral(
-                LocTok {
-                    line: 0,
-                    column: 4,
-                    abs_pos: 4,
-                    len: 4,
-                    token: True,
-                },
+                True,
             ),
         },
     ),

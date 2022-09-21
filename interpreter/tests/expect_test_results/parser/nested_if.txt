@@ -6,26 +6,14 @@
                     condition: If(
                         IfExpr {
                             condition: BoolLiteral(
-                                LocTok {
-                                    line: 0,
-                                    column: 6,
-                                    abs_pos: 6,
-                                    len: 4,
-                                    token: True,
-                                },
+                                True,
                             ),
                             consequence: Scope {
                                 statements: [
                                     Expression(
                                         NonTerminated(
                                             BoolLiteral(
-                                                LocTok {
-                                                    line: 0,
-                                                    column: 12,
-                                                    abs_pos: 12,
-                                                    len: 4,
-                                                    token: True,
-                                                },
+                                                True,
                                             ),
                                         ),
                                     ),
@@ -38,13 +26,7 @@
                                             Expression(
                                                 NonTerminated(
                                                     BoolLiteral(
-                                                        LocTok {
-                                                            line: 0,
-                                                            column: 24,
-                                                            abs_pos: 24,
-                                                            len: 5,
-                                                            token: False,
-                                                        },
+                                                        False,
                                                     ),
                                                 ),
                                             ),
@@ -59,13 +41,7 @@
                             Expression(
                                 NonTerminated(
                                     BoolLiteral(
-                                        LocTok {
-                                            line: 0,
-                                            column: 32,
-                                            abs_pos: 32,
-                                            len: 4,
-                                            token: True,
-                                        },
+                                        True,
                                     ),
                                 ),
                             ),
@@ -78,13 +54,7 @@
                                     Expression(
                                         NonTerminated(
                                             BoolLiteral(
-                                                LocTok {
-                                                    line: 0,
-                                                    column: 44,
-                                                    abs_pos: 44,
-                                                    len: 5,
-                                                    token: False,
-                                                },
+                                                False,
                                             ),
                                         ),
                                     ),

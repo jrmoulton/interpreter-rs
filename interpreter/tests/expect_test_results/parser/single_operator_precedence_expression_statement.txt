@@ -4,53 +4,17 @@
             BinaryExpression(
                 BinExp {
                     lhs: IntLiteral(
-                        LocTok {
-                            line: 0,
-                            column: 0,
-                            abs_pos: 0,
-                            len: 1,
-                            token: Int(
-                                5,
-                            ),
-                        },
+                        Int(5),
                     ),
-                    operator: LocTok {
-                        line: 0,
-                        column: 2,
-                        abs_pos: 2,
-                        len: 1,
-                        token: Plus,
-                    },
+                    operator: Plus,
                     rhs: BinaryExpression(
                         BinExp {
                             lhs: IntLiteral(
-                                LocTok {
-                                    line: 0,
-                                    column: 4,
-                                    abs_pos: 4,
-                                    len: 1,
-                                    token: Int(
-                                        5,
-                                    ),
-                                },
+                                Int(5),
                             ),
-                            operator: LocTok {
-                                line: 0,
-                                column: 6,
-                                abs_pos: 6,
-                                len: 1,
-                                token: Asterisk,
-                            },
+                            operator: Asterisk,
                             rhs: IntLiteral(
-                                LocTok {
-                                    line: 0,
-                                    column: 8,
-                                    abs_pos: 8,
-                                    len: 1,
-                                    token: Int(
-                                        5,
-                                    ),
-                                },
+                                Int(5),
                             ),
                         },
                     ),

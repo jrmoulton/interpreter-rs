@@ -76,6 +76,7 @@ pub(crate) enum ExprBase {
     IntLiteral(LocTok),
     BoolLiteral(LocTok),
     FuncLiteral(FnLiteral),
+    StringLiteral(LocTok),
     CallExpression(CallExpr),
     Identifier(Ident),
     Scope(Vec<Statement>),
@@ -86,11 +87,20 @@ pub(crate) enum ExprBase {
 impl Display for ExprBase {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let ret_str = match self {
-            ExprBase::IntLiteral(lok_tok) | ExprBase::BoolLiteral(lok_tok) => {
+            ExprBase::IntLiteral(lok_tok)
+            | ExprBase::BoolLiteral(lok_tok)
+            | ExprBase::StringLiteral(lok_tok) => {
                 format!("{lok_tok}",)
             }
             ExprBase::FuncLiteral(_fn_literal) => todo!(),
-            ExprBase::CallExpression(_call_expr) => todo!(),
+            ExprBase::CallExpression(CallExpr { function, args }) => {
+                let mut ret_str = String::from("[ ");
+                for arg in args.iter() {
+                    write!(ret_str, "{arg}, ")?;
+                }
+                ret_str.push_str(" ]");
+                format!("FunctionCall: func{{{function}}}, args{{{ret_str}}}")
+            }
             ExprBase::Identifier(ident) => format!("{ident}"),
             ExprBase::Scope(_statements) => todo!(),
             ExprBase::PrefixExpression(PreExpr {
@@ -113,6 +123,7 @@ impl ExprBase {
     fn type_string(&self) -> String {
         match self {
             ExprBase::IntLiteral(_) => "Integer".into(),
+            ExprBase::StringLiteral(_) => "String".into(),
             ExprBase::BoolLiteral(_) => "Boolean".into(),
             ExprBase::FuncLiteral(_) => "Function".into(),
             ExprBase::CallExpression(_) => "Function Call".into(),

@@ -1,5 +1,8 @@
 use error_stack::{Context, IntoReport, Report, Result, ResultExt};
-use std::{fmt::Display, mem::discriminant};
+use std::{
+    fmt::{Debug, Display},
+    mem::discriminant,
+};
 
 use crate::parser::structs::Suggestion;
 
@@ -60,6 +63,7 @@ pub(crate) enum Token {
 
     // Literals
     Int(i64),
+    String(String),
 
     // Operators
     Assign,
@@ -120,13 +124,18 @@ impl Token {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Clone)]
 pub(crate) struct LocTok {
     pub line: u32,
     pub column: usize,
     pub abs_pos: usize,
     pub len: usize,
     pub token: Token,
+}
+impl Debug for LocTok {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_fmt(format_args!("{:?}", self.token))
+    }
 }
 impl Display for LocTok {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
@@ -271,6 +280,26 @@ impl<'a> Lexer<'a> {
                     } else {
                         token.token = Token::BitOr;
                     }
+                }
+                '"' => {
+                    let mut len = 1;
+                    // While in bounds
+                    while self.pos + len < self.len
+                        // and char is not ending quote or new line
+                        && !matches!(self.input[self.pos + len] as char, '"' | '\n')
+                        // and if there is a ending quote a new line make sure it's not escaped
+                        || (matches!(self.input[self.pos + len] as char, '"' | '\n') && self.input[self.pos + len - 1] as char == '\\')
+                    {
+                        len += 1;
+                    }
+                    token.len = len + 1;
+                    token.token = Token::String(
+                        std::str::from_utf8(&self.input[self.pos + 1..self.pos + len])
+                            .map_err(|e| Report::new(e).change_context(LexerError::InvalidUtf8))?
+                            .into(),
+                    );
+                    self.pos += len;
+                    self.column += len;
                 }
                 'A'..='Z' | 'a'..='z' => {
                     let mut len = 1;
