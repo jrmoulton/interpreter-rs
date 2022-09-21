@@ -5,17 +5,15 @@ use std::{
 };
 
 use enum_dispatch::enum_dispatch;
+use parser::structs::{Ident, Scope};
 
-use crate::{
-    evaluator::Environment,
-    parser::structs::{Ident, Scope},
-};
+use crate::Environment;
 
 #[macro_use]
 mod literal_types_macro;
 
 #[derive(Debug, Clone)]
-pub(crate) struct FuncIntern {
+pub struct FuncIntern {
     pub parameters: Vec<Ident>,
     pub body: Scope,
     pub env: Rc<Environment>,

@@ -1,14 +1,14 @@
+mod tests;
+pub mod object;
+
 use std::{cell::RefCell, collections::HashMap, fmt::{Display, Write as _}, rc::Rc, ops::{Deref, DerefMut}};
 
 use error_stack::{Context, Report, Result};
+use lexer::{LocTok, Token};
+use parser::structs::*;
 
-use crate::{
-    lexer::{LocTok, Token},
-    object::{self, FuncIntern, Object, ObjectTrait},
-    parser::structs::*,
-};
+use crate::object::{FuncIntern, Object, ObjectTrait};
 
-mod tests;
 
 #[derive(Debug)]
 pub(crate) enum EvalError {
@@ -32,7 +32,7 @@ impl Display for EvalError {
 impl Context for EvalError {}
 
 #[derive(Debug)]
-pub(crate) struct EvalErrors {
+pub struct EvalErrors {
     errors: Vec<Report<EvalError>>,
 }
 impl From<Report<EvalError>> for EvalErrors {
@@ -52,7 +52,7 @@ impl Display for EvalErrors {
 }
 
 #[derive(Debug)]
-pub(crate) struct EnvWrapper(pub HashMap<String, Object>);
+pub struct EnvWrapper(pub HashMap<String, Object>);
 impl EnvWrapper {
     pub fn new() -> Self {
         Self(HashMap::new())
@@ -74,7 +74,7 @@ impl DerefMut for EnvWrapper {
 }
 
 #[derive(Debug)]
-pub(crate) struct Environment{ 
+pub struct Environment{ 
     pub env: RefCell<EnvWrapper> ,
     pub outer: Option<Rc<Environment>>
 }
@@ -122,7 +122,7 @@ impl Environment {
     }
 }
 
-pub(crate) fn eval(
+pub fn eval(
     statements: Vec<Statement>,
     env: Rc<Environment>,
 ) -> std::result::Result<Object, EvalErrors> {

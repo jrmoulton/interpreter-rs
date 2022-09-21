@@ -1,11 +1,10 @@
 use std::io::{BufRead, Write};
 use std::rc::Rc;
 
-use crate::evaluator::eval;
-use crate::evaluator::Environment;
-use crate::lexer::Lexer;
-use crate::object::Object;
-use crate::parser::parse;
+use evaluator::eval;
+use evaluator::{object::Object, Environment};
+use lexer::Lexer;
+use parser::parse;
 
 pub fn start() {
     println!("Welcome to Awesome Name Lang REPL!");

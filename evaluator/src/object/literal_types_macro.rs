@@ -2,7 +2,7 @@ macro_rules! make_literal_types {
     ($(($name:ident, $type:ty) $(,)?)*) => {
         $(
             #[derive(Debug, Clone)]
-            pub(crate) struct $name {
+            pub struct $name {
                 pub value: $type,
                 pub is_return: bool,
             }
@@ -33,7 +33,7 @@ macro_rules! make_literal_types {
         )*
         #[enum_dispatch]
         #[derive(Debug, Clone)]
-        pub(crate) enum Object {
+        pub enum Object {
             $(
                 $name,
             )*

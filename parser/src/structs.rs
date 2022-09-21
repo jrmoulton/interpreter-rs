@@ -7,41 +7,41 @@ use std::{cell::RefCell, fmt::Display, iter::Peekable, rc::Rc};
 /// A binary epression has an operator that goes inbetween a lhs operand and a rhs operand.
 /// Both the lhs and rhs can be entire expressions themselves
 pub struct BinExp {
-    pub(crate) lhs: Box<ExprBase>,
-    pub(crate) operator: LocTok,
-    pub(crate) rhs: Box<ExprBase>,
+    pub lhs: Box<ExprBase>,
+    pub operator: LocTok,
+    pub rhs: Box<ExprBase>,
 }
 
 #[derive(Debug, Clone)]
 /// A prefix expression has an operator before a single operand that can be an entire expression
 pub struct PreExpr {
-    pub(crate) operator: LocTok,
-    pub(crate) expression: Box<Expr>,
+    pub operator: LocTok,
+    pub expression: Box<Expr>,
 }
 
 #[derive(Debug, Clone)]
 /// The optional alterantive of an if expression
-pub(crate) enum ElseIfExpr {
+pub enum ElseIfExpr {
     ElseIf(Box<ExprBase>),
     Else(Scope),
 }
 
 #[derive(Debug, Clone)]
 pub struct CallExpr {
-    pub(crate) function: Box<ExprBase>,
-    pub(crate) args: Vec<Expr>,
+    pub function: Box<ExprBase>,
+    pub args: Vec<Expr>,
 }
 
 #[derive(Debug, Clone)]
 /// A faily self explanatory If expression
 pub struct IfExpr {
-    pub(crate) condition: Box<ExprBase>,
-    pub(crate) consequence: Scope,
-    pub(crate) alternative: Option<ElseIfExpr>,
+    pub condition: Box<ExprBase>,
+    pub consequence: Scope,
+    pub alternative: Option<ElseIfExpr>,
 }
 
 #[derive(Debug, Clone)]
-pub struct Ident(pub(crate) LocTok);
+pub struct Ident(pub LocTok);
 impl Display for Ident {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.write_fmt(format_args!("{}", self.0))
@@ -60,13 +60,6 @@ impl Display for Expr {
             Expr::Terminated(expr_base) | Expr::NonTerminated(expr_base) => {
                 f.write_fmt(format_args!("{expr_base}"))
             }
-        }
-    }
-}
-impl Expr {
-    fn type_string(&self) -> String {
-        match self {
-            Expr::Terminated(expr_base) | Expr::NonTerminated(expr_base) => expr_base.type_string(),
         }
     }
 }
@@ -119,36 +112,17 @@ impl Display for ExprBase {
         f.write_str(&ret_str)
     }
 }
-impl ExprBase {
-    fn type_string(&self) -> String {
-        match self {
-            ExprBase::IntLiteral(_) => "Integer".into(),
-            ExprBase::StringLiteral(_) => "String".into(),
-            ExprBase::BoolLiteral(_) => "Boolean".into(),
-            ExprBase::FuncLiteral(_) => "Function".into(),
-            ExprBase::CallExpression(_) => "Function Call".into(),
-            ExprBase::Identifier(_) => "Identifier".into(),
-            ExprBase::Scope(_) => "Scope".into(),
-            ExprBase::PrefixExpression(_) => "Prefix Expression".into(),
-            ExprBase::BinaryExpression(_) => "Binary Expression".into(),
-            ExprBase::If(_) => "If Expression".into(),
-        }
-    }
-}
-
-#[derive(Debug)]
-pub(crate) struct Parameters {}
 
 #[derive(Debug, Clone)]
 pub struct FnLiteral {
-    pub(crate) parameters: Vec<Ident>,
-    pub(crate) body: Scope,
+    pub parameters: Vec<Ident>,
+    pub body: Scope,
 }
 
 #[derive(Debug, Clone)]
 pub struct AssignStatement {
-    pub(crate) ident: LocTok,
-    pub(crate) expr: Box<ExprBase>,
+    pub ident: LocTok,
+    pub expr: Box<ExprBase>,
 }
 impl Display for AssignStatement {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
@@ -158,8 +132,8 @@ impl Display for AssignStatement {
 
 #[derive(Debug, Clone)]
 pub struct LetStatement {
-    pub(crate) ident: LocTok,
-    pub(crate) expr: Expr,
+    pub ident: LocTok,
+    pub expr: Expr,
 }
 impl Display for LetStatement {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
@@ -238,8 +212,8 @@ impl Context for ParseErrors {}
 pub(crate) struct Suggestion(pub &'static str);
 
 #[derive(Debug, Clone)]
-pub(crate) struct Scope {
-    pub(crate) statements: Vec<Statement>,
+pub struct Scope {
+    pub statements: Vec<Statement>,
 }
 impl Scope {
     pub(crate) fn new(statements: Vec<Statement>) -> Self {

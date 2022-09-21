@@ -55,6 +55,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "evaluator"
+version = "0.1.0"
+dependencies = [
+ "enum_dispatch",
+ "error-stack",
+ "expect-test",
+ "lexer",
+ "parser",
+ "regex",
+]
+
+[[package]]
 name = "expect-test"
 version = "1.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -62,16 +74,6 @@ checksum = "1d4661aca38d826eb7c72fe128e4238220616de4c0cc00db7bfc38e2e1364dd3"
 dependencies = [
  "dissimilar",
  "once_cell",
-]
-
-[[package]]
-name = "interpreter"
-version = "0.1.0"
-dependencies = [
- "enum_dispatch",
- "error-stack",
- "expect-test",
- "regex",
 ]
 
 [[package]]
@@ -160,6 +162,15 @@ name = "regex-syntax"
 version = "0.6.27"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a3f87b73ce11b1619a3c6332f45341e0047173771e8b8b73f87bfeefb7b56244"
+
+[[package]]
+name = "repl"
+version = "0.1.0"
+dependencies = [
+ "evaluator",
+ "lexer",
+ "parser",
+]
 
 [[package]]
 name = "rustc_version"

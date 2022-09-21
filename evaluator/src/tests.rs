@@ -1,12 +1,12 @@
 #![cfg(test)]
+use lexer::Lexer;
+use parser::parse;
 use std::rc::Rc;
 
 #[allow(unused_imports)]
 use crate::{
-    evaluator::{eval, Environment},
-    lexer::Lexer,
     object::{self, ObjectTrait},
-    parser::parse,
+    {eval, Environment},
 };
 
 fn get_inner_helper(code: &'static str) -> object::Object {
