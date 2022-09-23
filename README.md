@@ -11,11 +11,7 @@ This project is an interpreter for an expression heavy dynamically typed languag
 
 ## What is supported
 
-There is a lexer and a parser that are _finished_. This supports much of what a typical language would consist of although it does currently lack loops. The parser produces and AST that is ready to be interpreted. This does include support for proper parsing of operator precedence using a recursive descent parser. The evaluator is in progress and supports expressions, variable binding, a REPL and has high quality error messages.
-
-## What still needs to be implemented
-
-The evaluation of the AST needs to be completed. This includes properly evaluating closures and other items. 
+There is a lexer and a parser that are _finished_. This supports much of what a typical language would consist of although it does currently lack loops. The parser produces and AST that is passed to the evaluator. This does include support for proper parsing of operator precedence using a recursive descent parser. The evaluator is in nearly finished and supports expressions, variable binding, a REPL and has high quality error messages.
 
 ## A few short examples of code that can be properly parsed and evaluated
 
