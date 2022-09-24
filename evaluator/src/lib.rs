@@ -51,12 +51,9 @@ impl Display for EvalErrors {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Default)]
 pub struct EnvWrapper(pub HashMap<String, Object>);
 impl EnvWrapper {
-    pub fn new() -> Self {
-        Self(HashMap::new())
-    }
     pub fn new_from_map(map: HashMap<String, Object>) -> Self {
         Self(map)
     }
@@ -78,13 +75,15 @@ pub struct Environment{
     pub env: RefCell<EnvWrapper> ,
     pub outer: Option<Rc<Environment>>
 }
-impl Environment {
-    pub fn new() -> Self {
+impl Default for Environment {
+    fn default() -> Self {
         Self {
-            env: RefCell::new(EnvWrapper::new()),
+            env: RefCell::new(EnvWrapper::default()),
             outer: None
         }
     }
+}
+impl Environment {
     pub fn new_from_map(map: HashMap<String, Object>) -> Self {
         Self {
             env: RefCell::new(EnvWrapper::new_from_map(map)),
@@ -301,7 +300,7 @@ fn apply_function(function_obj: Object, args: Vec<Object>) -> std::result::Resul
             }
             let mut new_env = HashMap::new();
             param_strings.iter().zip(args).for_each(|(param, object)| {new_env.insert(param.clone(), object);});
-            eval(fn_literal.body.statements, Rc::new(Environment::new_from_map_and_outer(new_env, fn_literal.env.clone())))
+            eval(fn_literal.body.statements, Rc::new(Environment::new_from_map_and_outer(new_env, fn_literal.env)))
         },
         _ => unreachable!("No other objects match to calling this function {function_obj}")
     }
@@ -343,8 +342,27 @@ fn eval_binary_expr(
     match left {
         Object::Integer(_) => eval_int_binary_expr(operator, left, right, expr_base),
         Object::Boolean(_) => eval_bool_binary_expr(operator, left, right, expr_base),
+        Object::String(_) => eval_string_binary_expr(operator, left, right, expr_base),
         _ => unimplemented!(),
     }
+}
+
+fn eval_string_binary_expr(operator: &Token, left: Object, right: Object, expr_base: ExprBase) -> Result<Object, EvalError> {
+    let left = match left {
+        Object::String(object::String { value, .. }) => value,
+        _ => unreachable!("string was already matched"),
+    };
+    let right = match right {
+        Object::String(object::String { value, .. }) => value,
+        _ => unimplemented!("Here I would add support for operator overloading"),
+    };
+    match operator {
+        Token::Eq => Ok(object::Boolean::new(left == right).into()),
+        Token::Ne => Ok(object::Boolean::new(left != right).into()),
+        Token::Plus => Ok(object::String::new(left + &right).into()),
+        _ => Err(Report::new(EvalError::UnsupportedOperation(expr_base))),
+    }
+    
 }
 
 fn eval_bool_binary_expr(

@@ -6,12 +6,15 @@ use evaluator::{object::Object, Environment};
 use lexer::Lexer;
 use parser::parse;
 
-pub fn start() {
+pub fn start(env: Option<Rc<Environment>>) -> ! {
     println!("Welcome to Awesome Name Lang REPL!");
     print!(">> ");
     std::io::stdout().flush().unwrap();
     let stdin = std::io::stdin().lock();
-    let env = Rc::new(Environment::new());
+    let env = match env {
+        Some(env) => env,
+        None => Rc::new(Environment::default()),
+    };
     for line in stdin.lines() {
         let line = line.unwrap();
         let lexer = Lexer::new(&line);
@@ -37,4 +40,5 @@ pub fn start() {
         print!(">> ");
         std::io::stdout().flush().unwrap();
     }
+    unreachable!()
 }

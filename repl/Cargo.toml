@@ -9,3 +9,4 @@ edition = "2021"
 evaluator = {path = "../evaluator/"}
 lexer = {path = "../lexer/"}
 parser = {path = "../parser/"}
+clap = {version = "3.2.22", features = ["derive"]}

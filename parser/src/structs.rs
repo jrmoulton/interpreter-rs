@@ -85,7 +85,14 @@ impl Display for ExprBase {
             | ExprBase::StringLiteral(lok_tok) => {
                 format!("{lok_tok}",)
             }
-            ExprBase::FuncLiteral(_fn_literal) => todo!(),
+            ExprBase::FuncLiteral(FnLiteral { parameters, .. }) => {
+                let mut ret_str = String::from("(");
+                for param in parameters.iter() {
+                    write!(ret_str, "{param}, ")?;
+                }
+                ret_str.push(')');
+                format!("Function{ret_str}{{...}}")
+            }
             ExprBase::CallExpression(CallExpr { function, args }) => {
                 let mut ret_str = String::from("[ ");
                 for arg in args.iter() {
@@ -201,7 +208,7 @@ impl Display for ParseErrors {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let mut ret_str = String::from("Parse Errors[ ");
         for error in self.errors.iter() {
-            write!(ret_str, "{error}")?;
+            write!(ret_str, "{error}, ")?;
         }
         ret_str.push_str(" ]");
         f.write_str(&ret_str)

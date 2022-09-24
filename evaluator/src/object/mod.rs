@@ -12,11 +12,16 @@ use crate::Environment;
 #[macro_use]
 mod literal_types_macro;
 
-#[derive(Debug, Clone)]
+#[derive(Clone)]
 pub struct FuncIntern {
     pub parameters: Vec<Ident>,
     pub body: Scope,
     pub env: Rc<Environment>,
+}
+impl Debug for FuncIntern {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_fmt(format_args!("{:?}{:?}", self.parameters, self.body))
+    }
 }
 impl FuncIntern {
     pub fn new(parameters: Vec<Ident>, body: Scope, env: Rc<Environment>) -> Self {
