@@ -50,9 +50,9 @@ impl From<Report<EvalError>> for EvalErrors {
 impl Display for EvalErrors {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let mut ret_str = String::from("[ ");
-        self.errors.iter().for_each(|val| {
-            write!(ret_str, "{}", val);
-        });
+        for val in &self.errors {
+            write!(ret_str, "{}", val)?;
+        }
         ret_str.push_str(" ]");
         f.write_str(&ret_str)
     }

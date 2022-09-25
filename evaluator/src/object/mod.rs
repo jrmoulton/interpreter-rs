@@ -37,9 +37,9 @@ impl FuncIntern {
 impl Display for FuncIntern {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let mut ret_str = std::string::String::from("[ ");
-        self.parameters.iter().for_each(|val| {
-            write!(ret_str, "{}", val);
-        });
+        for param in &self.parameters {
+            write!(ret_str, "{}", param)?;
+        }
         ret_str.push_str(" ]");
         f.write_str(&ret_str)
     }
@@ -50,9 +50,9 @@ pub struct ArrayWrapper(pub Vec<Object>);
 impl Display for ArrayWrapper {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let mut ret_str = std::string::String::from("[ ");
-        self.0.iter().for_each(|val| {
-            write!(ret_str, "{}", val);
-        });
+        for val in &self.0 {
+            write!(ret_str, "{}", val)?;
+        }
         ret_str.push_str(" ]");
         f.write_str(&ret_str)
     }
