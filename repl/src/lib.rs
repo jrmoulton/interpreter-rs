@@ -1,19 +1,19 @@
 use std::io::{BufRead, Write};
-use std::rc::Rc;
+use std::sync::Arc;
 
 use evaluator::eval;
 use evaluator::{object::Object, Environment};
 use lexer::Lexer;
 use parser::parse;
 
-pub fn start(env: Option<Rc<Environment>>) -> ! {
+pub fn start(env: Option<Arc<Environment>>) -> ! {
     println!("Welcome to Awesome Name Lang REPL!");
     print!(">> ");
     std::io::stdout().flush().unwrap();
     let stdin = std::io::stdin().lock();
     let env = match env {
         Some(env) => env,
-        None => Rc::new(Environment::default()),
+        None => Arc::new(Environment::default()),
     };
     for line in stdin.lines() {
         let line = line.unwrap();

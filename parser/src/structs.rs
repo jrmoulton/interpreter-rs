@@ -29,7 +29,15 @@ pub enum ElseIfExpr {
 #[derive(Debug, Clone)]
 pub struct CallExpr {
     pub function: Box<ExprBase>,
-    pub args: Vec<Expr>,
+    pub args: Vec<ExprBase>,
+}
+
+#[derive(Debug, Clone)]
+pub struct MethCall {
+    /// An expression that can resolve to a value
+    pub instance: Box<ExprBase>,
+    /// an call expression that with the method ident comes afer the Dot
+    pub method: Box<ExprBase>,
 }
 
 #[derive(Debug, Clone)]
@@ -54,6 +62,24 @@ pub enum Expr {
     Terminated(ExprBase),
     NonTerminated(ExprBase),
 }
+impl Expr {
+    pub fn expect_non_terminated(self) -> ExprBase {
+        match self {
+            Self::Terminated(_) => {
+                panic!("Expected to be of type NonTerminated but found Terminated")
+            }
+            Self::NonTerminated(inner) => inner,
+        }
+    }
+    pub fn expect_terminated(self) -> ExprBase {
+        match self {
+            Self::NonTerminated(_) => {
+                panic!("Expected to be of type Terminated but found NonTerminated")
+            }
+            Self::Terminated(inner) => inner,
+        }
+    }
+}
 impl Display for Expr {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
@@ -70,11 +96,14 @@ pub enum ExprBase {
     BoolLiteral(LocTok),
     FuncLiteral(FnLiteral),
     StringLiteral(LocTok),
+    Array(Vec<ExprBase>),
     CallExpression(CallExpr),
     Identifier(Ident),
     Scope(Vec<Statement>),
     PrefixExpression(PreExpr),
     BinaryExpression(BinExp),
+    IndexExpression(IndExpr),
+    MethodCall(MethCall),
     If(IfExpr),
 }
 impl Display for ExprBase {
@@ -84,6 +113,20 @@ impl Display for ExprBase {
             | ExprBase::BoolLiteral(lok_tok)
             | ExprBase::StringLiteral(lok_tok) => {
                 format!("{lok_tok}",)
+            }
+            ExprBase::Array(items) => {
+                let mut ret_str = String::from("[ ");
+                for item in items.iter() {
+                    write!(ret_str, "{item}, ")?;
+                }
+                ret_str.push_str(" ]");
+                ret_str
+            }
+            ExprBase::IndexExpression(IndExpr { array, index }) => {
+                format!("{array}[{index}]")
+            }
+            ExprBase::MethodCall(MethCall { instance, method }) => {
+                format!("{instance}.{method}")
             }
             ExprBase::FuncLiteral(FnLiteral { parameters, .. }) => {
                 let mut ret_str = String::from("(");
@@ -118,6 +161,12 @@ impl Display for ExprBase {
         };
         f.write_str(&ret_str)
     }
+}
+
+#[derive(Debug, Clone)]
+pub struct IndExpr {
+    pub array: Box<ExprBase>,
+    pub index: Box<ExprBase>,
 }
 
 #[derive(Debug, Clone)]
@@ -175,6 +224,7 @@ pub(crate) enum ParseError {
     UnexpectedToken(LocTok),
     UnexpectedTerminatedExpr(Expr),
     ExpectedTerminatedExpr(Expr),
+    MultipleUnterminatedExpressions(Expr),
     Eof,
 }
 impl Display for ParseError {
@@ -186,6 +236,9 @@ impl Display for ParseError {
             }
             ParseError::ExpectedTerminatedExpr(expr) => {
                 format!("Expected ';' after expression: {expr}")
+            }
+            ParseError::MultipleUnterminatedExpressions(expr) => {
+                format!("Expected ';' before expression: {expr}")
             }
             ParseError::Eof => "Unexpected end of input".into(),
         };

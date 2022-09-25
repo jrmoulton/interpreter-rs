@@ -1,7 +1,8 @@
 use std::{
     any::Any,
+    collections::HashMap,
     fmt::{Debug, Display},
-    rc::Rc,
+    sync::Arc,
 };
 
 use enum_dispatch::enum_dispatch;
@@ -16,7 +17,7 @@ mod literal_types_macro;
 pub struct FuncIntern {
     pub parameters: Vec<Ident>,
     pub body: Scope,
-    pub env: Rc<Environment>,
+    pub env: Arc<Environment>,
 }
 impl Debug for FuncIntern {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
@@ -24,7 +25,7 @@ impl Debug for FuncIntern {
     }
 }
 impl FuncIntern {
-    pub fn new(parameters: Vec<Ident>, body: Scope, env: Rc<Environment>) -> Self {
+    pub fn new(parameters: Vec<Ident>, body: Scope, env: Arc<Environment>) -> Self {
         Self {
             parameters,
             body,
@@ -33,12 +34,20 @@ impl FuncIntern {
     }
 }
 
+#[derive(Debug, Clone)]
+pub struct ClassObject {
+    pub fields: HashMap<String, Object>,
+    pub methods: HashMap<String, Object>,
+}
+
 make_literal_types!(
-    (Integer, i64),
-    (Boolean, bool),
-    (Empty, ()),
-    (Function, FuncIntern),
-    (String, std::string::String)
+    (Integer, i64, "Integer"),
+    (Boolean, bool, "Boolean"),
+    (Empty, (), "Empty"),
+    (Function, FuncIntern, "Function"),
+    (String, std::string::String, "String"),
+    (Array, std::vec::Vec<Object>, "Array")
+    (Class, ClassObject, "Class")
 );
 
 #[enum_dispatch(Object)]
@@ -46,4 +55,5 @@ pub(crate) trait ObjectTrait: Display + Debug {
     fn inner(&self) -> &dyn Any;
     fn set_return(&mut self);
     fn is_return(&self) -> bool;
+    fn type_string(&self) -> std::string::String;
 }

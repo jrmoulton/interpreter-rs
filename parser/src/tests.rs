@@ -513,6 +513,87 @@ mod results {
     }
 
     #[test]
+    fn string_method_call() {
+        let code: &'static str = r#" "foobar".len() "#;
+        let lexer = Lexer::new(code);
+        match parse(lexer) {
+            Ok(statements) => {
+                let expected =
+                    expect_file!["./../tests/expect_test_results/string_method_call.txt"];
+                expected.assert_eq(&format!("{statements:#?}"));
+            }
+            Err(e) => {
+                eprintln!("{e}");
+                assert!(false);
+            }
+        }
+    }
+
+    #[test]
+    fn int_method_call() {
+        let code: &'static str = r#" 55.abs() "#;
+        let lexer = Lexer::new(code);
+        match parse(lexer) {
+            Ok(statements) => {
+                let expected = expect_file!["./../tests/expect_test_results/int_method_call.txt"];
+                expected.assert_eq(&format!("{statements:#?}"));
+            }
+            Err(e) => {
+                eprintln!("{e}");
+                assert!(false);
+            }
+        }
+    }
+
+    #[test]
+    fn int_array() {
+        let code: &'static str = r#" [15, 30, 90] "#;
+        let lexer = Lexer::new(code);
+        match parse(lexer) {
+            Ok(statements) => {
+                let expected = expect_file!["./../tests/expect_test_results/int_array.txt"];
+                expected.assert_eq(&format!("{statements:#?}"));
+            }
+            Err(e) => {
+                eprintln!("{e}");
+                assert!(false);
+            }
+        }
+    }
+
+    #[test]
+    fn empty_array() {
+        let code: &'static str = r#" [] "#;
+        let lexer = Lexer::new(code);
+        match parse(lexer) {
+            Ok(statements) => {
+                let expected = expect_file!["./../tests/expect_test_results/empty_array.txt"];
+                expected.assert_eq(&format!("{statements:#?}"));
+            }
+            Err(e) => {
+                eprintln!("{e}");
+                assert!(false);
+            }
+        }
+    }
+
+    #[test]
+    fn int_array_index() {
+        let code: &'static str = r#" [15, 30, 90][1] "#;
+        let lexer = Lexer::new(code);
+        match parse(lexer) {
+            Ok(statements) => {
+                let expected = expect_file!["./../tests/expect_test_results/int_array_index.txt"];
+                expected.assert_eq(&format!("{statements:#?}"));
+            }
+            Err(e) => {
+                eprintln!("{e}");
+                assert!(false);
+            }
+        }
+    }
+
+    #[test]
     fn operator_precedence() {
         let code: &'static str = r#"5 + 5 * 3 | 2 && 4 - -2 || 3 | 1"#;
         let lexer = Lexer::new(code);
@@ -549,6 +630,23 @@ mod errors {
                 let remove = regex::Regex::new(r"(at .*src.*)?(line:.*)?(col:.*)?").unwrap();
                 let err_string = format!("{e:#?}");
                 let expected = expect_file!["./../tests/expect_test_results/func_no_body.txt"];
+                expected.assert_eq(&remove.replace_all(&err_string, ""));
+            }
+        }
+    }
+
+    #[test]
+    fn two_expressions() {
+        let code: &'static str = r#"x fn(){true}"#;
+        let lexer = Lexer::new(code);
+        match parse(lexer) {
+            Ok(statements) => {
+                assert!(false, "Expected an error, found {statements:#?}");
+            }
+            Err(e) => {
+                let remove = regex::Regex::new(r"(at .*src.*)?(line:.*)?(col:.*)?").unwrap();
+                let err_string = format!("{e:#?}");
+                let expected = expect_file!["./../tests/expect_test_results/two_expressions.txt"];
                 expected.assert_eq(&remove.replace_all(&err_string, ""));
             }
         }

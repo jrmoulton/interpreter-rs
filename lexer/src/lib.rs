@@ -19,7 +19,7 @@ impl Display for LexerError {
 }
 impl Context for LexerError {}
 
-#[derive(PartialEq, PartialOrd)]
+#[derive(PartialEq, Eq, PartialOrd)]
 pub enum Precedence {
     Lowest = 0,
     LogicOr = 1,
@@ -31,10 +31,12 @@ pub enum Precedence {
     Sum = 7,
     Product = 8,
     Prefix = 9,
-    Call = 10,
+    // This matches the Dot and it needs to be less than call
+    Method = 10,
+    Call = 11,
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Token {
     // Extra stuff
     Illegal,
@@ -89,6 +91,9 @@ pub enum Token {
     RParen,
     LBrace,
     RBrace,
+    LBracket,
+    RBracket,
+    Dot,
 }
 impl Display for Token {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
@@ -105,6 +110,8 @@ impl Token {
         use Token::*;
         match self {
             LParen => Call,
+            LBracket => Call,
+            Dot => Method,
             Plus => Sum,
             Minus => Sum,
             Slash => Product,
@@ -225,6 +232,12 @@ impl<'a> Lexer<'a> {
                 '}' => {
                     token.token = Token::RBrace;
                 }
+                '[' => {
+                    token.token = Token::LBracket;
+                }
+                ']' => {
+                    token.token = Token::RBracket;
+                }
                 ',' => {
                     token.token = Token::Comma;
                 }
@@ -255,6 +268,9 @@ impl<'a> Lexer<'a> {
                 }
                 '>' => {
                     token.token = Token::GT;
+                }
+                '.' => {
+                    token.token = Token::Dot;
                 }
                 '&' => {
                     if self.input[self.pos + 1] as char == '&' {

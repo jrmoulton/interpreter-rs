@@ -1,5 +1,5 @@
 macro_rules! make_literal_types {
-    ($(($name:ident, $type:ty) $(,)?)*) => {
+    ($(($name:ident, $type:ty, $type_string:expr) $(,)?)*) => {
         $(
             #[derive(Debug, Clone)]
             pub struct $name {
@@ -28,6 +28,9 @@ macro_rules! make_literal_types {
                 }
                 fn is_return(&self) -> bool {
                     self.is_return
+                }
+                fn type_string(&self) -> std::string::String {
+                    format!("{}", $type_string)
                 }
             }
         )*

@@ -1,0 +1,23 @@
+[
+    Expression(
+        NonTerminated(
+            MethodCall(
+                MethCall {
+                    instance: StringLiteral(
+                        String("foobar"),
+                    ),
+                    method: CallExpression(
+                        CallExpr {
+                            function: Identifier(
+                                Ident(
+                                    Ident("len"),
+                                ),
+                            ),
+                            args: [],
+                        },
+                    ),
+                },
+            ),
+        ),
+    ),
+]

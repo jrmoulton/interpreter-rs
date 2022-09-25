@@ -1,0 +1,23 @@
+[
+    Expression(
+        NonTerminated(
+            MethodCall(
+                MethCall {
+                    instance: IntLiteral(
+                        Int(55),
+                    ),
+                    method: CallExpression(
+                        CallExpr {
+                            function: Identifier(
+                                Ident(
+                                    Ident("abs"),
+                                ),
+                            ),
+                            args: [],
+                        },
+                    ),
+                },
+            ),
+        ),
+    ),
+]

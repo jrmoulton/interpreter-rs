@@ -1,0 +1,26 @@
+[
+    Expression(
+        NonTerminated(
+            IndexExpression(
+                IndExpr {
+                    array: Array(
+                        [
+                            IntLiteral(
+                                Int(15),
+                            ),
+                            IntLiteral(
+                                Int(30),
+                            ),
+                            IntLiteral(
+                                Int(90),
+                            ),
+                        ],
+                    ),
+                    index: IntLiteral(
+                        Int(1),
+                    ),
+                },
+            ),
+        ),
+    ),
+]

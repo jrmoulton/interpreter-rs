@@ -1,10 +1,11 @@
 mod tests;
 pub mod object;
 
-use std::{cell::RefCell, collections::HashMap, fmt::{Display, Write as _}, rc::Rc, ops::{Deref, DerefMut}};
+use std::{collections::HashMap, fmt::{Display, Write as _}, sync::{Arc, Mutex}, ops::{Deref, DerefMut}};
 
 use error_stack::{Context, Report, Result};
 use lexer::{LocTok, Token};
+use object::{Array, Integer};
 use parser::structs::*;
 
 use crate::object::{FuncIntern, Object, ObjectTrait};
@@ -16,6 +17,7 @@ pub(crate) enum EvalError {
     IdentifierNotFound(String),
     InvalidIfCondition(ExprBase),
     MismatchedNumOfFunctionParams,
+    UnexpectedObject(Object),
 }
 impl Display for EvalError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
@@ -24,6 +26,7 @@ impl Display for EvalError {
             Self::UnsupportedOperation(expr) => format!("Unsupported Operation: {expr}"),
             Self::InvalidIfCondition(expr) => format!("Invalid if condition: {expr}"),
             Self::MismatchedNumOfFunctionParams => "Mismatched number of function parameters".into(),
+            Self::UnexpectedObject(found) => format!("Unexpected object {found}")
 
         };
         f.write_str(&format)
@@ -72,13 +75,13 @@ impl DerefMut for EnvWrapper {
 
 #[derive(Debug)]
 pub struct Environment{ 
-    pub env: RefCell<EnvWrapper> ,
-    pub outer: Option<Rc<Environment>>
+    pub env: Mutex<EnvWrapper> ,
+    pub outer: Option<Arc<Environment>>
 }
 impl Default for Environment {
     fn default() -> Self {
         Self {
-            env: RefCell::new(EnvWrapper::default()),
+            env: Mutex::new(EnvWrapper::default()),
             outer: None
         }
     }
@@ -86,31 +89,31 @@ impl Default for Environment {
 impl Environment {
     pub fn new_from_map(map: HashMap<String, Object>) -> Self {
         Self {
-            env: RefCell::new(EnvWrapper::new_from_map(map)),
+            env: Mutex::new(EnvWrapper::new_from_map(map)),
             outer: None
         }
     }
-    pub fn new_from_map_and_outer(map: HashMap<String, Object>, outer: Rc<Environment>) -> Self {
+    pub fn new_from_map_and_outer(map: HashMap<String, Object>, outer: Arc<Environment>) -> Self {
         Self {
-            env: RefCell::new(EnvWrapper::new_from_map(map)),
+            env: Mutex::new(EnvWrapper::new_from_map(map)),
             outer: Some(outer)
         }
     }
     pub fn find(&self, key: &String) -> Option<Object> {
-        if !self.env.borrow().contains_key(key) {
+        if !self.env.lock().unwrap().contains_key(key) {
             match &self.outer {
                 Some(outer) => outer.find(key),
                 None => None,
             }
         } else {
-            self.env.borrow().get(key).cloned()
+            self.env.lock().unwrap().get(key).cloned()
         }
     }
     pub fn set(&self, key: String, value: Object) {
-        self.env.borrow_mut().insert(key, value);
+        self.env.lock().unwrap().insert(key, value);
     }
     pub fn has(&self, key: &String) -> bool {
-        if !self.env.borrow().contains_key(key) {
+        if !self.env.lock().unwrap().contains_key(key) {
             match &self.outer {
                 Some(outer) => outer.has(key),
                 None => false,
@@ -123,7 +126,7 @@ impl Environment {
 
 pub fn eval(
     statements: Vec<Statement>,
-    env: Rc<Environment>,
+    env: Arc<Environment>,
 ) -> std::result::Result<Object, EvalErrors> {
     let mut errors = Vec::new();
     let mut last_obj_tup = None;
@@ -207,7 +210,7 @@ pub fn eval(
 
 fn eval_expression(
     expr: Expr,
-    env: Rc<Environment>,
+    env: Arc<Environment>,
 ) -> std::result::Result<(Object, bool), EvalErrors> {
     match expr {
         Expr::Terminated(expr_base) => Ok((eval_expr_base(expr_base, env)?, true)),
@@ -217,7 +220,7 @@ fn eval_expression(
 
 fn eval_expr_base(
     expr_base: ExprBase,
-    env: Rc<Environment>,
+    env: Arc<Environment>,
 ) -> std::result::Result<Object, EvalErrors> {
     match expr_base {
         ExprBase::IntLiteral(LocTok {
@@ -230,15 +233,40 @@ fn eval_expr_base(
             _ => {
                 unreachable!("BoolLiteral will never have a token that is not either true or false")
             }
-        },
+        }, 
         ExprBase::StringLiteral(LocTok {token: Token::String(inner_str), ..}) => Ok(Object::String(object::String::new(inner_str))),
         ExprBase::FuncLiteral(FnLiteral { parameters, body }) => Ok(Object::Function(object::Function::new(FuncIntern::new(parameters, body, env.clone())))),
         ExprBase::CallExpression(CallExpr { function, args }) => {
             let function_obj = eval_expr_base(*function, env.clone())?;
-            let args: std::result::Result<Vec<(Object, bool)>, EvalErrors> = args.iter().map(|arg| eval_expression(arg.clone(), env.clone())).collect();
-            let args: Vec<Object> = args?.iter().map(|val| val.clone().0).collect();
-            Ok(apply_function(function_obj, args)?)
+            let args: std::result::Result<Vec<Object>, EvalErrors> = args.iter().map(|arg| eval_expr_base(arg.clone(), env.clone())).collect();
+            Ok(apply_function(function_obj, args?)?)
         },
+        ExprBase::MethodCall(MethCall { instance, method }) => {
+            let _value = eval_expr_base(*instance, env.clone())?;
+            let _value_type = _value.type_string();
+            let _method_call = eval_expr_base(*method, env)?;
+            // let env.find(&value_type).expect("Exists");
+            unimplemented!()
+        },
+        ExprBase::Array(items) => {
+            let items: std::result::Result<Vec<Object>, EvalErrors> = items.iter().map(|item| eval_expr_base(item.clone(), env.clone())).collect();
+            Ok(Object::Array(object::Array::new(items?)))
+        }
+        ExprBase::IndexExpression(IndExpr { array, index }) => {
+            let array_obj = eval_expr_base(*array, env.clone())?;
+            let index = eval_expr_base(*index, env)?;
+            let index = match index {
+                Object::Integer(Integer { value, .. }) => value,
+                _ =>  Err(Report::new(EvalError::UnexpectedObject(index)))?
+
+            };
+            match array_obj {
+                Object::Array(Array { value, .. } ) => {
+                    Ok(value[index as usize].clone())
+                },
+                _ =>  Err(Report::new(EvalError::UnexpectedObject(array_obj)))?
+            } 
+        }
         ExprBase::Identifier(Ident(LocTok {
             token: Token::Ident(ref ident_string),
             ..
@@ -300,7 +328,7 @@ fn apply_function(function_obj: Object, args: Vec<Object>) -> std::result::Resul
             }
             let mut new_env = HashMap::new();
             param_strings.iter().zip(args).for_each(|(param, object)| {new_env.insert(param.clone(), object);});
-            eval(fn_literal.body.statements, Rc::new(Environment::new_from_map_and_outer(new_env, fn_literal.env)))
+            eval(fn_literal.body.statements, Arc::new(Environment::new_from_map_and_outer(new_env, fn_literal.env)))
         },
         _ => unreachable!("No other objects match to calling this function {function_obj}")
     }
@@ -310,7 +338,7 @@ fn eval_if_expr(
     condition: &ExprBase,
     consequence: Scope,
     alternative: Option<ElseIfExpr>,
-    env: Rc<Environment>,
+    env: Arc<Environment>,
 ) -> std::result::Result<Object, EvalErrors> {
     let cond_bool = eval_expr_base((*condition).clone(), env.clone())?;
     match cond_bool {

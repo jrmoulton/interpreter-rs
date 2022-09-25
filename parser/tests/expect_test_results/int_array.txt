@@ -1,0 +1,19 @@
+[
+    Expression(
+        NonTerminated(
+            Array(
+                [
+                    IntLiteral(
+                        Int(15),
+                    ),
+                    IntLiteral(
+                        Int(30),
+                    ),
+                    IntLiteral(
+                        Int(90),
+                    ),
+                ],
+            ),
+        ),
+    ),
+]

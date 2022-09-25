@@ -9,18 +9,14 @@
                         ),
                     ),
                     args: [
-                        NonTerminated(
-                            Identifier(
-                                Ident(
-                                    Ident("x"),
-                                ),
+                        Identifier(
+                            Ident(
+                                Ident("x"),
                             ),
                         ),
-                        NonTerminated(
-                            Identifier(
-                                Ident(
-                                    Ident("y"),
-                                ),
+                        Identifier(
+                            Ident(
+                                Ident("y"),
                             ),
                         ),
                     ],

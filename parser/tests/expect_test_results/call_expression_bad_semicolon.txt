@@ -8,7 +8,7 @@ ParseErrors {
                         
                         
                     },
-                    attachment: "Identifiers should be separated by commas",
+                    attachment: "expressions should be separated by commas",
                 },
                 Frame {
                     location: Location {

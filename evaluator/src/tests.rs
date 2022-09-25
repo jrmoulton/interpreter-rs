@@ -1,7 +1,7 @@
 #![cfg(test)]
 use lexer::Lexer;
 use parser::parse;
-use std::rc::Rc;
+use std::sync::Arc;
 
 #[allow(unused_imports)]
 use crate::{
@@ -10,11 +10,12 @@ use crate::{
 };
 
 mod results {
+
     use super::*;
 
     fn get_inner_helper(code: &'static str) -> object::Object {
         let lexer = Lexer::new(code);
-        let env = Rc::new(Environment::default());
+        let env = Arc::new(Environment::default());
         let statements = parse(lexer).unwrap();
         eval(statements, env.clone()).unwrap()
     }
@@ -253,6 +254,24 @@ mod results {
         assert_eq!(
             get_inner_helper(code).inner().downcast_ref::<String>(),
             Some(&"33".into())
+        );
+    }
+
+    // #[test]
+    // fn string_len_method() {
+    //     let code: &'static str = r#" "Hello world!".len() "#;
+    //     assert_eq!(
+    //         get_inner_helper(code).inner().downcast_ref::<i64>(),
+    //         Some(&12)
+    //     );
+    // }
+
+    #[test]
+    fn int_array_index() {
+        let code: &'static str = r#" [1, 2, 3, 4][2] "#;
+        assert_eq!(
+            get_inner_helper(code).inner().downcast_ref::<i64>(),
+            Some(&3)
         );
     }
 }

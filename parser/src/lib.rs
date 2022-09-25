@@ -7,6 +7,12 @@ use std::{cell::RefCell, rc::Rc};
 use lexer::{Lexer, LocTok, Precedence, Token};
 use structs::*;
 
+enum TermState {
+    None,
+    Term,
+    NonTerm,
+}
+
 pub fn parse(lexer: Lexer) -> Result<Vec<Statement>, ParseErrors> {
     parse_statements(Rc::new(RefCell::new(lexer.peekable())), false)
 }
@@ -18,16 +24,23 @@ fn parse_statements(
     let mut statements = Vec::new();
     let mut errors = Vec::new();
     let mut start_statement_peek = lexer.borrow_mut().peek().map(|val| val.to_owned());
+    let mut term_state = TermState::None;
     while let Some(lok_tok) = start_statement_peek {
         match lok_tok.token {
-            Token::Let => match parse_let_statement(lexer.clone()) {
-                Ok(statement) => statements.push(Statement::Let(statement)),
-                Err(e) => errors.extend(e.errors),
-            },
-            Token::Return => match parse_return_statement(lexer.clone()) {
-                Ok(statement) => statements.push(Statement::Return(statement)),
-                Err(e) => errors.extend(e.errors),
-            },
+            Token::Let => {
+                match parse_let_statement(lexer.clone()) {
+                    Ok(statement) => statements.push(Statement::Let(statement)),
+                    Err(e) => errors.extend(e.errors),
+                }
+                term_state = TermState::Term;
+            }
+            Token::Return => {
+                term_state = TermState::Term;
+                match parse_return_statement(lexer.clone()) {
+                    Ok(statement) => statements.push(Statement::Return(statement)),
+                    Err(e) => errors.extend(e.errors),
+                }
+            }
             Token::Ident(_) => {
                 let mut lexer_clone = lexer.borrow_mut().clone();
                 let _ident = lexer_clone.next();
@@ -37,7 +50,20 @@ fn parse_statements(
                         Err(errs) => errors.extend(errs.errors),
                     },
                     Err(_) => match parse_expression(lexer.clone(), Precedence::Lowest, true) {
-                        Ok(statement) => statements.push(Statement::Expression(statement)),
+                        Ok(statement) => match term_state {
+                            TermState::None | TermState::Term => {
+                                term_state = TermState::NonTerm;
+                                statements.push(Statement::Expression(statement));
+                            }
+                            TermState::NonTerm => match statement {
+                                Expr::Terminated(_) => {
+                                    statements.push(Statement::Expression(statement))
+                                }
+                                Expr::NonTerminated(_) => errors.push(Report::new(
+                                    ParseError::MultipleUnterminatedExpressions(statement),
+                                )),
+                            },
+                        },
                         Err(e) => errors.extend(e.errors),
                     },
                 }
@@ -46,13 +72,25 @@ fn parse_statements(
             | Token::If
             | Token::LParen
             | Token::LBrace
+            | Token::LBracket
             | Token::Minus
             | Token::Bang
             | Token::True
             | Token::False
             | Token::Func
             | Token::String(_) => match parse_expression(lexer.clone(), Precedence::Lowest, true) {
-                Ok(statement) => statements.push(Statement::Expression(statement)),
+                Ok(statement) => match term_state {
+                    TermState::None | TermState::Term => {
+                        term_state = TermState::NonTerm;
+                        statements.push(Statement::Expression(statement));
+                    }
+                    TermState::NonTerm => match statement {
+                        Expr::Terminated(_) => statements.push(Statement::Expression(statement)),
+                        Expr::NonTerminated(_) => errors.push(Report::new(
+                            ParseError::MultipleUnterminatedExpressions(statement),
+                        )),
+                    },
+                },
                 Err(e) => errors.extend(e.errors),
             },
             Token::RBrace => {
@@ -240,6 +278,10 @@ fn parse_expression(
                 let _lbrace = lexer.borrow_mut().next();
                 ExprBase::Scope(parse_statements(lexer.clone(), true)?)
             }
+            Token::LBracket => {
+                let _lbracket = lexer.borrow_mut().next();
+                ExprBase::Array(parse_array(lexer.clone())?)
+            }
             _ => {
                 lexer.borrow_mut().next();
                 Err(Report::new(ParseError::UnexpectedToken(left_lok_tok))
@@ -261,6 +303,8 @@ fn parse_expression(
             Plus | Minus | Slash | Asterisk | Eq | Ne | LT | GT | Assign | BitOr | Or | BitAnd
             | And => parse_binary_expression(lexer.clone(), left_exp)?,
             LParen => parse_call_expression(lexer.clone(), left_exp)?,
+            LBracket => parse_array_index(lexer.clone(), left_exp)?,
+            Dot => parse_method_expression(lexer.clone(), left_exp)?,
             _ => Err(Report::new(ParseError::UnexpectedToken(peek_op_token))
                 .attach_printable("Expected a binary operator"))?,
         };
@@ -269,6 +313,7 @@ fn parse_expression(
             None => return Ok(Expr::NonTerminated(left_exp)),
         };
     }
+
     // inner expressions should never be terminated so this check to match_semicolon checks if the
     // calling function wants the expression to have the option of being terminated or not.
     if match_semicolon && peek_op_token.token.token_matches(&Token::Semicolon) {
@@ -279,12 +324,59 @@ fn parse_expression(
     }
 }
 
+fn parse_array_index(lexer: LexerPeekRef, left: ExprBase) -> Result<ExprBase, ParseErrors> {
+    let mut errors = Vec::new();
+    let _lbracket = lexer
+        .borrow_mut()
+        .next()
+        .expect("The lbracket should already peeked and found");
+    let index = match parse_expression(lexer.clone(), Precedence::Lowest, false) {
+        Ok(expr) => Some(expr),
+        Err(e) => {
+            errors.extend(e.errors);
+            None
+        }
+    }
+    .map(|val| val.expect_non_terminated());
+    if let Err(e) = expect_peek(lexer.clone(), Token::RBracket) {
+        errors.push(e);
+    };
+    if !errors.is_empty() {
+        Err(ParseErrors { errors })
+    } else {
+        Ok(ExprBase::IndexExpression(IndExpr {
+            array: Box::new(left),
+            index: Box::new(index.unwrap()),
+        }))
+    }
+}
+
+fn parse_array(lexer: LexerPeekRef) -> Result<Vec<ExprBase>, ParseErrors> {
+    parse_call_args(lexer.clone(), Token::RBracket)
+}
+
+fn parse_method_expression(
+    lexer: LexerPeekRef,
+    instance: ExprBase,
+) -> Result<ExprBase, ParseErrors> {
+    let operator_dot = lexer
+        .borrow_mut()
+        .next()
+        .expect("The operator should already peeked and found and should always be a Dot");
+    let op_precedence = operator_dot.token.precedence();
+    let method = parse_expression(lexer.clone(), op_precedence, false)?.expect_non_terminated();
+    Ok(ExprBase::MethodCall(MethCall {
+        instance: Box::new(instance),
+        method: Box::new(method),
+    }))
+}
+
 fn parse_call_expression(lexer: LexerPeekRef, function: ExprBase) -> Result<ExprBase, ParseErrors> {
     let mut errors = Vec::new();
     if let Err(e) = expect_peek(lexer.clone(), Token::LParen) {
         errors.push(e);
     }
-    let args = match parse_call_args(lexer.clone()) {
+    let args = match parse_call_args(lexer.clone(), Token::RParen) {
         Ok(args) => Some(args),
         Err(errs) => {
             errors.extend(errs.errors);
@@ -302,7 +394,7 @@ fn parse_call_expression(lexer: LexerPeekRef, function: ExprBase) -> Result<Expr
 }
 
 // A function to parse the arguments to a function when it is being called
-fn parse_call_args(lexer: LexerPeekRef) -> Result<Vec<Expr>, ParseErrors> {
+fn parse_call_args(lexer: LexerPeekRef, end_token: Token) -> Result<Vec<ExprBase>, ParseErrors> {
     // A enum as  a state machine to track what the previous token was. This gives better options
     // for error messages
     enum ArgState {
@@ -311,7 +403,7 @@ fn parse_call_args(lexer: LexerPeekRef) -> Result<Vec<Expr>, ParseErrors> {
         Comma,
     }
     let mut errors = Vec::new();
-    let mut arguments: Vec<Expr> = Vec::new();
+    let mut arguments: Vec<ExprBase> = Vec::new();
     let mut arg_state = ArgState::Empty;
     let mut again = true;
 
@@ -325,7 +417,7 @@ fn parse_call_args(lexer: LexerPeekRef) -> Result<Vec<Expr>, ParseErrors> {
                         ArgState::Empty | ArgState::Comma => {
                             errors.push(
                                 Report::new(ParseError::UnexpectedToken(lok_tok)).attach_printable(
-                                    "There should be an argument before the comma",
+                                    "There should be an expression before the comma",
                                 ),
                             );
                         }
@@ -333,7 +425,7 @@ fn parse_call_args(lexer: LexerPeekRef) -> Result<Vec<Expr>, ParseErrors> {
                     };
                     arg_state = ArgState::Comma;
                 }
-                Token::RParen => {
+                token if token.token_matches(&end_token) => {
                     again = false;
                     lexer.borrow_mut().next();
                 }
@@ -342,7 +434,7 @@ fn parse_call_args(lexer: LexerPeekRef) -> Result<Vec<Expr>, ParseErrors> {
                         ArgState::Arg => {
                             errors.push(
                                 Report::new(ParseError::UnexpectedToken(lok_tok))
-                                    .attach_printable("Identifiers should be separated by commas"),
+                                    .attach_printable("expressions should be separated by commas"),
                             );
                             lexer.borrow_mut().next();
                         }
@@ -352,7 +444,7 @@ fn parse_call_args(lexer: LexerPeekRef) -> Result<Vec<Expr>, ParseErrors> {
                     };
                     match parse_expression(lexer.clone(), Precedence::Lowest, false) {
                         Ok(arg) => {
-                            arguments.push(arg);
+                            arguments.push(arg.expect_non_terminated());
                         }
                         Err(errs) => {
                             errors.extend(errs.errors);

@@ -185,6 +185,23 @@ mod results {
     }
 
     #[test]
+    fn array() {
+        let code: &'static str = r#"let x = [12, 15, 30];"#;
+        #[rustfmt::skip]
+        let correct = vec![
+        Let, Ident("x".into()), Assign, LBracket, Int(12), Comma, Int(15), Comma, Int(30), RBracket, Semicolon,
+        ];
+        let lexer = Lexer::new(code);
+        assert_eq!(
+            correct,
+            lexer
+                .into_iter()
+                .map(|lok_tok| lok_tok.token)
+                .collect::<Vec<_>>()
+        );
+    }
+
+    #[test]
     fn let_ends_on_plus_space() {
         let code: &'static str = r#"let x = 10 + "#;
         #[rustfmt::skip]

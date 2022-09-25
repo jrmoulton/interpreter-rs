@@ -1,4 +1,4 @@
-use std::{error::Error, fs, rc::Rc};
+use std::{error::Error, fs, sync::Arc};
 
 use clap::Parser;
 use evaluator::{eval, Environment};
@@ -19,7 +19,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     let args = Args::parse();
     if let Some(file_path) = args.file {
         let file = fs::read_to_string(&file_path)?;
-        let env = Rc::new(Environment::default());
+        let env = Arc::new(Environment::default());
         let lexer = Lexer::new(&file);
         let ast = match parse(lexer) {
             Ok(ast) => Some(ast),
