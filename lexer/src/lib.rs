@@ -34,6 +34,7 @@ pub enum Precedence {
     // This matches the Dot and it needs to be less than call
     Method = 10,
     Call = 11,
+    Index = 12,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -109,8 +110,8 @@ impl Token {
         use Precedence::*;
         use Token::*;
         match self {
+            LBracket => Index,
             LParen => Call,
-            LBracket => Call,
             Dot => Method,
             Plus => Sum,
             Minus => Sum,
