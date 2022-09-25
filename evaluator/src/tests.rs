@@ -274,4 +274,38 @@ mod results {
             Some(&3)
         );
     }
+
+    #[test]
+    fn string_index() {
+        let code: &'static str = r#" "foobar"[0] "#;
+        assert_eq!(
+            get_inner_helper(code).inner().downcast_ref::<String>(),
+            Some(&"f".into())
+        );
+    }
+}
+
+mod errors {
+    use super::*;
+    use expect_test::expect_file;
+
+    #[test]
+    fn index_out_of_bounds_string() {
+        let code: &'static str = r#" "foo"[3] "#;
+        let lexer = Lexer::new(code);
+        let statements = parse(lexer).unwrap();
+        let env = Arc::new(Environment::default());
+        match eval(statements, env.clone()) {
+            Ok(object) => {
+                assert!(false, "Expected an error, found object{object:#?}");
+            }
+            Err(errs) => {
+                let err_string = format!("{errs}");
+                let remove = regex::Regex::new(r"(at .*src.*)?(line:.*)?(col:.*)?").unwrap();
+                let expected =
+                    expect_file!["./../tests/expect_test_results/index_out_of_bounds_string.txt"];
+                expected.assert_eq(&remove.replace_all(&err_string, ""));
+            }
+        }
+    }
 }

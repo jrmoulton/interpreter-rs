@@ -17,6 +17,7 @@ pub enum EvalError {
     InvalidIfCondition(ExprBase),
     MismatchedNumOfFunctionParams,
     UnexpectedObject(Object),
+    IndexOutOfBounds((Object, i64)),
 }
 impl Display for EvalError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
@@ -30,6 +31,9 @@ impl Display for EvalError {
                 "Mismatched number of function parameters".into()
             }
             Self::UnexpectedObject(found) => format!("Unexpected object {found}"),
+            Self::IndexOutOfBounds((arr_obj, index)) => {
+                format!("Index out of bounds at index:{index} on object: {arr_obj}")
+            }
         };
         f.write_str(&format)
     }

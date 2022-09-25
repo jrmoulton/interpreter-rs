@@ -5,15 +5,13 @@ pub mod object;
 use std::{collections::HashMap,  sync::Arc};
 
 use error_stack::{ Report, Result};
-
 use lexer::{LocTok, Token};
-use object::{Array, Integer};
 use parser::structs::*;
+
+use object::{Array, Integer};
 use structs::*;
 
 use crate::object::{FuncIntern, Object, ObjectTrait};
-
-
 
 pub fn eval(
     statements: Vec<Statement>,
@@ -152,9 +150,19 @@ fn eval_expr_base(
 
             };
             match array_obj {
-                Object::Array(Array { value, .. } ) => {
-                    Ok(value[index as usize].clone())
+                Object::Array(Array { ref value, .. } ) => {
+                    match value.get(index as usize) {
+                        Some(val) => Ok(val.clone()),
+                        None => Err(Report::new(EvalError::IndexOutOfBounds((array_obj, index))))?,
+                    }
                 },
+                Object::String(object::String { ref value, .. }) => {
+                    match value.as_bytes().get(index as usize)  {
+                        Some(val) => Ok(Object::String(object::String::new(String::from(*val as char)))),
+                        None => Err(Report::new(EvalError::IndexOutOfBounds((array_obj, index))))?,
+                    }
+                    
+                }
                 _ =>  Err(Report::new(EvalError::UnexpectedObject(array_obj)))?
             } 
         }
