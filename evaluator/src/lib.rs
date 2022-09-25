@@ -1,128 +1,19 @@
 mod tests;
+pub mod structs;
 pub mod object;
 
-use std::{collections::HashMap, fmt::{Display, Write as _}, sync::{Arc, Mutex}, ops::{Deref, DerefMut}};
+use std::{collections::HashMap,  sync::Arc};
 
-use error_stack::{Context, Report, Result};
+use error_stack::{ Report, Result};
+
 use lexer::{LocTok, Token};
 use object::{Array, Integer};
 use parser::structs::*;
+use structs::*;
 
 use crate::object::{FuncIntern, Object, ObjectTrait};
 
 
-#[derive(Debug)]
-pub(crate) enum EvalError {
-    UnsupportedOperation(ExprBase),
-    IdentifierNotFound(String),
-    InvalidIfCondition(ExprBase),
-    MismatchedNumOfFunctionParams,
-    UnexpectedObject(Object),
-}
-impl Display for EvalError {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        let format = match self {
-            Self::IdentifierNotFound(ident_string) => format!("Identifier `{ident_string}` not found"),
-            Self::UnsupportedOperation(expr) => format!("Unsupported Operation: {expr}"),
-            Self::InvalidIfCondition(expr) => format!("Invalid if condition: {expr}"),
-            Self::MismatchedNumOfFunctionParams => "Mismatched number of function parameters".into(),
-            Self::UnexpectedObject(found) => format!("Unexpected object {found}")
-
-        };
-        f.write_str(&format)
-    }
-}
-impl Context for EvalError {}
-
-#[derive(Debug)]
-pub struct EvalErrors {
-    errors: Vec<Report<EvalError>>,
-}
-impl From<Report<EvalError>> for EvalErrors {
-    fn from(error: Report<EvalError>) -> Self {
-        Self {
-            errors: vec![error],
-        }
-    }
-}
-impl Display for EvalErrors {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        let mut ret_str = String::from("[ ");
-        self.errors.iter().for_each(|val| {let _ = write!(ret_str, "{}", val);} );
-        ret_str.push_str(" ]");
-        f.write_str(&ret_str)
-    }
-}
-
-#[derive(Debug, Default)]
-pub struct EnvWrapper(pub HashMap<String, Object>);
-impl EnvWrapper {
-    pub fn new_from_map(map: HashMap<String, Object>) -> Self {
-        Self(map)
-    }
-}
-impl Deref for EnvWrapper {
-    type Target = HashMap<String, Object>;
-    fn deref(&self) -> &Self::Target {
-        &self.0
-    }
-}
-impl DerefMut for EnvWrapper {
-    fn deref_mut(&mut self) -> &mut Self::Target {
-        &mut self.0
-    }
-}
-
-#[derive(Debug)]
-pub struct Environment{ 
-    pub env: Mutex<EnvWrapper> ,
-    pub outer: Option<Arc<Environment>>
-}
-impl Default for Environment {
-    fn default() -> Self {
-        Self {
-            env: Mutex::new(EnvWrapper::default()),
-            outer: None
-        }
-    }
-}
-impl Environment {
-    pub fn new_from_map(map: HashMap<String, Object>) -> Self {
-        Self {
-            env: Mutex::new(EnvWrapper::new_from_map(map)),
-            outer: None
-        }
-    }
-    pub fn new_from_map_and_outer(map: HashMap<String, Object>, outer: Arc<Environment>) -> Self {
-        Self {
-            env: Mutex::new(EnvWrapper::new_from_map(map)),
-            outer: Some(outer)
-        }
-    }
-    pub fn find(&self, key: &String) -> Option<Object> {
-        if !self.env.lock().unwrap().contains_key(key) {
-            match &self.outer {
-                Some(outer) => outer.find(key),
-                None => None,
-            }
-        } else {
-            self.env.lock().unwrap().get(key).cloned()
-        }
-    }
-    pub fn set(&self, key: String, value: Object) {
-        self.env.lock().unwrap().insert(key, value);
-    }
-    pub fn has(&self, key: &String) -> bool {
-        if !self.env.lock().unwrap().contains_key(key) {
-            match &self.outer {
-                Some(outer) => outer.has(key),
-                None => false,
-            }
-        } else {
-            true
-        }
-    }
-}
 
 pub fn eval(
     statements: Vec<Statement>,
@@ -139,7 +30,7 @@ pub fn eval(
                     _ => unreachable!(),
                 };
                 env.set(ident_string, expr_obj);
-                Ok((object::Empty::new(()).into(), true))
+                Ok((object::Empty::new(().into()).into(), true))
             }
             Statement::Return(expr) => {
                 match expr {
@@ -182,7 +73,7 @@ pub fn eval(
                 } else {
                     Err(Report::new(EvalError::IdentifierNotFound(ident_string.clone())).attach(ident))?
                 }
-                Ok((object::Empty::new(()).into(), true))
+                Ok((object::Empty::new(().into()).into(), true))
             }
         };
         last_obj_tup = match temp_res {
@@ -198,7 +89,7 @@ pub fn eval(
             if !obj.1 || obj.0.is_return() {
                 Ok(obj.0)
             } else {
-                Ok(Object::Empty(object::Empty::new(())))
+                Ok(Object::Empty(object::Empty::new(().into())))
             }
         } else {
             Err(EvalErrors { errors })
@@ -235,7 +126,7 @@ fn eval_expr_base(
             }
         }, 
         ExprBase::StringLiteral(LocTok {token: Token::String(inner_str), ..}) => Ok(Object::String(object::String::new(inner_str))),
-        ExprBase::FuncLiteral(FnLiteral { parameters, body }) => Ok(Object::Function(object::Function::new(FuncIntern::new(parameters, body, env.clone())))),
+        ExprBase::FuncLiteral(FnLiteral { parameters, body }) => Ok(Object::Function(object::Function::new(FuncIntern::new(parameters, body, env)))),
         ExprBase::CallExpression(CallExpr { function, args }) => {
             let function_obj = eval_expr_base(*function, env.clone())?;
             let args: std::result::Result<Vec<Object>, EvalErrors> = args.iter().map(|arg| eval_expr_base(arg.clone(), env.clone())).collect();
@@ -250,7 +141,7 @@ fn eval_expr_base(
         },
         ExprBase::Array(items) => {
             let items: std::result::Result<Vec<Object>, EvalErrors> = items.iter().map(|item| eval_expr_base(item.clone(), env.clone())).collect();
-            Ok(Object::Array(object::Array::new(items?)))
+            Ok(Object::Array(object::Array::new(items?.into())))
         }
         ExprBase::IndexExpression(IndExpr { array, index }) => {
             let array_obj = eval_expr_base(*array, env.clone())?;
@@ -353,7 +244,7 @@ fn eval_if_expr(
                     ElseIfExpr::Else(if_expr) => eval(if_expr.statements, env),
                 }
             } else {
-                Ok(Object::Empty(object::Empty::new(())))
+                Ok(Object::Empty(object::Empty::new(().into())))
             }
         }
         _ => Err(Report::new(EvalError::InvalidIfCondition(condition.clone())))?,

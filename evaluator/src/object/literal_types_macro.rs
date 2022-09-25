@@ -16,7 +16,7 @@ macro_rules! make_literal_types {
             }
             impl std::fmt::Display for $name {
                 fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-                    f.write_fmt(format_args!("{:?}", self.value))
+                    f.write_fmt(format_args!("{}", self.value))
                 }
             }
             impl ObjectTrait for $name {

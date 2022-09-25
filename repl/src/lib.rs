@@ -2,7 +2,7 @@ use std::io::{BufRead, Write};
 use std::sync::Arc;
 
 use evaluator::eval;
-use evaluator::{object::Object, Environment};
+use evaluator::{object::Object, structs::Environment};
 use lexer::Lexer;
 use parser::parse;
 
