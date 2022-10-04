@@ -1,24 +1,3 @@
-ParseErrors {
-    errors: [
-        Report {
-            frames: [
-                Frame {
-                    location: Location {
-                        file: "parser/src/lib.rs",
-                        
-                        
-                    },
-                    attachment: "Expected an expression",
-                },
-                Frame {
-                    location: Location {
-                        file: "parser/src/lib.rs",
-                        
-                        
-                    },
-                    context: Eof,
-                },
-            ],
-        },
-    ],
-}
+Unexpected end of input
+├╴parser/src/lib.rs:318:21
+╰╴Expected an expression

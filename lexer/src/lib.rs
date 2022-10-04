@@ -198,12 +198,12 @@ impl<'a> Lexer<'a> {
                     token.len = len;
                     token.token = Token::Int(
                         std::str::from_utf8(&self.input[self.pos..self.pos + len])
-                            .report()
+                            .into_report()
                             .change_context(LexerError::InvalidUtf8)?
                             .parse::<i64>()
-                            .report()
+                            .into_report()
                             .change_context(LexerError::IntegerOverflow)
-                            .attach_printable("Found a number that doesn't fit into an i64")?,
+                            .attach_printable("Found a number that doesn't fit into a signed 64 integer")?,
                     );
                     self.pos += len - 1;
                     self.column += len - 1;
@@ -389,6 +389,9 @@ impl<'a> Lexer<'a> {
 impl<'a> Iterator for Lexer<'a> {
     type Item = LocTok;
     fn next(&mut self) -> Option<Self::Item> {
-        self.next_token().unwrap()
+        match self.next_token() {
+            Ok(val) => val,
+            Err(e) => {println!("{:?}", e); None},
+        }
     }
 }

@@ -1,26 +1,3 @@
-ParseErrors {
-    errors: [
-        Report {
-            frames: [
-                Frame {
-                    location: Location {
-                        file: "parser/src/lib.rs",
-                        
-                        
-                    },
-                    attachment: "Expected a statement or an expression",
-                },
-                Frame {
-                    location: Location {
-                        file: "parser/src/lib.rs",
-                        
-                        
-                    },
-                    context: UnexpectedToken(
-                        Semicolon,
-                    ),
-                },
-            ],
-        },
-    ],
-}
+Unexpected Token: Semicolon
+├╴parser/src/lib.rs:106:25
+╰╴Expected a statement or an expression

@@ -1,26 +1,3 @@
-ParseErrors {
-    errors: [
-        Report {
-            frames: [
-                Frame {
-                    location: Location {
-                        file: "parser/src/lib.rs",
-                        
-                        
-                    },
-                    attachment: "expressions should be separated by commas",
-                },
-                Frame {
-                    location: Location {
-                        file: "parser/src/lib.rs",
-                        
-                        
-                    },
-                    context: UnexpectedToken(
-                        Semicolon,
-                    ),
-                },
-            ],
-        },
-    ],
-}
+Unexpected Token: Semicolon
+├╴parser/src/lib.rs:458:37
+╰╴expressions should be separated by commas

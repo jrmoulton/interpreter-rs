@@ -1,7 +1,7 @@
-use error_stack::{Context, Report};
+use error_stack::Context;
 use lexer::{Lexer, LocTok};
 use std::fmt::Write;
-use std::{cell::RefCell, fmt::Display, iter::Peekable, rc::Rc};
+use std::{fmt::Display, iter::Peekable};
 
 #[derive(Debug, Clone)]
 /// A binary epression has an operator that goes inbetween a lhs operand and a rhs operand.
@@ -134,7 +134,7 @@ impl Display for ExprBase {
                     write!(ret_str, "{param}, ")?;
                 }
                 ret_str.push(')');
-                format!("Function{ret_str}{{...}}")
+                format!("fn{ret_str}{{...}}")
             }
             ExprBase::CallExpression(CallExpr { function, args }) => {
                 let mut ret_str = String::from("[ ");
@@ -145,7 +145,14 @@ impl Display for ExprBase {
                 format!("FunctionCall: func{{{function}}}, args{{{ret_str}}}")
             }
             ExprBase::Identifier(ident) => format!("{ident}"),
-            ExprBase::Scope(_statements) => todo!(),
+            ExprBase::Scope(statements) => {
+                let mut ret_str = String::from("[ ");
+                for statement in statements.iter() {
+                    write!(ret_str, "{statement}, ")?;
+                }
+                ret_str.push_str(" ]");
+                ret_str
+            }
             ExprBase::PrefixExpression(PreExpr {
                 operator,
                 expression,
@@ -220,7 +227,7 @@ impl Display for Statement {
 }
 
 #[derive(Debug)]
-pub(crate) enum ParseError {
+pub enum ParseError {
     UnexpectedToken(LocTok),
     UnexpectedTerminatedExpr(Expr),
     ExpectedTerminatedExpr(Expr),
@@ -246,28 +253,6 @@ impl Display for ParseError {
     }
 }
 impl Context for ParseError {}
-impl From<Report<ParseError>> for ParseErrors {
-    fn from(parse_error: Report<ParseError>) -> Self {
-        ParseErrors {
-            errors: vec![parse_error],
-        }
-    }
-}
-#[derive(Debug)]
-pub struct ParseErrors {
-    pub(crate) errors: Vec<Report<ParseError>>,
-}
-impl Display for ParseErrors {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        let mut ret_str = String::from("Parse Errors[ ");
-        for error in self.errors.iter() {
-            write!(ret_str, "{error}, ")?;
-        }
-        ret_str.push_str(" ]");
-        f.write_str(&ret_str)
-    }
-}
-impl Context for ParseErrors {}
 
 pub(crate) struct Suggestion(pub &'static str);
 
@@ -288,4 +273,4 @@ impl IntoIterator for Scope {
     }
 }
 
-pub(crate) type LexerPeekRef<'a> = Rc<RefCell<Peekable<Lexer<'a>>>>;
+pub(crate) type PeekLex<'a> = Peekable<Lexer<'a>>;
