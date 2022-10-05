@@ -13,11 +13,27 @@ use structs::*;
 
 use crate::object::{FuncIntern, Object, ObjectTrait};
 
+trait ExtendAssign {
+    fn extend(&mut self, e: Report<EvalError>);
+}
+impl ExtendAssign for Option<Report<EvalError>> {
+    fn extend(&mut self, e: Report<EvalError>) {
+        if let Some(error) = self.as_mut() {
+            error.extend_one(e);
+        } else {
+            *self = Some(e);
+        }
+    }
+}
+
 pub fn eval(
     statements: Vec<Statement>,
     env: Arc<Environment>,
-) -> std::result::Result<Object, EvalErrors> {
-    let mut errors = Vec::new();
+) -> Result<Object, EvalError> {
+    Report::install_debug_hook::<Suggestion>(|value, context| {
+        context.push_body(format!("suggestion: {}", value.0));
+    });
+    let mut error: Option<Report<EvalError>> = None;
     let mut last_obj_tup = None;
     for statement in statements {
         let temp_res = match statement {
@@ -41,7 +57,7 @@ pub fn eval(
                                 Some(obj)
                             }
                             Err(e) => {
-                                errors.extend(e.errors);
+                                error.extend(e);
                                 None
                             }
                         };
@@ -77,30 +93,28 @@ pub fn eval(
         last_obj_tup = match temp_res {
             Ok(obj) => Some(obj),
             Err(e) => {
-                errors.extend(e.errors);
+                error.extend(e);
                 None
             }
         }
     }
-    if errors.is_empty() {
-        if let Some(obj) = last_obj_tup {
-            if !obj.1 || obj.0.is_return() {
-                Ok(obj.0)
-            } else {
-                Ok(Object::Empty(object::Empty::new(().into())))
-            }
+    if let Some(e) = error {
+        Err(e)
+    } else if let Some(obj) = last_obj_tup {
+        if !obj.1 || obj.0.is_return() {
+            Ok(obj.0)
         } else {
-            Err(EvalErrors { errors })
+            Ok(Object::Empty(object::Empty::new(().into())))
         }
     } else {
-        Err(EvalErrors { errors })
+        Err(Report::new(EvalError::NothingGiven))
     }
 }
 
 fn eval_expression(
     expr: Expr,
     env: Arc<Environment>,
-) -> std::result::Result<(Object, bool), EvalErrors> {
+) -> Result<(Object, bool), EvalError> {
     match expr {
         Expr::Terminated(expr_base) => Ok((eval_expr_base(expr_base, env)?, true)),
         Expr::NonTerminated(expr_base) => Ok((eval_expr_base(expr_base, env)?, false)),
@@ -110,7 +124,7 @@ fn eval_expression(
 fn eval_expr_base(
     expr_base: ExprBase,
     env: Arc<Environment>,
-) -> std::result::Result<Object, EvalErrors> {
+) -> Result<Object, EvalError> {
     match expr_base {
         ExprBase::IntLiteral(LocTok {
             token: Token::Int(int),
@@ -127,7 +141,7 @@ fn eval_expr_base(
         ExprBase::FuncLiteral(FnLiteral { parameters, body }) => Ok(Object::Function(object::Function::new(FuncIntern::new(parameters, body, env)))),
         ExprBase::CallExpression(CallExpr { function, args }) => {
             let function_obj = eval_expr_base(*function, env.clone())?;
-            let args: std::result::Result<Vec<Object>, EvalErrors> = args.iter().map(|arg| eval_expr_base(arg.clone(), env.clone())).collect();
+            let args: Result<Vec<Object>, EvalError> = args.iter().map(|arg| eval_expr_base(arg.clone(), env.clone())).collect();
             Ok(apply_function(function_obj, args?)?)
         },
         ExprBase::MethodCall(MethCall { instance, method }) => {
@@ -138,7 +152,7 @@ fn eval_expr_base(
             unimplemented!()
         },
         ExprBase::Array(items) => {
-            let items: std::result::Result<Vec<Object>, EvalErrors> = items.iter().map(|item| eval_expr_base(item.clone(), env.clone())).collect();
+            let items: Result<Vec<Object>, EvalError> = items.iter().map(|item| eval_expr_base(item.clone(), env.clone())).collect();
             Ok(Object::Array(object::Array::new(items?.into())))
         }
         ExprBase::IndexExpression(IndExpr { array, index }) => {
@@ -214,7 +228,7 @@ fn eval_expr_base(
     }
 }
 
-fn apply_function(function_obj: Object, args: Vec<Object>) -> std::result::Result<Object, EvalErrors> {
+fn apply_function(function_obj: Object, args: Vec<Object>) -> Result<Object, EvalError> {
     match function_obj {
         Object::Function(function_obj) => {
             let fn_literal = function_obj.value;
@@ -238,7 +252,7 @@ fn eval_if_expr(
     consequence: Scope,
     alternative: Option<ElseIfExpr>,
     env: Arc<Environment>,
-) -> std::result::Result<Object, EvalErrors> {
+) -> Result<Object, EvalError> {
     let cond_bool = eval_expr_base((*condition).clone(), env.clone())?;
     match cond_bool {
         Object::Boolean(object::Boolean { value, .. }) => {

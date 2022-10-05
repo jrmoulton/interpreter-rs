@@ -1,2 +1,1 @@
 Expected ';' before expression: fn(){...}
-╰╴parser/src/lib.rs:86:33

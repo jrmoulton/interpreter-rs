@@ -21,7 +21,7 @@ pub fn start(env: Option<Arc<Environment>>) -> ! {
         let ast = match parse(lexer) {
             Ok(ast) => Some(ast),
             Err(errs) => {
-                println!("{errs}");
+                println!("{errs:?}\n");
                 None
             }
         };
@@ -34,7 +34,7 @@ pub fn start(env: Option<Arc<Environment>>) -> ! {
                         println!("{}", obj);
                     }
                 }
-                Err(errs) => println!("{}", errs),
+                Err(errs) => println!("{errs:?}\n"),
             };
         }
         print!(">> ");

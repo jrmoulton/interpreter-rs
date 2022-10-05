@@ -1,3 +1,2 @@
 Expected ';' after expression: True
-├╴parser/src/lib.rs:164:39
-╰╴1 additional opaque attachment
+╰╴suggestion: Add a semicolon to the end of this expression

@@ -1,3 +1,2 @@
-Unexpected Token: Semicolon
-├╴parser/src/lib.rs:458:37
+Unexpected Token: `;`
 ╰╴expressions should be separated by commas

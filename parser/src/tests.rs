@@ -627,7 +627,7 @@ mod errors {
                 assert!(false, "Expected an error, found {statements:#?}");
             }
             Err(e) => {
-                let remove = regex::Regex::new(r"(at .*src.*)?(line:.*)?(col:.*)?").unwrap();
+                let remove = regex::Regex::new(r":\d+:\d+").unwrap();
                 let err_string = format!("{e:#?}");
                 let expected = expect_file!["./../tests/expect_test_results/func_no_body.txt"];
                 expected.assert_eq(&remove.replace_all(&err_string, ""));
@@ -644,7 +644,7 @@ mod errors {
                 assert!(false, "Expected an error, found {statements:#?}");
             }
             Err(e) => {
-                let remove = regex::Regex::new(r"(at .*src.*)?(line:.*)?(col:.*)?").unwrap();
+                let remove = regex::Regex::new(r"\n.*:\d+:\d+").unwrap();
                 let err_string = format!("{e:#?}");
                 let expected = expect_file!["./../tests/expect_test_results/two_expressions.txt"];
                 expected.assert_eq(&remove.replace_all(&err_string, ""));
@@ -661,7 +661,7 @@ mod errors {
                 assert!(false, "Expected an error, found {statements:#?}");
             }
             Err(e) => {
-                let remove = regex::Regex::new(r"(at .*src.*)?(line:.*)?(col:.*)?").unwrap();
+                let remove = regex::Regex::new(r"\n.*:\d+:\d+").unwrap();
                 let err_string = format!("{e:#?}");
                 let expected = expect_file![
                     "./../tests/expect_test_results/call_expression_bad_semicolon.txt"
@@ -683,7 +683,7 @@ mod errors {
                 assert!(false, "Expected an error, found {statements:#?}");
             }
             Err(e) => {
-                let remove = regex::Regex::new(r"(at .*src.*)?(line:.*)?(col:.*)?").unwrap();
+                let remove = regex::Regex::new(r"\n.*:\d+:\d+").unwrap();
                 let err_string = format!("{e:#?}");
                 let expected =
                     expect_file!["./../tests/expect_test_results/new_scope_bad_semicolon.txt"];
@@ -701,7 +701,7 @@ mod errors {
                 assert!(false, "Expected an error, found {statements:#?}");
             }
             Err(e) => {
-                let remove = regex::Regex::new(r"(at .*src.*)?(line:.*)?(col:.*)?").unwrap();
+                let remove = regex::Regex::new(r"\n.*:\d+:\d+").unwrap();
                 let err_string = format!("{e:#?}");
                 let expected = expect_file![
                     "./../tests/expect_test_results/assign_statement_no_semicolon.txt"
@@ -720,7 +720,7 @@ mod errors {
                 assert!(false, "Expected an error, found {statements:#?}");
             }
             Err(e) => {
-                let remove = regex::Regex::new(r"(at .*src.*)?(line:.*)?(col:.*)?").unwrap();
+                let remove = regex::Regex::new(r"\n.*:\d+:\d+").unwrap();
                 let err_string = format!("{e:#?}");
                 let expected =
                     expect_file!["./../tests/expect_test_results/let_statement_no_semicolon.txt"];
@@ -738,7 +738,7 @@ mod errors {
                 assert!(false, "Expected an error, found {statements:#?}");
             }
             Err(e) => {
-                let remove = regex::Regex::new(r"(at .*src.*)?(line:.*)?(col:.*)?").unwrap();
+                let remove = regex::Regex::new(r"\n.*:\d+:\d+").unwrap();
                 let err_string = format!("{e:#?}");
                 let expected =
                     expect_file!["./../tests/expect_test_results/return_no_semicolon.txt"];
@@ -756,7 +756,7 @@ mod errors {
                 assert!(false, "Expected an error, found {statements:#?}");
             }
             Err(e) => {
-                let remove = regex::Regex::new(r"(at .*src.*)?(line:.*)?(col:.*)?").unwrap();
+                let remove = regex::Regex::new(r"\n.*:\d+:\d+").unwrap();
                 let err_string = format!("{e:#?}");
                 let expected =
                     expect_file!["./../tests/expect_test_results/return_no_expr_no_semicolon.txt"];

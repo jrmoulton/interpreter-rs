@@ -1,6 +1,10 @@
 pub mod structs;
 mod tests;
 
+use error_stack::{Report, Result};
+use lexer::{Lexer, LocTok, Precedence, Token};
+use structs::*;
+
 trait ExtendAssign {
     fn extend_assign(&mut self, e: Report<ParseError>);
 }
@@ -20,12 +24,14 @@ enum TermState {
     NonTerm,
 }
 
-use error_stack::{Report, Result};
-use lexer::{Lexer, LocTok, Precedence, Token};
-use structs::*;
-
-pub fn parse(lexer: Lexer) -> Result<Vec<Statement>, ParseError> {
-    parse_statements(&mut lexer.peekable(), false)
+pub fn parse(mut lexer: Lexer) -> Result<Vec<Statement>, ParseError> {
+    Report::install_debug_hook::<LocTok>(|value, context| {
+        context.push_body(format!("Token: {value}"));
+    });
+    Report::install_debug_hook::<Suggestion>(|value, context| {
+        context.push_body(format!("suggestion: {}", value.0));
+    });
+    parse_statements(&mut lexer, false)
 }
 
 fn parse_statements(lexer: &mut PeekLex, inside_scope: bool) -> Result<Vec<Statement>, ParseError> {
@@ -194,6 +200,9 @@ fn parse_let_statement(lexer: &mut PeekLex) -> Result<LetStatement, ParseError> 
     let ident = match parse_identifier(lexer) {
         Ok(ident) => Some(ident),
         Err(e) => {
+            if is_peek(lexer, Token::Assign).is_err() {
+                lexer.next();
+            };
             error.extend_assign(e);
             None
         }
@@ -231,10 +240,13 @@ fn parse_let_statement(lexer: &mut PeekLex) -> Result<LetStatement, ParseError> 
 }
 
 fn parse_identifier(lexer: &mut PeekLex) -> error_stack::Result<LocTok, ParseError> {
-    let next = lexer.next();
+    let next = lexer.peek().clone();
     match next {
         Some(lok_tok) => match lok_tok.token {
-            Token::Ident(_) => Ok(lok_tok),
+            Token::Ident(_) => {
+                lexer.next();
+                Ok(lok_tok)
+            }
             _ => Err(Report::new(ParseError::UnexpectedToken(lok_tok))
                 .attach_printable("Expected an identifier")),
         },
@@ -726,11 +738,11 @@ fn parse_binary_expression(lexer: &mut PeekLex, left: ExprBase) -> Result<ExprBa
     let rhs_expr = parse_expression(lexer, op_precedence, false)?;
     let rhs = match rhs_expr {
         Expr::Terminated(_) => {
-            return Err(Report::new(ParseError::UnexpectedTerminatedExpr(rhs_expr))
-                .attach(Suggestion(
+            return Err(
+                Report::new(ParseError::UnexpectedTerminatedExpr(rhs_expr)).attach(Suggestion(
                     "Try removing the semicolon from this expression",
-                ))
-                .into());
+                )),
+            );
         }
         Expr::NonTerminated(rhs) => rhs,
     };
@@ -751,11 +763,11 @@ fn expect_peek(lexer: &mut PeekLex, expected: Token) -> error_stack::Result<(), 
                 Ok(())
             } else {
                 Err(Report::new(ParseError::UnexpectedToken(lok_tok))
-                    .attach_printable(format!("Expected a {expected:?}")))
+                    .attach_printable(format!("Expected a {expected}")))
             }
         }
         None => {
-            Err(Report::new(ParseError::Eof).attach_printable(format!("Expected a {expected:?}")))
+            Err(Report::new(ParseError::Eof).attach_printable(format!("Expected a {expected}")))
         }
     }
 }

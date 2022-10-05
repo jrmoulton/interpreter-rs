@@ -1,1 +1,1 @@
-[ Index out of bounds at index:3 on object: foo ]
+Index out of bounds at index:3 on object: foo

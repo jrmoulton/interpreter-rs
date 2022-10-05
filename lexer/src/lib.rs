@@ -96,9 +96,54 @@ pub enum Token {
     RBracket,
     Dot,
 }
+
 impl Display for Token {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.write_fmt(format_args!("{self:?}"))
+        let ret: String = match self {
+            Token::Illegal => "`Illegal`".into(),
+            Token::Eof => "`End of File`".into(),
+            Token::Let => "`let`".into(),
+            Token::Mut => "`mut`".into(),
+            Token::Func => "`fn`".into(),
+            Token::True => "`true`".into(),
+            Token::False => "`false`".into(),
+            Token::If => "`if`".into(),
+            Token::Else => "`else`".into(),
+            Token::Return => "`return`".into(),
+            Token::For => "`for`".into(),
+            Token::In => "`in`".into(),
+            Token::Break => "`break`".into(),
+            Token::Continue => "`continue`".into(),
+            Token::Loop => "`loop`".into(),
+            Token::While => "`while`".into(),
+            Token::Ident(ident) => format!("`{ident}`"),
+            Token::Int(int) => format!("`{int}`"),
+            Token::String(string) => format!("`{string}`"),
+            Token::Assign => "`=`".into(),
+            Token::Plus => "`+`".into(),
+            Token::Minus => "`-`".into(),
+            Token::Slash => "`/`".into(),
+            Token::Asterisk => "`*`".into(),
+            Token::Bang => "`!`".into(),
+            Token::BitAnd => "`&`".into(),
+            Token::BitOr => "`|`".into(),
+            Token::Or => "`||`".into(),
+            Token::And => "`&&`".into(),
+            Token::LT => "`<`".into(),
+            Token::GT => "`>`".into(),
+            Token::Eq => "`==`".into(),
+            Token::Ne => "`!=`".into(),
+            Token::Comma => "`,`".into(),
+            Token::Semicolon => "`;`".into(),
+            Token::LParen => "`(`".into(),
+            Token::RParen => "`)`".into(),
+            Token::LBrace => "`{`".into(),
+            Token::RBrace => "`}`".into(),
+            Token::LBracket => "`[`".into(),
+            Token::RBracket => "`]`".into(),
+            Token::Dot => "`.`".into(),
+        };
+        f.write_str(&ret)
     }
 }
 impl Token {
@@ -131,11 +176,17 @@ impl Token {
 }
 
 #[derive(Clone)]
-pub struct LocTok {
+pub struct Location {
+    pub file: String,
     pub line: u32,
     pub column: usize,
     pub abs_pos: usize,
     pub len: usize,
+}
+
+#[derive(Clone)]
+pub struct LocTok {
+    pub loc: Location,
     pub token: Token,
 }
 impl Debug for LocTok {
@@ -151,25 +202,63 @@ impl Display for LocTok {
 
 #[derive(Debug, Clone)]
 pub struct Lexer<'a> {
+    file: String,
     input: &'a [u8],
     len: usize,
     line: u32,
     column: usize,
     pos: usize,
+    peeked: Option<LocTok>,
 }
 impl<'a> Lexer<'a> {
-    pub fn new(input: &'a str) -> Self {
+    pub fn new(input: &'a str, file: String) -> Self {
         let input = input.as_bytes();
         let len = input.len();
         Self {
+            file,
             input,
             len,
             line: 0,
             column: 0,
             pos: 0,
+            peeked: None,
         }
     }
-    fn next_token(&mut self) -> Result<Option<LocTok>, LexerError> {
+
+    pub fn get_text(&self, location: Location) -> String {
+        String::from_utf8(self.input[location.abs_pos..location.abs_pos + location.len].to_vec())
+            .unwrap()
+    }
+
+    #[allow(clippy::should_implement_trait)]
+    pub fn next(&'a mut self) -> Option<LocTok> {
+        if let Some(val) = self.peeked.clone() {
+            self.peeked = None;
+            return Some(val);
+        }
+        match self.next_token() {
+            Ok(val) => val,
+            Err(e) => {
+                println!("{:?}", e);
+                None
+            }
+        }
+    }
+
+    pub fn peek(&'a mut self) -> Option<LocTok> {
+        match &self.peeked {
+            Some(val) => Some(val.clone()),
+            None => match self.next_token() {
+                Ok(opt_lok_tok) => opt_lok_tok,
+                Err(e) => {
+                    println!("{:?}", e);
+                    None
+                }
+            },
+        }
+    }
+
+    fn next_token(&'a mut self) -> Result<Option<LocTok>, LexerError> {
         while self.pos < self.len && (self.input[self.pos] as char).is_whitespace() {
             if self.input[self.pos] as char == '\n' {
                 self.line += 1;
@@ -180,10 +269,13 @@ impl<'a> Lexer<'a> {
             self.pos += 1;
         }
         let mut token = LocTok {
-            line: self.line,
-            column: self.column,
-            abs_pos: self.pos,
-            len: 1,
+            loc: Location {
+                file: self.file.clone(),
+                line: self.line,
+                column: self.column,
+                abs_pos: self.pos,
+                len: 1,
+            },
             token: Token::Illegal,
         };
         if let Some(ch) = self.input.get(self.pos) {
@@ -195,7 +287,7 @@ impl<'a> Lexer<'a> {
                     {
                         len += 1;
                     }
-                    token.len = len;
+                    token.loc.len = len;
                     token.token = Token::Int(
                         std::str::from_utf8(&self.input[self.pos..self.pos + len])
                             .into_report()
@@ -203,7 +295,9 @@ impl<'a> Lexer<'a> {
                             .parse::<i64>()
                             .into_report()
                             .change_context(LexerError::IntegerOverflow)
-                            .attach_printable("Found a number that doesn't fit into a signed 64 integer")?,
+                            .attach_printable(
+                                "Got a number that doesn't fit into a signed 64 bit integer",
+                            )?,
                     );
                     self.pos += len - 1;
                     self.column += len - 1;
@@ -276,7 +370,7 @@ impl<'a> Lexer<'a> {
                 '&' => {
                     if self.input[self.pos + 1] as char == '&' {
                         token.token = Token::And;
-                        token.len = 2;
+                        token.loc.len = 2;
                         self.pos += 1;
                         self.column += 1;
                     } else {
@@ -286,7 +380,7 @@ impl<'a> Lexer<'a> {
                 '|' => {
                     if self.input[self.pos + 1] as char == '|' {
                         token.token = Token::Or;
-                        token.len = 2;
+                        token.loc.len = 2;
                         self.pos += 1;
                         self.column += 1;
                     } else {
@@ -304,7 +398,7 @@ impl<'a> Lexer<'a> {
                     {
                         len += 1;
                     }
-                    token.len = len + 1;
+                    token.loc.len = len + 1;
                     token.token = Token::String(
                         std::str::from_utf8(&self.input[self.pos + 1..self.pos + len])
                             .map_err(|e| Report::new(e).change_context(LexerError::InvalidUtf8))?
@@ -320,7 +414,7 @@ impl<'a> Lexer<'a> {
                     {
                         len += 1;
                     }
-                    token.len = len;
+                    token.loc.len = len;
                     match std::str::from_utf8(&self.input[self.pos..self.pos + len]) {
                         Ok("let") => {
                             token.token = Token::Let;
@@ -386,12 +480,15 @@ impl<'a> Lexer<'a> {
         Ok(Some(token))
     }
 }
-impl<'a> Iterator for Lexer<'a> {
-    type Item = LocTok;
-    fn next(&mut self) -> Option<Self::Item> {
-        match self.next_token() {
-            Ok(val) => val,
-            Err(e) => {println!("{:?}", e); None},
-        }
-    }
-}
+// impl<'a> Iterator for Lexer<'a> {
+//     type Item = LocTok<'a>;
+//     fn next(&mut self) -> Option<Self::Item> {
+//         match self.next_token() {
+//             Ok(val) => val,
+//             Err(e) => {
+//                 println!("{:?}", e);
+//                 None
+//             }
+//         }
+//     }
+// }

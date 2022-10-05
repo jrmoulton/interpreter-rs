@@ -1,3 +1,2 @@
 Unexpected end of input
-├╴parser/src/lib.rs:318:21
 ╰╴Expected an expression

@@ -1,3 +1,2 @@
 Expected ';' after expression: Int(5)
-├╴parser/src/lib.rs:185:39
-╰╴1 additional opaque attachment
+╰╴suggestion: Add a semicolon to the end of this expression

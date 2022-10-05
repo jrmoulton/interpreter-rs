@@ -24,7 +24,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         let ast = match parse(lexer) {
             Ok(ast) => Some(ast),
             Err(errs) => {
-                println!("{errs}");
+                println!("{errs:?}");
                 None
             }
         };

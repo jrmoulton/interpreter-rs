@@ -1,7 +1,7 @@
 Unexpected end of input
-├╴parser/src/lib.rs:760:17
-╰╴Expected a LBrace
+├╴parser/src/lib.rs
+╰╴Expected a `{`
 
 Unexpected end of input
-├╴parser/src/lib.rs:760:17
-╰╴Expected a RBrace
+├╴parser/src/lib.rs
+╰╴Expected a `}`

@@ -1,17 +1,18 @@
 use std::{
     collections::HashMap,
-    fmt::{Display, Write as _},
+    fmt::Display,
     ops::{Deref, DerefMut},
     sync::{Arc, Mutex},
 };
 
-use error_stack::{Context, Report};
+use error_stack::Context;
 use parser::structs::*;
 
 use crate::object::Object;
 
 #[derive(Debug)]
 pub enum EvalError {
+    NothingGiven,
     UnsupportedOperation(ExprBase),
     IdentifierNotFound(String),
     InvalidIfCondition(ExprBase),
@@ -22,6 +23,7 @@ pub enum EvalError {
 impl Display for EvalError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let format = match self {
+            Self::NothingGiven => "Nothing Given".into(),
             Self::IdentifierNotFound(ident_string) => {
                 format!("Identifier `{ident_string}` not found")
             }
@@ -39,28 +41,6 @@ impl Display for EvalError {
     }
 }
 impl Context for EvalError {}
-
-#[derive(Debug)]
-pub struct EvalErrors {
-    pub errors: Vec<Report<EvalError>>,
-}
-impl From<Report<EvalError>> for EvalErrors {
-    fn from(error: Report<EvalError>) -> Self {
-        Self {
-            errors: vec![error],
-        }
-    }
-}
-impl Display for EvalErrors {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        let mut ret_str = String::from("[ ");
-        for val in &self.errors {
-            write!(ret_str, "{}", val)?;
-        }
-        ret_str.push_str(" ]");
-        f.write_str(&ret_str)
-    }
-}
 
 #[derive(Debug, Default)]
 pub struct EnvWrapper(pub HashMap<String, Object>);

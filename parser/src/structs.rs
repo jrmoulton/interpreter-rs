@@ -1,7 +1,7 @@
 use error_stack::Context;
 use lexer::{Lexer, LocTok};
+use std::fmt::Display;
 use std::fmt::Write;
-use std::{fmt::Display, iter::Peekable};
 
 #[derive(Debug, Clone)]
 /// A binary epression has an operator that goes inbetween a lhs operand and a rhs operand.
@@ -142,7 +142,7 @@ impl Display for ExprBase {
                     write!(ret_str, "{arg}, ")?;
                 }
                 ret_str.push_str(" ]");
-                format!("FunctionCall: func{{{function}}}, args{{{ret_str}}}")
+                format!("Call: func{{{function}}}, args{{{ret_str}}}")
             }
             ExprBase::Identifier(ident) => format!("{ident}"),
             ExprBase::Scope(statements) => {
@@ -252,9 +252,9 @@ impl Display for ParseError {
         f.write_str(&temp)
     }
 }
-impl Context for ParseError {}
+impl<'a> Context for ParseError {}
 
-pub(crate) struct Suggestion(pub &'static str);
+pub struct Suggestion(pub &'static str);
 
 #[derive(Debug, Clone)]
 pub struct Scope {
@@ -273,4 +273,4 @@ impl IntoIterator for Scope {
     }
 }
 
-pub(crate) type PeekLex<'a> = Peekable<Lexer<'a>>;
+pub(crate) type PeekLex<'a> = Lexer<'a>;
