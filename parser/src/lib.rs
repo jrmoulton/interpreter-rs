@@ -1,10 +1,6 @@
 pub mod structs;
 mod tests;
 
-use error_stack::{Report, Result};
-use lexer::{Lexer, LocTok, Precedence, Token};
-use structs::*;
-
 trait ExtendAssign {
     fn extend_assign(&mut self, e: Report<ParseError>);
 }
@@ -24,14 +20,18 @@ enum TermState {
     NonTerm,
 }
 
-pub fn parse(mut lexer: Lexer) -> Result<Vec<Statement>, ParseError> {
+use error_stack::{Report, Result};
+use lexer::{Lexer, LocTok, Precedence, Token};
+use structs::*;
+
+pub fn parse(lexer: Lexer) -> Result<Vec<Statement>, ParseError> {
     Report::install_debug_hook::<LocTok>(|value, context| {
         context.push_body(format!("Token: {value}"));
     });
     Report::install_debug_hook::<Suggestion>(|value, context| {
         context.push_body(format!("suggestion: {}", value.0));
     });
-    parse_statements(&mut lexer, false)
+    parse_statements(&mut lexer.peekable(), false)
 }
 
 fn parse_statements(lexer: &mut PeekLex, inside_scope: bool) -> Result<Vec<Statement>, ParseError> {
@@ -240,7 +240,7 @@ fn parse_let_statement(lexer: &mut PeekLex) -> Result<LetStatement, ParseError> 
 }
 
 fn parse_identifier(lexer: &mut PeekLex) -> error_stack::Result<LocTok, ParseError> {
-    let next = lexer.peek().clone();
+    let next = lexer.peek().cloned();
     match next {
         Some(lok_tok) => match lok_tok.token {
             Token::Ident(_) => {

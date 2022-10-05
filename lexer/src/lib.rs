@@ -176,17 +176,11 @@ impl Token {
 }
 
 #[derive(Clone)]
-pub struct Location {
-    pub file: String,
+pub struct LocTok {
     pub line: u32,
     pub column: usize,
     pub abs_pos: usize,
     pub len: usize,
-}
-
-#[derive(Clone)]
-pub struct LocTok {
-    pub loc: Location,
     pub token: Token,
 }
 impl Debug for LocTok {
@@ -202,63 +196,25 @@ impl Display for LocTok {
 
 #[derive(Debug, Clone)]
 pub struct Lexer<'a> {
-    file: String,
     input: &'a [u8],
     len: usize,
     line: u32,
     column: usize,
     pos: usize,
-    peeked: Option<LocTok>,
 }
 impl<'a> Lexer<'a> {
-    pub fn new(input: &'a str, file: String) -> Self {
+    pub fn new(input: &'a str) -> Self {
         let input = input.as_bytes();
         let len = input.len();
         Self {
-            file,
             input,
             len,
             line: 0,
             column: 0,
             pos: 0,
-            peeked: None,
         }
     }
-
-    pub fn get_text(&self, location: Location) -> String {
-        String::from_utf8(self.input[location.abs_pos..location.abs_pos + location.len].to_vec())
-            .unwrap()
-    }
-
-    #[allow(clippy::should_implement_trait)]
-    pub fn next(&'a mut self) -> Option<LocTok> {
-        if let Some(val) = self.peeked.clone() {
-            self.peeked = None;
-            return Some(val);
-        }
-        match self.next_token() {
-            Ok(val) => val,
-            Err(e) => {
-                println!("{:?}", e);
-                None
-            }
-        }
-    }
-
-    pub fn peek(&'a mut self) -> Option<LocTok> {
-        match &self.peeked {
-            Some(val) => Some(val.clone()),
-            None => match self.next_token() {
-                Ok(opt_lok_tok) => opt_lok_tok,
-                Err(e) => {
-                    println!("{:?}", e);
-                    None
-                }
-            },
-        }
-    }
-
-    fn next_token(&'a mut self) -> Result<Option<LocTok>, LexerError> {
+    fn next_token(&mut self) -> Result<Option<LocTok>, LexerError> {
         while self.pos < self.len && (self.input[self.pos] as char).is_whitespace() {
             if self.input[self.pos] as char == '\n' {
                 self.line += 1;
@@ -269,13 +225,10 @@ impl<'a> Lexer<'a> {
             self.pos += 1;
         }
         let mut token = LocTok {
-            loc: Location {
-                file: self.file.clone(),
-                line: self.line,
-                column: self.column,
-                abs_pos: self.pos,
-                len: 1,
-            },
+            line: self.line,
+            column: self.column,
+            abs_pos: self.pos,
+            len: 1,
             token: Token::Illegal,
         };
         if let Some(ch) = self.input.get(self.pos) {
@@ -287,7 +240,7 @@ impl<'a> Lexer<'a> {
                     {
                         len += 1;
                     }
-                    token.loc.len = len;
+                    token.len = len;
                     token.token = Token::Int(
                         std::str::from_utf8(&self.input[self.pos..self.pos + len])
                             .into_report()
@@ -370,7 +323,7 @@ impl<'a> Lexer<'a> {
                 '&' => {
                     if self.input[self.pos + 1] as char == '&' {
                         token.token = Token::And;
-                        token.loc.len = 2;
+                        token.len = 2;
                         self.pos += 1;
                         self.column += 1;
                     } else {
@@ -380,7 +333,7 @@ impl<'a> Lexer<'a> {
                 '|' => {
                     if self.input[self.pos + 1] as char == '|' {
                         token.token = Token::Or;
-                        token.loc.len = 2;
+                        token.len = 2;
                         self.pos += 1;
                         self.column += 1;
                     } else {
@@ -398,7 +351,7 @@ impl<'a> Lexer<'a> {
                     {
                         len += 1;
                     }
-                    token.loc.len = len + 1;
+                    token.len = len + 1;
                     token.token = Token::String(
                         std::str::from_utf8(&self.input[self.pos + 1..self.pos + len])
                             .map_err(|e| Report::new(e).change_context(LexerError::InvalidUtf8))?
@@ -414,7 +367,7 @@ impl<'a> Lexer<'a> {
                     {
                         len += 1;
                     }
-                    token.loc.len = len;
+                    token.len = len;
                     match std::str::from_utf8(&self.input[self.pos..self.pos + len]) {
                         Ok("let") => {
                             token.token = Token::Let;
@@ -480,15 +433,15 @@ impl<'a> Lexer<'a> {
         Ok(Some(token))
     }
 }
-// impl<'a> Iterator for Lexer<'a> {
-//     type Item = LocTok<'a>;
-//     fn next(&mut self) -> Option<Self::Item> {
-//         match self.next_token() {
-//             Ok(val) => val,
-//             Err(e) => {
-//                 println!("{:?}", e);
-//                 None
-//             }
-//         }
-//     }
-// }
+impl<'a> Iterator for Lexer<'a> {
+    type Item = LocTok;
+    fn next(&mut self) -> Option<Self::Item> {
+        match self.next_token() {
+            Ok(val) => val,
+            Err(e) => {
+                println!("{:?}", e);
+                None
+            }
+        }
+    }
+}
