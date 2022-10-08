@@ -337,3 +337,13 @@ impl Display for ExprBase {
         f.write_str(&ret_str)
     }
 }
+
+pub(crate) enum TermState {
+    None,
+    Term,
+    NonTerm,
+}
+
+pub(crate) trait ExtendAssign {
+    fn extend_assign(&mut self, e: error_stack::Report<ParseError>);
+}

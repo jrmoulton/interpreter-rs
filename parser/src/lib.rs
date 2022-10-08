@@ -1,11 +1,12 @@
 pub mod structs;
 mod tests;
 
-trait ExtendAssign {
-    fn extend_assign(&mut self, e: Report<ParseError>);
-}
-impl ExtendAssign for Option<Report<ParseError>> {
-    fn extend_assign(&mut self, e: Report<ParseError>) {
+use error_stack::{Report, Result};
+use lexer::{Lexer, Precedence, Token, TokenKInd};
+use structs::*;
+
+impl ExtendAssign for Option<error_stack::Report<ParseError>> {
+    fn extend_assign(&mut self, e: error_stack::Report<ParseError>) {
         if let Some(error) = self.as_mut() {
             error.extend_one(e);
         } else {
@@ -13,16 +14,6 @@ impl ExtendAssign for Option<Report<ParseError>> {
         }
     }
 }
-
-enum TermState {
-    None,
-    Term,
-    NonTerm,
-}
-
-use error_stack::{Report, Result};
-use lexer::{Lexer, Precedence, Token, TokenKInd};
-use structs::*;
 
 pub fn parse(lexer: Lexer) -> Result<Vec<Statement>, ParseError> {
     Report::install_debug_hook::<Token>(|value, context| {
