@@ -1,6 +1,6 @@
 Unexpected end of input
 ├╴parser/src/lib.rs
-╰╴Expected a `{`
+╰╴Expected a LBrace
 
 Unexpected end of input
 ├╴parser/src/lib.rs

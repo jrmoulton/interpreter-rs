@@ -175,10 +175,10 @@ impl TokenKInd {
     }
 }
 
-#[derive(Clone)]
+#[derive(Clone, Copy)]
 pub struct Span {
     pub start_row: usize,
-    pub start_column: usize,
+    pub start_col: usize,
     pub end_row: usize,
     pub end_col: usize,
 }
@@ -187,8 +187,19 @@ impl Debug for Span {
         write!(
             f,
             "({},{})->({},{})",
-            self.start_row, self.start_column, self.end_row, self.end_col
+            self.start_row, self.start_col, self.end_row, self.end_col
         )
+    }
+}
+impl core::ops::Add for Span {
+    type Output = Self;
+    fn add(self, rhs: Self) -> Self::Output {
+        Self {
+            start_row: self.start_row,
+            start_col: self.start_col,
+            end_row: rhs.end_row,
+            end_col: rhs.end_col,
+        }
     }
 }
 
@@ -241,9 +252,9 @@ impl<'a> Lexer<'a> {
         let mut token = Token {
             span: Span {
                 start_row: self.line,
-                start_column: self.column,
+                start_col: self.column,
                 end_row: self.line,
-                end_col: self.column + 1,
+                end_col: self.column,
             },
             kind: TokenKInd::Illegal,
         };

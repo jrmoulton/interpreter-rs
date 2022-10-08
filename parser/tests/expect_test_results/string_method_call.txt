@@ -4,18 +4,20 @@
             MethodCall(
                 MethCall {
                     instance: StringLiteral(
-                        Token(String("foobar"), (0,1)->(0,9)),
+                        Token(String("foobar"), (0,1)->(0,8)),
                     ),
                     method: CallExpression(
                         CallExpr {
                             function: Identifier(
                                 Ident(
-                                    Token(Ident("len"), (0,10)->(0,13)),
+                                    Token(Ident("len"), (0,10)->(0,12)),
                                 ),
                             ),
                             args: [],
+                            span: (0,10)->(0,14),
                         },
                     ),
+                    span: (0,9)->(0,14),
                 },
             ),
         ),

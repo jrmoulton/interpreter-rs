@@ -98,7 +98,6 @@ fn parse_statements(lexer: &mut PeekLex, inside_scope: bool) -> Result<Vec<State
             },
             TokenKInd::RBrace => {
                 // If there is a brace it is time to yeet out while keeping any errors
-                lexer.next();
                 if let Some(e) = error {
                     return Err(e);
                 } else {
@@ -169,6 +168,7 @@ fn parse_assign_statement(lexer: &mut PeekLex) -> Result<AssignStatement, ParseE
             .attach(Suggestion("Add a semicolon to the end of this expression")))?,
     };
     let assign_statement = AssignStatement {
+        span: ident.span + expr_base.get_span(),
         ident,
         expr: Box::new(expr_base),
     };
@@ -193,7 +193,7 @@ fn parse_return_statement(lexer: &mut PeekLex) -> Result<Option<Expr>, ParseErro
 }
 
 fn parse_let_statement(lexer: &mut PeekLex) -> Result<LetStatement, ParseError> {
-    lexer
+    let let_tok = lexer
         .next()
         .expect("The let keyword was already peeked and matched");
     let mut error: Option<Report<ParseError>> = None;
@@ -232,9 +232,11 @@ fn parse_let_statement(lexer: &mut PeekLex) -> Result<LetStatement, ParseError> 
     if let Some(e) = error {
         Err(e)
     } else {
+        let expr = expr.expect("Some because there are no errors");
         Ok(LetStatement {
+            span: let_tok.span + expr.get_span(),
             ident: ident.expect("Some because there are no errors"),
-            expr: expr.expect("Some because there are no errors"),
+            expr,
         })
     }
 }
@@ -303,22 +305,10 @@ fn parse_expression(
                 lexer.next(); // This skips the lparen
                 parse_grouped_expression(lexer)?
             }
-            If => {
-                lexer.next();
-                parse_if_expression(lexer)?
-            }
-            Func => {
-                lexer.next();
-                parse_func_literal(lexer)?
-            }
-            TokenKInd::LBrace => {
-                let _lbrace = lexer.next();
-                ExprBase::Scope(parse_statements(lexer, true)?)
-            }
-            TokenKInd::LBracket => {
-                let _lbracket = lexer.next();
-                ExprBase::Array(parse_array(lexer)?)
-            }
+            If => parse_if_expression(lexer)?,
+            Func => parse_func_literal(lexer)?,
+            TokenKInd::LBrace => ExprBase::Scope(parse_scope(lexer)?),
+            TokenKInd::LBracket => ExprBase::Array(parse_array(lexer)?),
             _ => {
                 lexer.next();
                 Err(Report::new(ParseError::UnexpectedToken(left_lok_tok))
@@ -363,7 +353,7 @@ fn parse_expression(
 
 fn parse_array_index(lexer: &mut PeekLex, left: ExprBase) -> Result<ExprBase, ParseError> {
     let mut error: Option<Report<ParseError>> = None;
-    let _lbracket = lexer
+    let lbracket = lexer
         .next()
         .expect("The lbracket should already peeked and found");
     let index = match parse_expression(lexer, Precedence::Lowest, false) {
@@ -374,21 +364,35 @@ fn parse_array_index(lexer: &mut PeekLex, left: ExprBase) -> Result<ExprBase, Pa
         }
     }
     .map(|val| val.expect_non_terminated());
-    if let Err(e) = expect_peek(lexer, TokenKInd::RBracket) {
-        error.extend_assign(e);
+    let rbracket = match is_peek(lexer, TokenKInd::RBracket) {
+        Ok(_) => lexer.next().expect("already matched"),
+        Err(e) => {
+            error.extend_assign(e);
+            Err(error.expect("should definitely be an error"))?
+        }
     };
-    if let Some(e) = error {
-        Err(e)
-    } else {
-        Ok(ExprBase::IndexExpression(IndExpr {
-            array: Box::new(left),
-            index: Box::new(index.unwrap()),
-        }))
-    }
+    Ok(ExprBase::IndexExpression(IndExpr {
+        array: Box::new(left),
+        index: Box::new(index.unwrap()),
+        span: lbracket.span + rbracket.span,
+    }))
 }
 
-fn parse_array(lexer: &mut PeekLex) -> Result<Vec<ExprBase>, ParseError> {
-    parse_call_args(lexer, TokenKInd::RBracket)
+fn parse_array(lexer: &mut PeekLex) -> Result<Array, ParseError> {
+    let lbracket = lexer.next().expect("should be lbracket");
+    let mut error: Option<Report<ParseError>> = None;
+    match parse_call_args(lexer, TokenKInd::RBracket) {
+        Ok(exprs) => {
+            let rbracket = lexer
+                .next()
+                .expect("should already be matched because this is the ok branch");
+            Ok(Array::new(exprs, lbracket.span + rbracket.span))
+        }
+        Err(e) => {
+            error.extend_assign(e);
+            Err(error.expect("should be some because an error was added"))
+        }
+    }
 }
 
 fn parse_method_expression(
@@ -401,6 +405,7 @@ fn parse_method_expression(
     let op_precedence = operator_dot.kind.precedence();
     let method = parse_expression(lexer, op_precedence, false)?.expect_non_terminated();
     Ok(ExprBase::MethodCall(MethCall {
+        span: operator_dot.span + method.get_span(),
         instance: Box::new(instance),
         method: Box::new(method),
     }))
@@ -408,24 +413,22 @@ fn parse_method_expression(
 
 fn parse_call_expression(lexer: &mut PeekLex, function: ExprBase) -> Result<ExprBase, ParseError> {
     let mut error: Option<Report<ParseError>> = None;
-    if let Err(e) = expect_peek(lexer, TokenKInd::LParen) {
-        error.extend_assign(e);
-    }
+    let _lparen = lexer.next().expect("already matched");
     let args = match parse_call_args(lexer, TokenKInd::RParen) {
-        Ok(args) => Some(args),
+        Ok(args) => args,
         Err(e) => {
             error.extend_assign(e);
-            None
+            Err(error.expect("definitely an error"))?
         }
     };
-    if let Some(e) = error {
-        Err(e)
-    } else {
-        Ok(ExprBase::CallExpression(CallExpr {
-            function: Box::new(function),
-            args: args.expect("If there are no errors then the parsed args are present"),
-        }))
-    }
+    let rparen = lexer
+        .next()
+        .expect("already matched and checked in parse_call_args");
+    Ok(ExprBase::CallExpression(CallExpr {
+        span: function.get_span() + rparen.span,
+        function: Box::new(function),
+        args,
+    }))
 }
 
 // A function to parse the arguments to a function when it is being called
@@ -460,7 +463,6 @@ fn parse_call_args(lexer: &mut PeekLex, end_token: TokenKInd) -> Result<Vec<Expr
                 }
                 token if token.token_matches(&end_token) => {
                     again = false;
-                    lexer.next();
                 }
                 _ => {
                     match arg_state {
@@ -501,6 +503,9 @@ fn parse_call_args(lexer: &mut PeekLex, end_token: TokenKInd) -> Result<Vec<Expr
 }
 
 fn parse_func_literal(lexer: &mut PeekLex) -> Result<ExprBase, ParseError> {
+    let fn_tok = lexer
+        .next()
+        .expect("fn token should already be already matched");
     let mut error: Option<Report<ParseError>> = None;
     if let Err(e) = expect_peek(lexer, TokenKInd::LParen) {
         if let Some(error) = error.as_mut() {
@@ -510,17 +515,18 @@ fn parse_func_literal(lexer: &mut PeekLex) -> Result<ExprBase, ParseError> {
         };
     }
     let identifiers = match parse_function_parameters(lexer) {
-        Ok(identifiers) => Some(identifiers),
+        Ok(identifiers) => {
+            let _rparent = lexer.next();
+            Some(identifiers)
+        }
         Err(e) => {
+            let _rparent = lexer.next();
             error.extend_assign(e);
             None
         }
     };
-    if let Err(e) = expect_peek(lexer, TokenKInd::LBrace) {
-        error.extend_assign(e);
-    }
-    let body = match parse_statements(lexer, true) {
-        Ok(statements) => Some(Scope::new(statements)),
+    let body = match parse_scope(lexer) {
+        Ok(scope) => Some(scope),
         Err(e) => {
             error.extend_assign(e);
             None
@@ -529,10 +535,12 @@ fn parse_func_literal(lexer: &mut PeekLex) -> Result<ExprBase, ParseError> {
     if let Some(e) = error {
         Err(e)
     } else {
+        let body = body.expect("If there are no errors then the function body is present");
         Ok(ExprBase::FuncLiteral(FnLiteral {
             parameters: identifiers
                 .expect("If there are no errors then the identifers are present"),
-            body: body.expect("If there are no errors then the function body is present"),
+            span: fn_tok.span + body.span,
+            body,
         }))
     }
 }
@@ -587,7 +595,6 @@ fn parse_function_parameters(lexer: &mut PeekLex) -> Result<Vec<Ident>, ParseErr
                 }
                 TokenKInd::RParen => {
                     again = false;
-                    lexer.next();
                 }
                 _ => {
                     let e = Report::new(ParseError::UnexpectedToken(lok_tok))
@@ -614,7 +621,6 @@ fn parse_function_parameters(lexer: &mut PeekLex) -> Result<Vec<Ident>, ParseErr
 
 fn parse_grouped_expression(lexer: &mut PeekLex) -> Result<ExprBase, ParseError> {
     let mut error: Option<Report<ParseError>> = None;
-    // let _lparen = lexer.borrow_mut().next();
     let exp = match parse_expression(lexer, Precedence::Lowest, true) {
         Ok(exp) => match exp {
             Expr::Terminated(_) => {
@@ -642,6 +648,9 @@ fn parse_grouped_expression(lexer: &mut PeekLex) -> Result<ExprBase, ParseError>
 }
 
 fn parse_if_expression(lexer: &mut PeekLex) -> Result<ExprBase, ParseError> {
+    let if_tok = lexer
+        .next()
+        .expect("the if token should already be matched");
     let mut error: Option<Report<ParseError>> = None;
     let condition: Option<ExprBase> = match parse_expression(lexer, Precedence::Lowest, true) {
         Ok(condition) => match condition {
@@ -659,34 +668,28 @@ fn parse_if_expression(lexer: &mut PeekLex) -> Result<ExprBase, ParseError> {
             None
         }
     };
-    if let Err(e) = expect_peek(lexer, TokenKInd::LBrace) {
-        error.extend_assign(e);
-    };
-    let consequence = match parse_statements(lexer, true) {
-        Ok(statements) => Some(statements),
+    let consequence = match parse_scope(lexer) {
+        Ok(scope) => Some(scope),
         Err(e) => {
             error.extend_assign(e);
             None
         }
     };
     let alternate_opt = expect_peek(lexer, TokenKInd::Else);
-    let alternative = match alternate_opt {
+    let alternative: Option<_> = match alternate_opt {
         Err(_) => None,
         Ok(_) => {
-            let if_or_lbrace = expect_peek(lexer, TokenKInd::If);
+            let if_or_lbrace = is_peek(lexer, TokenKInd::If);
             match if_or_lbrace {
-                Err(_) => {
-                    if let Err(e) = expect_peek(lexer, TokenKInd::LBrace) {
+                // if ok then is if/ if else
+                // if err then might be lbrace
+                Err(_) => match parse_scope(lexer) {
+                    Ok(scope) => Some(ElseIfExpr::Else(scope)),
+                    Err(e) => {
                         error.extend_assign(e);
+                        None
                     }
-                    match parse_statements(lexer, true) {
-                        Ok(statements) => Some(ElseIfExpr::Else(Scope::new(statements))),
-                        Err(e) => {
-                            error.extend_assign(e);
-                            None
-                        }
-                    }
-                }
+                },
                 Ok(_) => match parse_if_expression(lexer) {
                     Ok(if_expr) => Some(ElseIfExpr::ElseIf(Box::new(if_expr))),
                     Err(e) => {
@@ -700,15 +703,51 @@ fn parse_if_expression(lexer: &mut PeekLex) -> Result<ExprBase, ParseError> {
     if let Some(e) = error {
         Err(e)
     } else {
+        let consequence =
+            consequence.expect("If there are no errors then the expression is present");
         Ok(ExprBase::If(IfExpr {
             condition: Box::new(
                 condition.expect("If there are no errors then the expression is present"),
             ),
-            consequence: Scope::new(
-                consequence.expect("If there are no errors then the expression is present"),
-            ),
+            span: if_tok.span
+                + match alternative {
+                    Some(_) => alternative.as_ref().expect("is some").get_span(),
+                    None => consequence.span,
+                },
+            consequence,
             alternative,
         }))
+    }
+}
+
+fn parse_scope(lexer: &mut PeekLex) -> Result<Scope, ParseError> {
+    let mut error: Option<Report<ParseError>> = None;
+    let lbrace = match is_peek(lexer, TokenKInd::LBrace) {
+        Ok(_) => Some(lexer.next().expect("already matched")),
+        Err(e) => {
+            error.extend_assign(e);
+            lexer.next();
+            None
+        }
+    };
+    match parse_statements(lexer, true) {
+        Ok(statements) => match lbrace {
+            Some(_) => {
+                let rbrace = lexer
+                    .next()
+                    .expect("rbrace token should be matched in parse_statements");
+                Ok(Scope::new(
+                    statements,
+                    lbrace.expect("already matched").span + rbrace.span,
+                ))
+            }
+            None => Err(error.expect("if none then error should be present"))?,
+        },
+        Err(e) => {
+            let _rbrace = lexer.next();
+            error.extend_assign(e);
+            Err(error.expect("should definitely be some"))?
+        }
     }
 }
 
@@ -724,9 +763,11 @@ fn parse_prefix_expression(lexer: &mut PeekLex) -> Result<ExprBase, ParseError> 
             operator.kind
         )))?,
     };
+    let span = operator.span + expression.get_span();
     Ok(ExprBase::PrefixExpression(PreExpr {
         operator,
         expression: Box::new(expression),
+        span,
     }))
 }
 
@@ -746,10 +787,12 @@ fn parse_binary_expression(lexer: &mut PeekLex, left: ExprBase) -> Result<ExprBa
         }
         Expr::NonTerminated(rhs) => rhs,
     };
+    let span = left.get_span() + rhs.get_span();
     Ok(ExprBase::BinaryExpression(BinExp {
         lhs: Box::new(left),
         operator,
         rhs: Box::new(rhs),
+        span,
     }))
 }
 

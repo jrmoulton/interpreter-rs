@@ -72,6 +72,7 @@ pub fn eval(
             Statement::Assign(AssignStatement {
                 ident,
                 expr,
+                ..
             }) => {
                 let ident_string = match ident {
                     Token {
@@ -138,13 +139,13 @@ fn eval_expr_base(
             }
         }, 
         ExprBase::StringLiteral(Token {kind: TokenKInd::String(inner_str), ..}) => Ok(Object::String(object::String::new(inner_str))),
-        ExprBase::FuncLiteral(FnLiteral { parameters, body }) => Ok(Object::Function(object::Function::new(FuncIntern::new(parameters, body, env)))),
-        ExprBase::CallExpression(CallExpr { function, args }) => {
+        ExprBase::FuncLiteral(FnLiteral { parameters, body, .. }) => Ok(Object::Function(object::Function::new(FuncIntern::new(parameters, body, env)))),
+        ExprBase::CallExpression(CallExpr { function, args, .. }) => {
             let function_obj = eval_expr_base(*function, env.clone())?;
             let args: Result<Vec<Object>, EvalError> = args.iter().map(|arg| eval_expr_base(arg.clone(), env.clone())).collect();
             Ok(apply_function(function_obj, args?)?)
         },
-        ExprBase::MethodCall(MethCall { instance, method }) => {
+        ExprBase::MethodCall(MethCall { instance, method, .. }) => {
             let _value = eval_expr_base(*instance, env.clone())?;
             let _value_type = _value.type_string();
             let _method_call = eval_expr_base(*method, env)?;
@@ -152,10 +153,10 @@ fn eval_expr_base(
             unimplemented!()
         },
         ExprBase::Array(items) => {
-            let items: Result<Vec<Object>, EvalError> = items.iter().map(|item| eval_expr_base(item.clone(), env.clone())).collect();
+            let items: Result<Vec<Object>, EvalError> = items.exprs.iter().map(|item| eval_expr_base(item.clone(), env.clone())).collect();
             Ok(Object::Array(object::Array::new(items?.into())))
         }
-        ExprBase::IndexExpression(IndExpr { array, index }) => {
+        ExprBase::IndexExpression(IndExpr { array, index, .. }) => {
             let array_obj = eval_expr_base(*array, env.clone())?;
             let index = eval_expr_base(*index, env)?;
             let index = match index {
@@ -193,6 +194,7 @@ fn eval_expr_base(
         ExprBase::PrefixExpression(PreExpr {
             ref operator,
             ref expression,
+            ..
         }) => {
             let right = eval_expression((**expression).clone(), env)?.0;
             Ok(eval_prefix_expr(&operator.kind, right, expr_base.clone())?)
@@ -201,6 +203,7 @@ fn eval_expr_base(
             ref lhs,
             ref operator,
             ref rhs,
+            ..
         }) => {
             let left = eval_expr_base((**lhs).clone(), env.clone())?;
             let right = eval_expr_base((**rhs).clone(), env)?;
@@ -215,6 +218,7 @@ fn eval_expr_base(
             ref condition,
             consequence,
             alternative,
+            ..
         }) => eval_if_expr(condition, consequence, alternative, env),
         ExprBase::IntLiteral(_) => unreachable!(
             "Int token matched above. An IntLiteral will never have a token that is not an Int"

@@ -2,7 +2,7 @@
     Expression(
         NonTerminated(
             IntLiteral(
-                Token(Int(35), (0,0)->(0,2)),
+                Token(Int(35), (0,0)->(0,1)),
             ),
         ),
     ),

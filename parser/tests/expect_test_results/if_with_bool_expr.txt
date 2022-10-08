@@ -5,7 +5,7 @@
                 IfExpr {
                     condition: Identifier(
                         Ident(
-                            Token(Ident("x"), (1,11)->(1,12)),
+                            Token(Ident("x"), (1,11)->(1,11)),
                         ),
                     ),
                     consequence: Scope {
@@ -13,11 +13,12 @@
                             Expression(
                                 NonTerminated(
                                     BoolLiteral(
-                                        Token(True, (2,12)->(2,16)),
+                                        Token(True, (2,12)->(2,15)),
                                     ),
                                 ),
                             ),
                         ],
+                        span: (1,13)->(3,8),
                     },
                     alternative: Some(
                         Else(
@@ -26,14 +27,16 @@
                                     Expression(
                                         NonTerminated(
                                             BoolLiteral(
-                                                Token(False, (4,12)->(4,17)),
+                                                Token(False, (4,12)->(4,16)),
                                             ),
                                         ),
                                     ),
                                 ],
+                                span: (3,15)->(5,8),
                             },
                         ),
                     ),
+                    span: (1,8)->(5,8),
                 },
             ),
         ),

@@ -2,7 +2,10 @@
     Expression(
         NonTerminated(
             Array(
-                [],
+                Array {
+                    exprs: [],
+                    span: (0,1)->(0,2),
+                },
             ),
         ),
     ),

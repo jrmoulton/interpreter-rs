@@ -5,7 +5,7 @@
                 IfExpr {
                     condition: Identifier(
                         Ident(
-                            Token(Ident("x"), (1,11)->(1,12)),
+                            Token(Ident("x"), (1,11)->(1,11)),
                         ),
                     ),
                     consequence: Scope {
@@ -14,12 +14,13 @@
                                 NonTerminated(
                                     Identifier(
                                         Ident(
-                                            Token(Ident("x"), (2,12)->(2,13)),
+                                            Token(Ident("x"), (2,12)->(2,12)),
                                         ),
                                     ),
                                 ),
                             ),
                         ],
+                        span: (1,13)->(3,8),
                     },
                     alternative: Some(
                         ElseIf(
@@ -27,7 +28,7 @@
                                 IfExpr {
                                     condition: Identifier(
                                         Ident(
-                                            Token(Ident("y"), (3,19)->(3,20)),
+                                            Token(Ident("y"), (3,19)->(3,19)),
                                         ),
                                     ),
                                     consequence: Scope {
@@ -36,12 +37,13 @@
                                                 NonTerminated(
                                                     Identifier(
                                                         Ident(
-                                                            Token(Ident("y"), (4,12)->(4,13)),
+                                                            Token(Ident("y"), (4,12)->(4,12)),
                                                         ),
                                                     ),
                                                 ),
                                             ),
                                         ],
+                                        span: (3,22)->(5,8),
                                     },
                                     alternative: Some(
                                         Else(
@@ -51,19 +53,22 @@
                                                         NonTerminated(
                                                             Identifier(
                                                                 Ident(
-                                                                    Token(Ident("foobar"), (6,12)->(6,18)),
+                                                                    Token(Ident("foobar"), (6,12)->(6,17)),
                                                                 ),
                                                             ),
                                                         ),
                                                     ),
                                                 ],
+                                                span: (5,15)->(7,8),
                                             },
                                         ),
                                     ),
+                                    span: (3,15)->(7,8),
                                 },
                             ),
                         ),
                     ),
+                    span: (1,8)->(7,8),
                 },
             ),
         ),

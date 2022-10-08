@@ -1,12 +1,13 @@
 [
     Let(
         LetStatement {
-            ident: Token(Ident("x"), (0,4)->(0,5)),
+            ident: Token(Ident("x"), (0,4)->(0,4)),
             expr: Terminated(
                 StringLiteral(
-                    Token(String("foo bar"), (0,8)->(0,17)),
+                    Token(String("foo bar"), (0,8)->(0,16)),
                 ),
             ),
+            span: (0,0)->(0,16),
         },
     ),
 ]

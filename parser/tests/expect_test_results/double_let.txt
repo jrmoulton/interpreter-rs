@@ -1,22 +1,24 @@
 [
     Let(
         LetStatement {
-            ident: Token(Ident("x"), (0,4)->(0,5)),
+            ident: Token(Ident("x"), (0,4)->(0,4)),
             expr: Terminated(
                 IntLiteral(
-                    Token(Int(5), (0,8)->(0,9)),
+                    Token(Int(5), (0,8)->(0,8)),
                 ),
             ),
+            span: (0,0)->(0,8),
         },
     ),
     Let(
         LetStatement {
-            ident: Token(Ident("y"), (1,12)->(1,13)),
+            ident: Token(Ident("y"), (1,12)->(1,12)),
             expr: Terminated(
                 IntLiteral(
-                    Token(Int(3), (1,16)->(1,17)),
+                    Token(Int(3), (1,16)->(1,16)),
                 ),
             ),
+            span: (1,8)->(1,16),
         },
     ),
 ]

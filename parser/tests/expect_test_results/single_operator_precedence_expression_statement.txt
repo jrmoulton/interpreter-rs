@@ -4,20 +4,22 @@
             BinaryExpression(
                 BinExp {
                     lhs: IntLiteral(
-                        Token(Int(5), (0,0)->(0,1)),
+                        Token(Int(5), (0,0)->(0,0)),
                     ),
-                    operator: Token(Plus, (0,2)->(0,3)),
+                    operator: Token(Plus, (0,2)->(0,2)),
                     rhs: BinaryExpression(
                         BinExp {
                             lhs: IntLiteral(
-                                Token(Int(5), (0,4)->(0,5)),
+                                Token(Int(5), (0,4)->(0,4)),
                             ),
-                            operator: Token(Asterisk, (0,6)->(0,7)),
+                            operator: Token(Asterisk, (0,6)->(0,6)),
                             rhs: IntLiteral(
-                                Token(Int(5), (0,8)->(0,9)),
+                                Token(Int(5), (0,8)->(0,8)),
                             ),
+                            span: (0,4)->(0,8),
                         },
                     ),
+                    span: (0,0)->(0,8),
                 },
             ),
         ),

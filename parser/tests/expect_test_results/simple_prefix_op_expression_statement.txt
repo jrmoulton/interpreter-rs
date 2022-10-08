@@ -3,12 +3,13 @@
         NonTerminated(
             PrefixExpression(
                 PreExpr {
-                    operator: Token(Minus, (0,0)->(0,1)),
+                    operator: Token(Minus, (0,0)->(0,0)),
                     expression: NonTerminated(
                         IntLiteral(
-                            Token(Int(5), (0,1)->(0,2)),
+                            Token(Int(5), (0,1)->(0,1)),
                         ),
                     ),
+                    span: (0,0)->(0,1),
                 },
             ),
         ),

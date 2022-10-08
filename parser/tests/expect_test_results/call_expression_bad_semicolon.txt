@@ -1,2 +1,5 @@
 Unexpected Token: `;`
 ╰╴expressions should be separated by commas
+
+Unexpected Token: `)`
+╰╴Expected a statement or an expression

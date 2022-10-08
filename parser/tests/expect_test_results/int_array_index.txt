@@ -4,21 +4,25 @@
             IndexExpression(
                 IndExpr {
                     array: Array(
-                        [
-                            IntLiteral(
-                                Token(Int(15), (0,2)->(0,4)),
-                            ),
-                            IntLiteral(
-                                Token(Int(30), (0,6)->(0,8)),
-                            ),
-                            IntLiteral(
-                                Token(Int(90), (0,10)->(0,12)),
-                            ),
-                        ],
+                        Array {
+                            exprs: [
+                                IntLiteral(
+                                    Token(Int(15), (0,2)->(0,3)),
+                                ),
+                                IntLiteral(
+                                    Token(Int(30), (0,6)->(0,7)),
+                                ),
+                                IntLiteral(
+                                    Token(Int(90), (0,10)->(0,11)),
+                                ),
+                            ],
+                            span: (0,1)->(0,12),
+                        },
                     ),
                     index: IntLiteral(
-                        Token(Int(1), (0,14)->(0,15)),
+                        Token(Int(1), (0,14)->(0,14)),
                     ),
+                    span: (0,13)->(0,15),
                 },
             ),
         ),

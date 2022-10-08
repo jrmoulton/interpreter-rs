@@ -2,7 +2,10 @@
     Expression(
         NonTerminated(
             Scope(
-                [],
+                Scope {
+                    statements: [],
+                    span: (1,8)->(3,8),
+                },
             ),
         ),
     ),

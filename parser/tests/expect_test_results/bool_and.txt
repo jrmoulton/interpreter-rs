@@ -6,26 +6,29 @@
                     lhs: BinaryExpression(
                         BinExp {
                             lhs: IntLiteral(
-                                Token(Int(3), (0,0)->(0,1)),
+                                Token(Int(3), (0,0)->(0,0)),
                             ),
-                            operator: Token(Eq, (0,2)->(0,3)),
+                            operator: Token(Eq, (0,2)->(0,2)),
                             rhs: IntLiteral(
-                                Token(Int(3), (0,5)->(0,6)),
+                                Token(Int(3), (0,5)->(0,5)),
                             ),
+                            span: (0,0)->(0,5),
                         },
                     ),
-                    operator: Token(And, (0,7)->(0,9)),
+                    operator: Token(And, (0,7)->(0,8)),
                     rhs: BinaryExpression(
                         BinExp {
                             lhs: IntLiteral(
-                                Token(Int(5), (0,10)->(0,11)),
+                                Token(Int(5), (0,10)->(0,10)),
                             ),
-                            operator: Token(Eq, (0,12)->(0,13)),
+                            operator: Token(Eq, (0,12)->(0,12)),
                             rhs: IntLiteral(
-                                Token(Int(6), (0,15)->(0,16)),
+                                Token(Int(6), (0,15)->(0,15)),
                             ),
+                            span: (0,10)->(0,15),
                         },
                     ),
+                    span: (0,0)->(0,15),
                 },
             ),
         ),

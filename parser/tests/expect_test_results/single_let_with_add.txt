@@ -1,20 +1,22 @@
 [
     Let(
         LetStatement {
-            ident: Token(Ident("x"), (0,4)->(0,5)),
+            ident: Token(Ident("x"), (0,4)->(0,4)),
             expr: Terminated(
                 BinaryExpression(
                     BinExp {
                         lhs: IntLiteral(
-                            Token(Int(10), (0,8)->(0,10)),
+                            Token(Int(10), (0,8)->(0,9)),
                         ),
-                        operator: Token(Plus, (0,11)->(0,12)),
+                        operator: Token(Plus, (0,11)->(0,11)),
                         rhs: IntLiteral(
-                            Token(Int(3), (0,13)->(0,14)),
+                            Token(Int(3), (0,13)->(0,13)),
                         ),
+                        span: (0,8)->(0,13),
                     },
                 ),
             ),
+            span: (0,0)->(0,13),
         },
     ),
 ]
