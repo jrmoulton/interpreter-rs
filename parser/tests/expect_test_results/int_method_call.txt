@@ -4,13 +4,13 @@
             MethodCall(
                 MethCall {
                     instance: IntLiteral(
-                        Int(55),
+                        Token(Int(55), (0,1)->(0,3)),
                     ),
                     method: CallExpression(
                         CallExpr {
                             function: Identifier(
                                 Ident(
-                                    Ident("abs"),
+                                    Token(Ident("abs"), (0,4)->(0,7)),
                                 ),
                             ),
                             args: [],

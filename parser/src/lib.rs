@@ -21,11 +21,11 @@ enum TermState {
 }
 
 use error_stack::{Report, Result};
-use lexer::{Lexer, LocTok, Precedence, Token};
+use lexer::{Lexer, Precedence, Token, TokenKInd};
 use structs::*;
 
 pub fn parse(lexer: Lexer) -> Result<Vec<Statement>, ParseError> {
-    Report::install_debug_hook::<LocTok>(|value, context| {
+    Report::install_debug_hook::<Token>(|value, context| {
         context.push_body(format!("Token: {value}"));
     });
     Report::install_debug_hook::<Suggestion>(|value, context| {
@@ -40,8 +40,8 @@ fn parse_statements(lexer: &mut PeekLex, inside_scope: bool) -> Result<Vec<State
     let mut start_statement_peek = lexer.peek().map(|val| val.to_owned());
     let mut term_state = TermState::None;
     while let Some(lok_tok) = start_statement_peek {
-        match lok_tok.token {
-            Token::Let => {
+        match lok_tok.kind {
+            TokenKInd::Let => {
                 match parse_let_statement(lexer) {
                     Ok(statement) => statements.push(Statement::Let(statement)),
                     Err(e) => {
@@ -50,7 +50,7 @@ fn parse_statements(lexer: &mut PeekLex, inside_scope: bool) -> Result<Vec<State
                 }
                 term_state = TermState::Term;
             }
-            Token::Return => {
+            TokenKInd::Return => {
                 term_state = TermState::Term;
                 match parse_return_statement(lexer) {
                     Ok(statement) => statements.push(Statement::Return(statement)),
@@ -59,7 +59,7 @@ fn parse_statements(lexer: &mut PeekLex, inside_scope: bool) -> Result<Vec<State
                     }
                 }
             }
-            Token::Ident(_) => match parse_ident_statement(lexer, &mut term_state) {
+            TokenKInd::Ident(_) => match parse_ident_statement(lexer, &mut term_state) {
                 Ok(statement) => {
                     statements.push(statement);
                 }
@@ -67,17 +67,17 @@ fn parse_statements(lexer: &mut PeekLex, inside_scope: bool) -> Result<Vec<State
                     error.extend_assign(e);
                 }
             },
-            Token::Int(_)
-            | Token::If
-            | Token::LParen
-            | Token::LBrace
-            | Token::LBracket
-            | Token::Minus
-            | Token::Bang
-            | Token::True
-            | Token::False
-            | Token::Func
-            | Token::String(_) => match parse_expression(lexer, Precedence::Lowest, true) {
+            TokenKInd::Int(_)
+            | TokenKInd::If
+            | TokenKInd::LParen
+            | TokenKInd::LBrace
+            | TokenKInd::LBracket
+            | TokenKInd::Minus
+            | TokenKInd::Bang
+            | TokenKInd::True
+            | TokenKInd::False
+            | TokenKInd::Func
+            | TokenKInd::String(_) => match parse_expression(lexer, Precedence::Lowest, true) {
                 Ok(statement) => match term_state {
                     TermState::None | TermState::Term => {
                         term_state = TermState::NonTerm;
@@ -96,7 +96,7 @@ fn parse_statements(lexer: &mut PeekLex, inside_scope: bool) -> Result<Vec<State
                     error.extend_assign(e);
                 }
             },
-            Token::RBrace => {
+            TokenKInd::RBrace => {
                 // If there is a brace it is time to yeet out while keeping any errors
                 lexer.next();
                 if let Some(e) = error {
@@ -115,7 +115,7 @@ fn parse_statements(lexer: &mut PeekLex, inside_scope: bool) -> Result<Vec<State
         start_statement_peek = lexer.peek().map(|val| val.to_owned());
     }
     if inside_scope {
-        let e = expect_peek(lexer, Token::RBrace).unwrap_err();
+        let e = expect_peek(lexer, TokenKInd::RBrace).unwrap_err();
         error.extend_assign(e);
     }
     if let Some(e) = error {
@@ -131,7 +131,7 @@ fn parse_ident_statement(
 ) -> Result<Statement, ParseError> {
     let mut lexer_clone = lexer.clone();
     let _ident = lexer_clone.next();
-    match is_peek(&mut lexer_clone, Token::Assign) {
+    match is_peek(&mut lexer_clone, TokenKInd::Assign) {
         Ok(_) => match parse_assign_statement(lexer) {
             Ok(statement) => Ok(Statement::Assign(statement)),
             Err(e) => Err(e),
@@ -179,7 +179,7 @@ fn parse_return_statement(lexer: &mut PeekLex) -> Result<Option<Expr>, ParseErro
     lexer
         .next()
         .expect("The return keyword was already peeked and matched");
-    if expect_peek(lexer, Token::Semicolon).is_ok() {
+    if expect_peek(lexer, TokenKInd::Semicolon).is_ok() {
         // A return with no expression is valid if there is a semicolon
         return Ok(None);
     }
@@ -200,14 +200,14 @@ fn parse_let_statement(lexer: &mut PeekLex) -> Result<LetStatement, ParseError> 
     let ident = match parse_identifier(lexer) {
         Ok(ident) => Some(ident),
         Err(e) => {
-            if is_peek(lexer, Token::Assign).is_err() {
+            if is_peek(lexer, TokenKInd::Assign).is_err() {
                 lexer.next();
             };
             error.extend_assign(e);
             None
         }
     };
-    if let Err(e) = expect_peek(lexer, Token::Assign) {
+    if let Err(e) = expect_peek(lexer, TokenKInd::Assign) {
         error.extend_assign(e);
     };
     let expr = match parse_expression(lexer, Precedence::Lowest, true) {
@@ -239,11 +239,11 @@ fn parse_let_statement(lexer: &mut PeekLex) -> Result<LetStatement, ParseError> 
     }
 }
 
-fn parse_identifier(lexer: &mut PeekLex) -> error_stack::Result<LocTok, ParseError> {
+fn parse_identifier(lexer: &mut PeekLex) -> error_stack::Result<Token, ParseError> {
     let next = lexer.peek().cloned();
     match next {
-        Some(lok_tok) => match lok_tok.token {
-            Token::Ident(_) => {
+        Some(lok_tok) => match lok_tok.kind {
+            TokenKInd::Ident(_) => {
                 lexer.next();
                 Ok(lok_tok)
             }
@@ -271,10 +271,10 @@ fn parse_expression(
     precedence: Precedence,
     match_semicolon: bool,
 ) -> Result<Expr, ParseError> {
-    use Token::*;
+    use TokenKInd::*;
     let lhs_val_peek = lexer.peek().map(|val| val.to_owned());
     let mut left_exp = match lhs_val_peek {
-        Some(left_lok_tok) => match left_lok_tok.token {
+        Some(left_lok_tok) => match left_lok_tok.kind {
             // All Literals, identifiers and prefix operators should be matched here
             Ident(_) => {
                 // An ident can either be an expression all on its own or the start of an assign
@@ -295,7 +295,7 @@ fn parse_expression(
                 lexer.next();
                 ExprBase::StringLiteral(left_lok_tok)
             }
-            Bang | Token::Minus => {
+            Bang | TokenKInd::Minus => {
                 // Don't skip the operator because it is needed
                 parse_prefix_expression(lexer)?
             }
@@ -311,11 +311,11 @@ fn parse_expression(
                 lexer.next();
                 parse_func_literal(lexer)?
             }
-            Token::LBrace => {
+            TokenKInd::LBrace => {
                 let _lbrace = lexer.next();
                 ExprBase::Scope(parse_statements(lexer, true)?)
             }
-            Token::LBracket => {
+            TokenKInd::LBracket => {
                 let _lbracket = lexer.next();
                 ExprBase::Array(parse_array(lexer)?)
             }
@@ -332,8 +332,8 @@ fn parse_expression(
         Some(token) => token,
         None => return Ok(Expr::NonTerminated(left_exp)),
     };
-    while precedence < peek_op_token.token.precedence() {
-        left_exp = match peek_op_token.token {
+    while precedence < peek_op_token.kind.precedence() {
+        left_exp = match peek_op_token.kind {
             // All binary tokens should be matched here. This includes LParen but LParen will match
             // to a different function because it is the start of a function call which needs
             // a few more checks than just regular binary expressions
@@ -353,7 +353,7 @@ fn parse_expression(
 
     // inner expressions should never be terminated so this check to match_semicolon checks if the
     // calling function wants the expression to have the option of being terminated or not.
-    if match_semicolon && peek_op_token.token.token_matches(&Token::Semicolon) {
+    if match_semicolon && peek_op_token.kind.token_matches(&TokenKInd::Semicolon) {
         lexer.next();
         Ok(Expr::Terminated(left_exp))
     } else {
@@ -374,7 +374,7 @@ fn parse_array_index(lexer: &mut PeekLex, left: ExprBase) -> Result<ExprBase, Pa
         }
     }
     .map(|val| val.expect_non_terminated());
-    if let Err(e) = expect_peek(lexer, Token::RBracket) {
+    if let Err(e) = expect_peek(lexer, TokenKInd::RBracket) {
         error.extend_assign(e);
     };
     if let Some(e) = error {
@@ -388,7 +388,7 @@ fn parse_array_index(lexer: &mut PeekLex, left: ExprBase) -> Result<ExprBase, Pa
 }
 
 fn parse_array(lexer: &mut PeekLex) -> Result<Vec<ExprBase>, ParseError> {
-    parse_call_args(lexer, Token::RBracket)
+    parse_call_args(lexer, TokenKInd::RBracket)
 }
 
 fn parse_method_expression(
@@ -398,7 +398,7 @@ fn parse_method_expression(
     let operator_dot = lexer
         .next()
         .expect("The operator should already peeked and found and should always be a Dot");
-    let op_precedence = operator_dot.token.precedence();
+    let op_precedence = operator_dot.kind.precedence();
     let method = parse_expression(lexer, op_precedence, false)?.expect_non_terminated();
     Ok(ExprBase::MethodCall(MethCall {
         instance: Box::new(instance),
@@ -408,10 +408,10 @@ fn parse_method_expression(
 
 fn parse_call_expression(lexer: &mut PeekLex, function: ExprBase) -> Result<ExprBase, ParseError> {
     let mut error: Option<Report<ParseError>> = None;
-    if let Err(e) = expect_peek(lexer, Token::LParen) {
+    if let Err(e) = expect_peek(lexer, TokenKInd::LParen) {
         error.extend_assign(e);
     }
-    let args = match parse_call_args(lexer, Token::RParen) {
+    let args = match parse_call_args(lexer, TokenKInd::RParen) {
         Ok(args) => Some(args),
         Err(e) => {
             error.extend_assign(e);
@@ -429,7 +429,7 @@ fn parse_call_expression(lexer: &mut PeekLex, function: ExprBase) -> Result<Expr
 }
 
 // A function to parse the arguments to a function when it is being called
-fn parse_call_args(lexer: &mut PeekLex, end_token: Token) -> Result<Vec<ExprBase>, ParseError> {
+fn parse_call_args(lexer: &mut PeekLex, end_token: TokenKInd) -> Result<Vec<ExprBase>, ParseError> {
     // A enum as  a state machine to track what the previous token was. This gives better options
     // for error messages
     enum ArgState {
@@ -445,8 +445,8 @@ fn parse_call_args(lexer: &mut PeekLex, end_token: Token) -> Result<Vec<ExprBase
     let mut peek = lexer.peek().map(|val| val.to_owned());
     while again {
         match peek {
-            Some(lok_tok) => match lok_tok.token {
-                Token::Comma => {
+            Some(lok_tok) => match lok_tok.kind {
+                TokenKInd::Comma => {
                     lexer.next();
                     match arg_state {
                         ArgState::Empty | ArgState::Comma => {
@@ -502,7 +502,7 @@ fn parse_call_args(lexer: &mut PeekLex, end_token: Token) -> Result<Vec<ExprBase
 
 fn parse_func_literal(lexer: &mut PeekLex) -> Result<ExprBase, ParseError> {
     let mut error: Option<Report<ParseError>> = None;
-    if let Err(e) = expect_peek(lexer, Token::LParen) {
+    if let Err(e) = expect_peek(lexer, TokenKInd::LParen) {
         if let Some(error) = error.as_mut() {
             error.extend_one(e);
         } else {
@@ -516,7 +516,7 @@ fn parse_func_literal(lexer: &mut PeekLex) -> Result<ExprBase, ParseError> {
             None
         }
     };
-    if let Err(e) = expect_peek(lexer, Token::LBrace) {
+    if let Err(e) = expect_peek(lexer, TokenKInd::LBrace) {
         error.extend_assign(e);
     }
     let body = match parse_statements(lexer, true) {
@@ -554,8 +554,8 @@ fn parse_function_parameters(lexer: &mut PeekLex) -> Result<Vec<Ident>, ParseErr
     let mut peek = lexer.peek().map(|val| val.to_owned());
     while again {
         match peek {
-            Some(lok_tok) => match lok_tok.token {
-                Token::Ident(_) => {
+            Some(lok_tok) => match lok_tok.kind {
+                TokenKInd::Ident(_) => {
                     lexer.next();
                     match param_state {
                         ParamState::Ident => {
@@ -569,7 +569,7 @@ fn parse_function_parameters(lexer: &mut PeekLex) -> Result<Vec<Ident>, ParseErr
                         }
                     }
                 }
-                Token::Comma => {
+                TokenKInd::Comma => {
                     lexer.next();
                     match param_state {
                         ParamState::Empty | ParamState::Comma => {
@@ -585,7 +585,7 @@ fn parse_function_parameters(lexer: &mut PeekLex) -> Result<Vec<Ident>, ParseErr
                     };
                     param_state = ParamState::Comma;
                 }
-                Token::RParen => {
+                TokenKInd::RParen => {
                     again = false;
                     lexer.next();
                 }
@@ -631,7 +631,7 @@ fn parse_grouped_expression(lexer: &mut PeekLex) -> Result<ExprBase, ParseError>
             None
         }
     };
-    if let Err(e) = expect_peek(lexer, Token::RParen) {
+    if let Err(e) = expect_peek(lexer, TokenKInd::RParen) {
         error.extend_assign(e);
     }
     if let Some(e) = error {
@@ -659,7 +659,7 @@ fn parse_if_expression(lexer: &mut PeekLex) -> Result<ExprBase, ParseError> {
             None
         }
     };
-    if let Err(e) = expect_peek(lexer, Token::LBrace) {
+    if let Err(e) = expect_peek(lexer, TokenKInd::LBrace) {
         error.extend_assign(e);
     };
     let consequence = match parse_statements(lexer, true) {
@@ -669,14 +669,14 @@ fn parse_if_expression(lexer: &mut PeekLex) -> Result<ExprBase, ParseError> {
             None
         }
     };
-    let alternate_opt = expect_peek(lexer, Token::Else);
+    let alternate_opt = expect_peek(lexer, TokenKInd::Else);
     let alternative = match alternate_opt {
         Err(_) => None,
         Ok(_) => {
-            let if_or_lbrace = expect_peek(lexer, Token::If);
+            let if_or_lbrace = expect_peek(lexer, TokenKInd::If);
             match if_or_lbrace {
                 Err(_) => {
-                    if let Err(e) = expect_peek(lexer, Token::LBrace) {
+                    if let Err(e) = expect_peek(lexer, TokenKInd::LBrace) {
                         error.extend_assign(e);
                     }
                     match parse_statements(lexer, true) {
@@ -718,10 +718,10 @@ fn parse_prefix_expression(lexer: &mut PeekLex) -> Result<ExprBase, ParseError> 
         .expect("The operator was already peeked and found");
     let right = lexer.peek().map(|val| val.to_owned());
     let expression = match right {
-        Some(_) => parse_expression(lexer, operator.token.precedence(), false)?,
+        Some(_) => parse_expression(lexer, operator.kind.precedence(), false)?,
         None => Err(Report::new(ParseError::Eof).attach_printable(format!(
             "Expected an operand after the prefix operator {:?} at {operator:?}",
-            operator.token
+            operator.kind
         )))?,
     };
     Ok(ExprBase::PrefixExpression(PreExpr {
@@ -734,7 +734,7 @@ fn parse_binary_expression(lexer: &mut PeekLex, left: ExprBase) -> Result<ExprBa
     let operator = lexer
         .next()
         .expect("The operator was already peeked and found");
-    let op_precedence = operator.token.precedence();
+    let op_precedence = operator.kind.precedence();
     let rhs_expr = parse_expression(lexer, op_precedence, false)?;
     let rhs = match rhs_expr {
         Expr::Terminated(_) => {
@@ -754,11 +754,11 @@ fn parse_binary_expression(lexer: &mut PeekLex, left: ExprBase) -> Result<ExprBa
 }
 
 // A function that
-fn expect_peek(lexer: &mut PeekLex, expected: Token) -> error_stack::Result<(), ParseError> {
+fn expect_peek(lexer: &mut PeekLex, expected: TokenKInd) -> error_stack::Result<(), ParseError> {
     let peek = lexer.peek().map(|val| val.to_owned());
     match peek {
         Some(lok_tok) => {
-            if lok_tok.token.token_matches(&expected) {
+            if lok_tok.kind.token_matches(&expected) {
                 lexer.next();
                 Ok(())
             } else {
@@ -772,11 +772,11 @@ fn expect_peek(lexer: &mut PeekLex, expected: Token) -> error_stack::Result<(), 
     }
 }
 
-fn is_peek(lexer: &mut PeekLex, expected: Token) -> error_stack::Result<(), ParseError> {
+fn is_peek(lexer: &mut PeekLex, expected: TokenKInd) -> error_stack::Result<(), ParseError> {
     let peek = lexer.peek().map(|val| val.to_owned());
     match peek {
         Some(lok_tok) => {
-            if lok_tok.token.token_matches(&expected) {
+            if lok_tok.kind.token_matches(&expected) {
                 Ok(())
             } else {
                 Err(Report::new(ParseError::UnexpectedToken(lok_tok))

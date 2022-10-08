@@ -1,10 +1,10 @@
 [
     Let(
         LetStatement {
-            ident: Ident("x"),
+            ident: Token(Ident("x"), (1,8)->(1,9)),
             expr: Terminated(
                 IntLiteral(
-                    Int(5),
+                    Token(Int(5), (1,12)->(1,13)),
                 ),
             ),
         },
@@ -13,31 +13,31 @@
         Terminated(
             Identifier(
                 Ident(
-                    Ident("foobar"),
+                    Token(Ident("foobar"), (2,4)->(2,10)),
                 ),
             ),
         ),
     ),
     Let(
         LetStatement {
-            ident: Ident("y"),
+            ident: Token(Ident("y"), (3,8)->(3,9)),
             expr: Terminated(
                 BinaryExpression(
                     BinExp {
                         lhs: BinaryExpression(
                             BinExp {
                                 lhs: IntLiteral(
-                                    Int(3),
+                                    Token(Int(3), (3,13)->(3,14)),
                                 ),
-                                operator: Plus,
+                                operator: Token(Plus, (3,15)->(3,16)),
                                 rhs: IntLiteral(
-                                    Int(3),
+                                    Token(Int(3), (3,17)->(3,18)),
                                 ),
                             },
                         ),
-                        operator: Asterisk,
+                        operator: Token(Asterisk, (3,20)->(3,21)),
                         rhs: IntLiteral(
-                            Int(5),
+                            Token(Int(5), (3,22)->(3,23)),
                         ),
                     },
                 ),
@@ -50,7 +50,7 @@
                 IfExpr {
                     condition: Identifier(
                         Ident(
-                            Ident("a"),
+                            Token(Ident("a"), (4,7)->(4,8)),
                         ),
                     ),
                     consequence: Scope {
@@ -59,7 +59,7 @@
                                 NonTerminated(
                                     Identifier(
                                         Ident(
-                                            Ident("b"),
+                                            Token(Ident("b"), (5,6)->(5,7)),
                                         ),
                                     ),
                                 ),
@@ -72,7 +72,7 @@
                                 IfExpr {
                                     condition: Identifier(
                                         Ident(
-                                            Ident("c"),
+                                            Token(Ident("c"), (6,14)->(6,15)),
                                         ),
                                     ),
                                     consequence: Scope {
@@ -81,7 +81,7 @@
                                                 NonTerminated(
                                                     Identifier(
                                                         Ident(
-                                                            Ident("d"),
+                                                            Token(Ident("d"), (7,6)->(7,7)),
                                                         ),
                                                     ),
                                                 ),
@@ -96,7 +96,7 @@
                                                         NonTerminated(
                                                             Identifier(
                                                                 Ident(
-                                                                    Ident("e"),
+                                                                    Token(Ident("e"), (9,6)->(9,7)),
                                                                 ),
                                                             ),
                                                         ),
@@ -115,16 +115,16 @@
     ),
     Let(
         LetStatement {
-            ident: Ident("multiply"),
+            ident: Token(Ident("multiply"), (11,8)->(11,16)),
             expr: Terminated(
                 FuncLiteral(
                     FnLiteral {
                         parameters: [
                             Ident(
-                                Ident("x"),
+                                Token(Ident("x"), (11,22)->(11,23)),
                             ),
                             Ident(
-                                Ident("y"),
+                                Token(Ident("y"), (11,25)->(11,26)),
                             ),
                         ],
                         body: Scope {
@@ -135,13 +135,13 @@
                                             BinExp {
                                                 lhs: Identifier(
                                                     Ident(
-                                                        Ident("x"),
+                                                        Token(Ident("x"), (11,28)->(11,29)),
                                                     ),
                                                 ),
-                                                operator: Asterisk,
+                                                operator: Token(Asterisk, (11,30)->(11,31)),
                                                 rhs: Identifier(
                                                     Ident(
-                                                        Ident("y"),
+                                                        Token(Ident("y"), (11,32)->(11,33)),
                                                     ),
                                                 ),
                                             },
@@ -160,11 +160,11 @@
             BinaryExpression(
                 BinExp {
                     lhs: IntLiteral(
-                        Int(100),
+                        Token(Int(100), (12,4)->(12,7)),
                     ),
-                    operator: Slash,
+                    operator: Token(Slash, (12,8)->(12,9)),
                     rhs: IntLiteral(
-                        Int(20),
+                        Token(Int(20), (12,10)->(12,12)),
                     ),
                 },
             ),

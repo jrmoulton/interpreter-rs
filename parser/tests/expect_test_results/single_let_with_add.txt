@@ -1,16 +1,16 @@
 [
     Let(
         LetStatement {
-            ident: Ident("x"),
+            ident: Token(Ident("x"), (0,4)->(0,5)),
             expr: Terminated(
                 BinaryExpression(
                     BinExp {
                         lhs: IntLiteral(
-                            Int(10),
+                            Token(Int(10), (0,8)->(0,10)),
                         ),
-                        operator: Plus,
+                        operator: Token(Plus, (0,11)->(0,12)),
                         rhs: IntLiteral(
-                            Int(3),
+                            Token(Int(3), (0,13)->(0,14)),
                         ),
                     },
                 ),

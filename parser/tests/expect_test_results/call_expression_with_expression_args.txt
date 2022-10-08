@@ -5,24 +5,24 @@
                 CallExpr {
                     function: Identifier(
                         Ident(
-                            Ident("call_func"),
+                            Token(Ident("call_func"), (0,0)->(0,9)),
                         ),
                     ),
                     args: [
                         IntLiteral(
-                            Int(2),
+                            Token(Int(2), (0,10)->(0,11)),
                         ),
                         IntLiteral(
-                            Int(3),
+                            Token(Int(3), (0,13)->(0,14)),
                         ),
                         FuncLiteral(
                             FnLiteral {
                                 parameters: [
                                     Ident(
-                                        Ident("x"),
+                                        Token(Ident("x"), (0,19)->(0,20)),
                                     ),
                                     Ident(
-                                        Ident("y"),
+                                        Token(Ident("y"), (0,21)->(0,22)),
                                     ),
                                 ],
                                 body: Scope {
@@ -33,13 +33,13 @@
                                                     BinExp {
                                                         lhs: Identifier(
                                                             Ident(
-                                                                Ident("x"),
+                                                                Token(Ident("x"), (0,24)->(0,25)),
                                                             ),
                                                         ),
-                                                        operator: Plus,
+                                                        operator: Token(Plus, (0,26)->(0,27)),
                                                         rhs: Identifier(
                                                             Ident(
-                                                                Ident("y"),
+                                                                Token(Ident("y"), (0,28)->(0,29)),
                                                             ),
                                                         ),
                                                     },

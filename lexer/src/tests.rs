@@ -1,7 +1,7 @@
 #![cfg(test)]
 use super::*;
 use expect_test::expect_file;
-use Token::*;
+use TokenKInd::*;
 
 mod results {
     use super::*;
@@ -15,7 +15,7 @@ mod results {
             correct,
             lexer
                 .into_iter()
-                .map(|lok_tok| lok_tok.token)
+                .map(|lok_tok| lok_tok.kind)
                 .collect::<Vec<_>>()
         );
     }
@@ -29,7 +29,7 @@ mod results {
             correct,
             lexer
                 .into_iter()
-                .map(|lok_tok| lok_tok.token)
+                .map(|lok_tok| lok_tok.kind)
                 .collect::<Vec<_>>()
         );
     }
@@ -43,7 +43,7 @@ mod results {
             correct,
             lexer
                 .into_iter()
-                .map(|lok_tok| lok_tok.token)
+                .map(|lok_tok| lok_tok.kind)
                 .collect::<Vec<_>>()
         );
     }
@@ -57,7 +57,7 @@ mod results {
             correct,
             lexer
                 .into_iter()
-                .map(|lok_tok| lok_tok.token)
+                .map(|lok_tok| lok_tok.kind)
                 .collect::<Vec<_>>()
         );
     }
@@ -71,7 +71,7 @@ mod results {
             correct,
             lexer
                 .into_iter()
-                .map(|lok_tok| lok_tok.token)
+                .map(|lok_tok| lok_tok.kind)
                 .collect::<Vec<_>>()
         );
     }
@@ -85,7 +85,7 @@ mod results {
             correct,
             lexer
                 .into_iter()
-                .map(|lok_tok| lok_tok.token)
+                .map(|lok_tok| lok_tok.kind)
                 .collect::<Vec<_>>()
         );
     }
@@ -99,7 +99,7 @@ mod results {
             correct,
             lexer
                 .into_iter()
-                .map(|lok_tok| lok_tok.token)
+                .map(|lok_tok| lok_tok.kind)
                 .collect::<Vec<_>>()
         );
     }
@@ -113,7 +113,7 @@ mod results {
             correct,
             lexer
                 .into_iter()
-                .map(|lok_tok| lok_tok.token)
+                .map(|lok_tok| lok_tok.kind)
                 .collect::<Vec<_>>()
         );
     }
@@ -127,7 +127,7 @@ mod results {
             correct,
             lexer
                 .into_iter()
-                .map(|lok_tok| lok_tok.token)
+                .map(|lok_tok| lok_tok.kind)
                 .collect::<Vec<_>>()
         );
     }
@@ -141,7 +141,7 @@ mod results {
             correct,
             lexer
                 .into_iter()
-                .map(|lok_tok| lok_tok.token)
+                .map(|lok_tok| lok_tok.kind)
                 .collect::<Vec<_>>()
         );
     }
@@ -158,7 +158,7 @@ mod results {
             correct,
             lexer
                 .into_iter()
-                .map(|lok_tok| lok_tok.token)
+                .map(|lok_tok| lok_tok.kind)
                 .collect::<Vec<_>>()
         );
     }
@@ -179,7 +179,7 @@ mod results {
             correct,
             lexer
                 .into_iter()
-                .map(|lok_tok| lok_tok.token)
+                .map(|lok_tok| lok_tok.kind)
                 .collect::<Vec<_>>()
         );
     }
@@ -196,7 +196,7 @@ mod results {
             correct,
             lexer
                 .into_iter()
-                .map(|lok_tok| lok_tok.token)
+                .map(|lok_tok| lok_tok.kind)
                 .collect::<Vec<_>>()
         );
     }
@@ -213,7 +213,7 @@ mod results {
             correct,
             lexer
                 .into_iter()
-                .map(|lok_tok| lok_tok.token)
+                .map(|lok_tok| lok_tok.kind)
                 .collect::<Vec<_>>()
         );
     }
@@ -230,7 +230,7 @@ mod results {
             correct,
             lexer
                 .into_iter()
-                .map(|lok_tok| lok_tok.token)
+                .map(|lok_tok| lok_tok.kind)
                 .collect::<Vec<_>>()
         );
     }
@@ -274,7 +274,7 @@ mod results {
             correct,
             lexer
                 .into_iter()
-                .map(|lok_tok| lok_tok.token)
+                .map(|lok_tok| lok_tok.kind)
                 .collect::<Vec<_>>()
         );
     }

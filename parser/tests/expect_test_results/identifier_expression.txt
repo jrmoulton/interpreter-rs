@@ -3,7 +3,7 @@
         NonTerminated(
             Identifier(
                 Ident(
-                    Ident("foobar"),
+                    Token(Ident("foobar"), (0,0)->(0,6)),
                 ),
             ),
         ),

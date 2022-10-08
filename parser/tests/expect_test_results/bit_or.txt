@@ -4,11 +4,11 @@
             BinaryExpression(
                 BinExp {
                     lhs: IntLiteral(
-                        Int(3),
+                        Token(Int(3), (0,0)->(0,1)),
                     ),
-                    operator: BitOr,
+                    operator: Token(BitOr, (0,2)->(0,3)),
                     rhs: IntLiteral(
-                        Int(6),
+                        Token(Int(6), (0,4)->(0,5)),
                     ),
                 },
             ),

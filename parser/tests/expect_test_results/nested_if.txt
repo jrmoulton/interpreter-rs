@@ -6,14 +6,14 @@
                     condition: If(
                         IfExpr {
                             condition: BoolLiteral(
-                                True,
+                                Token(True, (0,6)->(0,10)),
                             ),
                             consequence: Scope {
                                 statements: [
                                     Expression(
                                         NonTerminated(
                                             BoolLiteral(
-                                                True,
+                                                Token(True, (0,12)->(0,16)),
                                             ),
                                         ),
                                     ),
@@ -26,7 +26,7 @@
                                             Expression(
                                                 NonTerminated(
                                                     BoolLiteral(
-                                                        False,
+                                                        Token(False, (0,24)->(0,29)),
                                                     ),
                                                 ),
                                             ),
@@ -41,7 +41,7 @@
                             Expression(
                                 NonTerminated(
                                     BoolLiteral(
-                                        True,
+                                        Token(True, (0,32)->(0,36)),
                                     ),
                                 ),
                             ),
@@ -54,7 +54,7 @@
                                     Expression(
                                         NonTerminated(
                                             BoolLiteral(
-                                                False,
+                                                Token(False, (0,44)->(0,49)),
                                             ),
                                         ),
                                     ),

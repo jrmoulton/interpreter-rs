@@ -1,9 +1,9 @@
 [
     Assign(
         AssignStatement {
-            ident: Ident("x"),
+            ident: Token(Ident("x"), (0,0)->(0,1)),
             expr: BoolLiteral(
-                True,
+                Token(True, (0,4)->(0,8)),
             ),
         },
     ),

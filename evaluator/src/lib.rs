@@ -5,7 +5,7 @@ pub mod object;
 use std::{collections::HashMap,  sync::Arc};
 
 use error_stack::{ Report, Result};
-use lexer::{LocTok, Token};
+use lexer::{Token, TokenKInd};
 use parser::structs::*;
 
 use object::{Array, Integer};
@@ -39,8 +39,8 @@ pub fn eval(
         let temp_res = match statement {
             Statement::Let(let_statement) => {
                 let expr_obj = eval_expression(let_statement.expr, env.clone())?.0;
-                let ident_string = match let_statement.ident.token {
-                    Token::Ident(inner) => inner,
+                let ident_string = match let_statement.ident.kind {
+                    TokenKInd::Ident(inner) => inner,
                     _ => unreachable!(),
                 };
                 env.set(ident_string, expr_obj);
@@ -74,8 +74,8 @@ pub fn eval(
                 expr,
             }) => {
                 let ident_string = match ident {
-                    LocTok {
-                        token: Token::Ident(ref ident_string),
+                    Token {
+                        kind: TokenKInd::Ident(ref ident_string),
                         ..
                     } => ident_string,
                     _ => unreachable!()
@@ -126,18 +126,18 @@ fn eval_expr_base(
     env: Arc<Environment>,
 ) -> Result<Object, EvalError> {
     match expr_base {
-        ExprBase::IntLiteral(LocTok {
-            token: Token::Int(int),
+        ExprBase::IntLiteral(Token {
+            kind: TokenKInd::Int(int),
             ..
         }) => Ok(Object::Integer(object::Integer::new(int))),
-        ExprBase::BoolLiteral(LocTok { token, .. }) => match token {
-            Token::True => Ok(Object::Boolean(object::Boolean::new(true))),
-            Token::False => Ok(Object::Boolean(object::Boolean::new(false))),
+        ExprBase::BoolLiteral(Token { kind: token, .. }) => match token {
+            TokenKInd::True => Ok(Object::Boolean(object::Boolean::new(true))),
+            TokenKInd::False => Ok(Object::Boolean(object::Boolean::new(false))),
             _ => {
                 unreachable!("BoolLiteral will never have a token that is not either true or false")
             }
         }, 
-        ExprBase::StringLiteral(LocTok {token: Token::String(inner_str), ..}) => Ok(Object::String(object::String::new(inner_str))),
+        ExprBase::StringLiteral(Token {kind: TokenKInd::String(inner_str), ..}) => Ok(Object::String(object::String::new(inner_str))),
         ExprBase::FuncLiteral(FnLiteral { parameters, body }) => Ok(Object::Function(object::Function::new(FuncIntern::new(parameters, body, env)))),
         ExprBase::CallExpression(CallExpr { function, args }) => {
             let function_obj = eval_expr_base(*function, env.clone())?;
@@ -180,8 +180,8 @@ fn eval_expr_base(
                 _ =>  Err(Report::new(EvalError::UnexpectedObject(array_obj)))?
             } 
         }
-        ExprBase::Identifier(Ident(LocTok {
-            token: Token::Ident(ref ident_string),
+        ExprBase::Identifier(Ident(Token {
+            kind: TokenKInd::Ident(ref ident_string),
             ..
         })) => {
                 match env.find(ident_string) {
@@ -195,7 +195,7 @@ fn eval_expr_base(
             ref expression,
         }) => {
             let right = eval_expression((**expression).clone(), env)?.0;
-            Ok(eval_prefix_expr(&operator.token, right, expr_base.clone())?)
+            Ok(eval_prefix_expr(&operator.kind, right, expr_base.clone())?)
         } 
         ExprBase::BinaryExpression(BinExp {
             ref lhs,
@@ -205,7 +205,7 @@ fn eval_expr_base(
             let left = eval_expr_base((**lhs).clone(), env.clone())?;
             let right = eval_expr_base((**rhs).clone(), env)?;
             Ok(eval_binary_expr(
-                &operator.token,
+                &operator.kind,
                 left,
                 right,
                 expr_base.clone(),
@@ -232,8 +232,8 @@ fn apply_function(function_obj: Object, args: Vec<Object>) -> Result<Object, Eva
     match function_obj {
         Object::Function(function_obj) => {
             let fn_literal = function_obj.value;
-            let param_strings: Vec<String> = fn_literal.parameters.iter().map(|param_ident| {match &param_ident.0.token {
-                Token::Ident(ident_string) => ident_string.clone(),
+            let param_strings: Vec<String> = fn_literal.parameters.iter().map(|param_ident| {match &param_ident.0.kind {
+                TokenKInd::Ident(ident_string) => ident_string.clone(),
                 _ => unreachable!()
             }}).collect();
             if param_strings.len() != args.len() {
@@ -275,7 +275,7 @@ fn eval_if_expr(
 
 #[allow(unreachable_patterns)]
 fn eval_binary_expr(
-    operator: &Token,
+    operator: &TokenKInd,
     left: Object,
     right: Object,
     expr_base: ExprBase,
@@ -288,7 +288,7 @@ fn eval_binary_expr(
     }
 }
 
-fn eval_string_binary_expr(operator: &Token, left: Object, right: Object, expr_base: ExprBase) -> Result<Object, EvalError> {
+fn eval_string_binary_expr(operator: &TokenKInd, left: Object, right: Object, expr_base: ExprBase) -> Result<Object, EvalError> {
     let left = match left {
         Object::String(object::String { value, .. }) => value,
         _ => unreachable!("string was already matched"),
@@ -298,16 +298,16 @@ fn eval_string_binary_expr(operator: &Token, left: Object, right: Object, expr_b
         _ => unimplemented!("Here I would add support for operator overloading"),
     };
     match operator {
-        Token::Eq => Ok(object::Boolean::new(left == right).into()),
-        Token::Ne => Ok(object::Boolean::new(left != right).into()),
-        Token::Plus => Ok(object::String::new(left + &right).into()),
+        TokenKInd::Eq => Ok(object::Boolean::new(left == right).into()),
+        TokenKInd::Ne => Ok(object::Boolean::new(left != right).into()),
+        TokenKInd::Plus => Ok(object::String::new(left + &right).into()),
         _ => Err(Report::new(EvalError::UnsupportedOperation(expr_base))),
     }
     
 }
 
 fn eval_bool_binary_expr(
-    operator: &Token,
+    operator: &TokenKInd,
     left: Object,
     right: Object,
     expr_base: ExprBase,
@@ -321,16 +321,16 @@ fn eval_bool_binary_expr(
         _ => unimplemented!("Here I would add support for operator overloading"),
     };
     match operator {
-        Token::Eq => Ok(object::Boolean::new(left == right).into()),
-        Token::Ne => Ok(object::Boolean::new(left != right).into()),
-        Token::Or => Ok(object::Boolean::new(left || right).into()),
-        Token::And => Ok(object::Boolean::new(left && right).into()),
+        TokenKInd::Eq => Ok(object::Boolean::new(left == right).into()),
+        TokenKInd::Ne => Ok(object::Boolean::new(left != right).into()),
+        TokenKInd::Or => Ok(object::Boolean::new(left || right).into()),
+        TokenKInd::And => Ok(object::Boolean::new(left && right).into()),
         _ => Err(Report::new(EvalError::UnsupportedOperation(expr_base))),
     }
 }
 
 fn eval_int_binary_expr(
-    operator: &Token,
+    operator: &TokenKInd,
     left: Object,
     right: Object,
     expr_base: ExprBase,
@@ -344,26 +344,26 @@ fn eval_int_binary_expr(
         _ => unimplemented!("Here I would add support for operator overloading"),
     };
     match operator {
-        Token::Plus => Ok(object::Integer::new(left + right).into()),
-        Token::Minus => Ok(object::Integer::new(left - right).into()),
-        Token::Slash => Ok(object::Integer::new(left / right).into()),
-        Token::Asterisk => Ok(object::Integer::new(left * right).into()),
-        Token::LT => Ok(object::Boolean::new(left < right).into()),
-        Token::GT => Ok(object::Boolean::new(left > right).into()),
-        Token::Eq => Ok(object::Boolean::new(left == right).into()),
-        Token::Ne => Ok(object::Boolean::new(left != right).into()),
+        TokenKInd::Plus => Ok(object::Integer::new(left + right).into()),
+        TokenKInd::Minus => Ok(object::Integer::new(left - right).into()),
+        TokenKInd::Slash => Ok(object::Integer::new(left / right).into()),
+        TokenKInd::Asterisk => Ok(object::Integer::new(left * right).into()),
+        TokenKInd::LT => Ok(object::Boolean::new(left < right).into()),
+        TokenKInd::GT => Ok(object::Boolean::new(left > right).into()),
+        TokenKInd::Eq => Ok(object::Boolean::new(left == right).into()),
+        TokenKInd::Ne => Ok(object::Boolean::new(left != right).into()),
         _ => Err(Report::new(EvalError::UnsupportedOperation(expr_base))),
     }
 }
 
 fn eval_prefix_expr(
-    operator: &Token,
+    operator: &TokenKInd,
     right: Object,
     expr_base: ExprBase,
 ) -> Result<Object, EvalError> {
     match operator {
-        Token::Minus => eval_minux_prefix_op(right, expr_base),
-        Token::Bang => eval_bang_prefix_op(right, expr_base),
+        TokenKInd::Minus => eval_minux_prefix_op(right, expr_base),
+        TokenKInd::Bang => eval_bang_prefix_op(right, expr_base),
         _ => Err(Report::new(EvalError::UnsupportedOperation(expr_base))),
     }
 }

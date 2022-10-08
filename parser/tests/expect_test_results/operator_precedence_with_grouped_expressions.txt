@@ -6,17 +6,17 @@
                     lhs: BinaryExpression(
                         BinExp {
                             lhs: IntLiteral(
-                                Int(5),
+                                Token(Int(5), (0,1)->(0,2)),
                             ),
-                            operator: Plus,
+                            operator: Token(Plus, (0,3)->(0,4)),
                             rhs: IntLiteral(
-                                Int(5),
+                                Token(Int(5), (0,5)->(0,6)),
                             ),
                         },
                     ),
-                    operator: Asterisk,
+                    operator: Token(Asterisk, (0,8)->(0,9)),
                     rhs: IntLiteral(
-                        Int(5),
+                        Token(Int(5), (0,10)->(0,11)),
                     ),
                 },
             ),

@@ -3,10 +3,10 @@
         NonTerminated(
             PrefixExpression(
                 PreExpr {
-                    operator: Minus,
+                    operator: Token(Minus, (0,0)->(0,1)),
                     expression: NonTerminated(
                         IntLiteral(
-                            Int(5),
+                            Token(Int(5), (0,1)->(0,2)),
                         ),
                     ),
                 },

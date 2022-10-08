@@ -1,10 +1,10 @@
 [
     Let(
         LetStatement {
-            ident: Ident("x"),
+            ident: Token(Ident("x"), (0,4)->(0,5)),
             expr: Terminated(
                 StringLiteral(
-                    String("foo bar"),
+                    Token(String("foo bar"), (0,8)->(0,17)),
                 ),
             ),
         },

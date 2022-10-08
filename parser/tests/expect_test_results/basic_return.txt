@@ -3,7 +3,7 @@
         Some(
             Terminated(
                 IntLiteral(
-                    Int(35),
+                    Token(Int(35), (0,7)->(0,9)),
                 ),
             ),
         ),

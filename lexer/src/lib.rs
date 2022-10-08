@@ -38,7 +38,7 @@ pub enum Precedence {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub enum Token {
+pub enum TokenKInd {
     // Extra stuff
     Illegal,
     Eof,
@@ -97,63 +97,63 @@ pub enum Token {
     Dot,
 }
 
-impl Display for Token {
+impl Display for TokenKInd {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let ret: String = match self {
-            Token::Illegal => "`Illegal`".into(),
-            Token::Eof => "`End of File`".into(),
-            Token::Let => "`let`".into(),
-            Token::Mut => "`mut`".into(),
-            Token::Func => "`fn`".into(),
-            Token::True => "`true`".into(),
-            Token::False => "`false`".into(),
-            Token::If => "`if`".into(),
-            Token::Else => "`else`".into(),
-            Token::Return => "`return`".into(),
-            Token::For => "`for`".into(),
-            Token::In => "`in`".into(),
-            Token::Break => "`break`".into(),
-            Token::Continue => "`continue`".into(),
-            Token::Loop => "`loop`".into(),
-            Token::While => "`while`".into(),
-            Token::Ident(ident) => format!("`{ident}`"),
-            Token::Int(int) => format!("`{int}`"),
-            Token::String(string) => format!("`{string}`"),
-            Token::Assign => "`=`".into(),
-            Token::Plus => "`+`".into(),
-            Token::Minus => "`-`".into(),
-            Token::Slash => "`/`".into(),
-            Token::Asterisk => "`*`".into(),
-            Token::Bang => "`!`".into(),
-            Token::BitAnd => "`&`".into(),
-            Token::BitOr => "`|`".into(),
-            Token::Or => "`||`".into(),
-            Token::And => "`&&`".into(),
-            Token::LT => "`<`".into(),
-            Token::GT => "`>`".into(),
-            Token::Eq => "`==`".into(),
-            Token::Ne => "`!=`".into(),
-            Token::Comma => "`,`".into(),
-            Token::Semicolon => "`;`".into(),
-            Token::LParen => "`(`".into(),
-            Token::RParen => "`)`".into(),
-            Token::LBrace => "`{`".into(),
-            Token::RBrace => "`}`".into(),
-            Token::LBracket => "`[`".into(),
-            Token::RBracket => "`]`".into(),
-            Token::Dot => "`.`".into(),
+            TokenKInd::Illegal => "`Illegal`".into(),
+            TokenKInd::Eof => "`End of File`".into(),
+            TokenKInd::Let => "`let`".into(),
+            TokenKInd::Mut => "`mut`".into(),
+            TokenKInd::Func => "`fn`".into(),
+            TokenKInd::True => "`true`".into(),
+            TokenKInd::False => "`false`".into(),
+            TokenKInd::If => "`if`".into(),
+            TokenKInd::Else => "`else`".into(),
+            TokenKInd::Return => "`return`".into(),
+            TokenKInd::For => "`for`".into(),
+            TokenKInd::In => "`in`".into(),
+            TokenKInd::Break => "`break`".into(),
+            TokenKInd::Continue => "`continue`".into(),
+            TokenKInd::Loop => "`loop`".into(),
+            TokenKInd::While => "`while`".into(),
+            TokenKInd::Ident(ident) => format!("`{ident}`"),
+            TokenKInd::Int(int) => format!("`{int}`"),
+            TokenKInd::String(string) => format!("`{string}`"),
+            TokenKInd::Assign => "`=`".into(),
+            TokenKInd::Plus => "`+`".into(),
+            TokenKInd::Minus => "`-`".into(),
+            TokenKInd::Slash => "`/`".into(),
+            TokenKInd::Asterisk => "`*`".into(),
+            TokenKInd::Bang => "`!`".into(),
+            TokenKInd::BitAnd => "`&`".into(),
+            TokenKInd::BitOr => "`|`".into(),
+            TokenKInd::Or => "`||`".into(),
+            TokenKInd::And => "`&&`".into(),
+            TokenKInd::LT => "`<`".into(),
+            TokenKInd::GT => "`>`".into(),
+            TokenKInd::Eq => "`==`".into(),
+            TokenKInd::Ne => "`!=`".into(),
+            TokenKInd::Comma => "`,`".into(),
+            TokenKInd::Semicolon => "`;`".into(),
+            TokenKInd::LParen => "`(`".into(),
+            TokenKInd::RParen => "`)`".into(),
+            TokenKInd::LBrace => "`{`".into(),
+            TokenKInd::RBrace => "`}`".into(),
+            TokenKInd::LBracket => "`[`".into(),
+            TokenKInd::RBracket => "`]`".into(),
+            TokenKInd::Dot => "`.`".into(),
         };
         f.write_str(&ret)
     }
 }
-impl Token {
+impl TokenKInd {
     /// Checks if the token type matches without checking the internal data
     pub fn token_matches(&self, other: &Self) -> bool {
         discriminant(self) == discriminant(other)
     }
     pub fn precedence(&self) -> Precedence {
         use Precedence::*;
-        use Token::*;
+        use TokenKInd::*;
         match self {
             LBracket => Index,
             LParen => Call,
@@ -168,29 +168,46 @@ impl Token {
             Ne => Equals,
             Or => LogicOr,
             And => LogicAnd,
-            Token::BitOr => Precedence::BitOr,
-            Token::BitAnd => Precedence::BitAnd,
+            TokenKInd::BitOr => Precedence::BitOr,
+            TokenKInd::BitAnd => Precedence::BitAnd,
             _ => Lowest,
         }
     }
 }
 
 #[derive(Clone)]
-pub struct LocTok {
+pub struct Span {
     pub line: u32,
     pub column: usize,
     pub abs_pos: usize,
     pub len: usize,
-    pub token: Token,
 }
-impl Debug for LocTok {
+impl Debug for Span {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.write_fmt(format_args!("{:?}", self.token))
+        write!(
+            f,
+            "({},{})->({},{})",
+            self.line,
+            self.column,
+            self.line,
+            self.column + self.len
+        )
     }
 }
-impl Display for LocTok {
+
+#[derive(Clone)]
+pub struct Token {
+    pub span: Span,
+    pub kind: TokenKInd,
+}
+impl Debug for Token {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.write_fmt(format_args!("{:?}", self.token))
+        f.write_fmt(format_args!("Token({:?}, {:?})", self.kind, self.span))
+    }
+}
+impl Display for Token {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_fmt(format_args!("{:?}", self.kind))
     }
 }
 
@@ -214,7 +231,7 @@ impl<'a> Lexer<'a> {
             pos: 0,
         }
     }
-    fn next_token(&mut self) -> Result<Option<LocTok>, LexerError> {
+    fn next_token(&mut self) -> Result<Option<Token>, LexerError> {
         while self.pos < self.len && (self.input[self.pos] as char).is_whitespace() {
             if self.input[self.pos] as char == '\n' {
                 self.line += 1;
@@ -224,12 +241,14 @@ impl<'a> Lexer<'a> {
             }
             self.pos += 1;
         }
-        let mut token = LocTok {
-            line: self.line,
-            column: self.column,
-            abs_pos: self.pos,
-            len: 1,
-            token: Token::Illegal,
+        let mut token = Token {
+            span: Span {
+                line: self.line,
+                column: self.column,
+                abs_pos: self.pos,
+                len: 1,
+            },
+            kind: TokenKInd::Illegal,
         };
         if let Some(ch) = self.input.get(self.pos) {
             match *ch as char {
@@ -240,8 +259,8 @@ impl<'a> Lexer<'a> {
                     {
                         len += 1;
                     }
-                    token.len = len;
-                    token.token = Token::Int(
+                    token.span.len = len;
+                    token.kind = TokenKInd::Int(
                         std::str::from_utf8(&self.input[self.pos..self.pos + len])
                             .into_report()
                             .change_context(LexerError::InvalidUtf8)?
@@ -256,88 +275,88 @@ impl<'a> Lexer<'a> {
                     self.column += len - 1;
                 }
                 '=' => {
-                    token.token = Token::Assign;
+                    token.kind = TokenKInd::Assign;
                     if let Some(ch) = self.input.get(self.pos + 1) {
                         if *ch as char == '=' {
-                            token.token = Token::Eq;
+                            token.kind = TokenKInd::Eq;
                             self.pos += 1;
                             self.column += 1;
                         }
                     }
                 }
                 '+' => {
-                    token.token = Token::Plus;
+                    token.kind = TokenKInd::Plus;
                 }
                 '(' => {
-                    token.token = Token::LParen;
+                    token.kind = TokenKInd::LParen;
                 }
                 ')' => {
-                    token.token = Token::RParen;
+                    token.kind = TokenKInd::RParen;
                 }
                 '{' => {
-                    token.token = Token::LBrace;
+                    token.kind = TokenKInd::LBrace;
                 }
                 '}' => {
-                    token.token = Token::RBrace;
+                    token.kind = TokenKInd::RBrace;
                 }
                 '[' => {
-                    token.token = Token::LBracket;
+                    token.kind = TokenKInd::LBracket;
                 }
                 ']' => {
-                    token.token = Token::RBracket;
+                    token.kind = TokenKInd::RBracket;
                 }
                 ',' => {
-                    token.token = Token::Comma;
+                    token.kind = TokenKInd::Comma;
                 }
                 ';' => {
-                    token.token = Token::Semicolon;
+                    token.kind = TokenKInd::Semicolon;
                 }
                 '-' => {
-                    token.token = Token::Minus;
+                    token.kind = TokenKInd::Minus;
                 }
                 '!' => {
-                    token.token = Token::Bang;
+                    token.kind = TokenKInd::Bang;
                     if let Some(ch) = self.input.get(self.pos + 1) {
                         if *ch as char == '=' {
-                            token.token = Token::Ne;
+                            token.kind = TokenKInd::Ne;
                             self.pos += 1;
                             self.column += 1;
                         }
                     }
                 }
                 '*' => {
-                    token.token = Token::Asterisk;
+                    token.kind = TokenKInd::Asterisk;
                 }
                 '/' => {
-                    token.token = Token::Slash;
+                    token.kind = TokenKInd::Slash;
                 }
                 '<' => {
-                    token.token = Token::LT;
+                    token.kind = TokenKInd::LT;
                 }
                 '>' => {
-                    token.token = Token::GT;
+                    token.kind = TokenKInd::GT;
                 }
                 '.' => {
-                    token.token = Token::Dot;
+                    token.kind = TokenKInd::Dot;
                 }
                 '&' => {
                     if self.input[self.pos + 1] as char == '&' {
-                        token.token = Token::And;
-                        token.len = 2;
+                        token.kind = TokenKInd::And;
+                        token.span.len = 2;
                         self.pos += 1;
                         self.column += 1;
                     } else {
-                        token.token = Token::BitAnd;
+                        token.kind = TokenKInd::BitAnd;
                     }
                 }
                 '|' => {
                     if self.input[self.pos + 1] as char == '|' {
-                        token.token = Token::Or;
-                        token.len = 2;
+                        token.kind = TokenKInd::Or;
+                        token.span.len = 2;
                         self.pos += 1;
                         self.column += 1;
                     } else {
-                        token.token = Token::BitOr;
+                        token.kind = TokenKInd::BitOr;
                     }
                 }
                 '"' => {
@@ -351,8 +370,8 @@ impl<'a> Lexer<'a> {
                     {
                         len += 1;
                     }
-                    token.len = len + 1;
-                    token.token = Token::String(
+                    token.span.len = len + 1;
+                    token.kind = TokenKInd::String(
                         std::str::from_utf8(&self.input[self.pos + 1..self.pos + len])
                             .map_err(|e| Report::new(e).change_context(LexerError::InvalidUtf8))?
                             .into(),
@@ -367,52 +386,52 @@ impl<'a> Lexer<'a> {
                     {
                         len += 1;
                     }
-                    token.len = len;
+                    token.span.len = len;
                     match std::str::from_utf8(&self.input[self.pos..self.pos + len]) {
                         Ok("let") => {
-                            token.token = Token::Let;
+                            token.kind = TokenKInd::Let;
                         }
                         Ok("fn") => {
-                            token.token = Token::Func;
+                            token.kind = TokenKInd::Func;
                         }
                         Ok("true") => {
-                            token.token = Token::True;
+                            token.kind = TokenKInd::True;
                         }
                         Ok("false") => {
-                            token.token = Token::False;
+                            token.kind = TokenKInd::False;
                         }
                         Ok("if") => {
-                            token.token = Token::If;
+                            token.kind = TokenKInd::If;
                         }
                         Ok("else") => {
-                            token.token = Token::Else;
+                            token.kind = TokenKInd::Else;
                         }
                         Ok("return") => {
-                            token.token = Token::Return;
+                            token.kind = TokenKInd::Return;
                         }
                         Ok("for") => {
-                            token.token = Token::For;
+                            token.kind = TokenKInd::For;
                         }
                         Ok("in") => {
-                            token.token = Token::In;
+                            token.kind = TokenKInd::In;
                         }
                         Ok("mut") => {
-                            token.token = Token::Mut;
+                            token.kind = TokenKInd::Mut;
                         }
                         Ok("break") => {
-                            token.token = Token::Break;
+                            token.kind = TokenKInd::Break;
                         }
                         Ok("continue") => {
-                            token.token = Token::Continue;
+                            token.kind = TokenKInd::Continue;
                         }
                         Ok("loop") => {
-                            token.token = Token::Loop;
+                            token.kind = TokenKInd::Loop;
                         }
                         Ok("while") => {
-                            token.token = Token::While;
+                            token.kind = TokenKInd::While;
                         }
                         Ok(ident) => {
-                            token.token = Token::Ident(ident.into());
+                            token.kind = TokenKInd::Ident(ident.into());
                         }
                         Err(e) => {
                             return Err(Report::new(e).change_context(LexerError::InvalidUtf8));
@@ -422,7 +441,7 @@ impl<'a> Lexer<'a> {
                     self.column += len - 1;
                 }
                 _ => {
-                    token.token = Token::Illegal;
+                    token.kind = TokenKInd::Illegal;
                 }
             }; // End of main match statement matching on first chars
         } else {
@@ -434,7 +453,7 @@ impl<'a> Lexer<'a> {
     }
 }
 impl<'a> Iterator for Lexer<'a> {
-    type Item = LocTok;
+    type Item = Token;
     fn next(&mut self) -> Option<Self::Item> {
         match self.next_token() {
             Ok(val) => val,

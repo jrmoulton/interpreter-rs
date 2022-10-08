@@ -1,5 +1,5 @@
 use error_stack::Context;
-use lexer::{Lexer, LocTok};
+use lexer::{Lexer, Token};
 use std::fmt::Write;
 use std::{fmt::Display, iter::Peekable};
 
@@ -8,14 +8,14 @@ use std::{fmt::Display, iter::Peekable};
 /// Both the lhs and rhs can be entire expressions themselves
 pub struct BinExp {
     pub lhs: Box<ExprBase>,
-    pub operator: LocTok,
+    pub operator: Token,
     pub rhs: Box<ExprBase>,
 }
 
 #[derive(Debug, Clone)]
 /// A prefix expression has an operator before a single operand that can be an entire expression
 pub struct PreExpr {
-    pub operator: LocTok,
+    pub operator: Token,
     pub expression: Box<Expr>,
 }
 
@@ -49,7 +49,7 @@ pub struct IfExpr {
 }
 
 #[derive(Debug, Clone)]
-pub struct Ident(pub LocTok);
+pub struct Ident(pub Token);
 impl Display for Ident {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.write_fmt(format_args!("{}", self.0))
@@ -92,10 +92,10 @@ impl Display for Expr {
 
 #[derive(Debug, Clone)]
 pub enum ExprBase {
-    IntLiteral(LocTok),
-    BoolLiteral(LocTok),
+    IntLiteral(Token),
+    BoolLiteral(Token),
     FuncLiteral(FnLiteral),
-    StringLiteral(LocTok),
+    StringLiteral(Token),
     Array(Vec<ExprBase>),
     CallExpression(CallExpr),
     Identifier(Ident),
@@ -184,7 +184,7 @@ pub struct FnLiteral {
 
 #[derive(Debug, Clone)]
 pub struct AssignStatement {
-    pub ident: LocTok,
+    pub ident: Token,
     pub expr: Box<ExprBase>,
 }
 impl Display for AssignStatement {
@@ -195,7 +195,7 @@ impl Display for AssignStatement {
 
 #[derive(Debug, Clone)]
 pub struct LetStatement {
-    pub ident: LocTok,
+    pub ident: Token,
     pub expr: Expr,
 }
 impl Display for LetStatement {
@@ -228,7 +228,7 @@ impl Display for Statement {
 
 #[derive(Debug)]
 pub enum ParseError {
-    UnexpectedToken(LocTok),
+    UnexpectedToken(Token),
     UnexpectedTerminatedExpr(Expr),
     ExpectedTerminatedExpr(Expr),
     MultipleUnterminatedExpressions(Expr),
@@ -237,7 +237,7 @@ pub enum ParseError {
 impl Display for ParseError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let temp = match self {
-            ParseError::UnexpectedToken(lok_tok) => format!("Unexpected Token: {}", lok_tok.token),
+            ParseError::UnexpectedToken(lok_tok) => format!("Unexpected Token: {}", lok_tok.kind),
             ParseError::UnexpectedTerminatedExpr(expr) => {
                 format!("Unexpected token `;` after expression: {expr}")
             }

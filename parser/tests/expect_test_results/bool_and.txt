@@ -6,23 +6,23 @@
                     lhs: BinaryExpression(
                         BinExp {
                             lhs: IntLiteral(
-                                Int(3),
+                                Token(Int(3), (0,0)->(0,1)),
                             ),
-                            operator: Eq,
+                            operator: Token(Eq, (0,2)->(0,3)),
                             rhs: IntLiteral(
-                                Int(3),
+                                Token(Int(3), (0,5)->(0,6)),
                             ),
                         },
                     ),
-                    operator: And,
+                    operator: Token(And, (0,7)->(0,9)),
                     rhs: BinaryExpression(
                         BinExp {
                             lhs: IntLiteral(
-                                Int(5),
+                                Token(Int(5), (0,10)->(0,11)),
                             ),
-                            operator: Eq,
+                            operator: Token(Eq, (0,12)->(0,13)),
                             rhs: IntLiteral(
-                                Int(6),
+                                Token(Int(6), (0,15)->(0,16)),
                             ),
                         },
                     ),

@@ -4,13 +4,13 @@
             Array(
                 [
                     IntLiteral(
-                        Int(15),
+                        Token(Int(15), (0,2)->(0,4)),
                     ),
                     IntLiteral(
-                        Int(30),
+                        Token(Int(30), (0,6)->(0,8)),
                     ),
                     IntLiteral(
-                        Int(90),
+                        Token(Int(90), (0,10)->(0,12)),
                     ),
                 ],
             ),

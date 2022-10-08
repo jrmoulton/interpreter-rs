@@ -5,10 +5,10 @@
                 FnLiteral {
                     parameters: [
                         Ident(
-                            Ident("x"),
+                            Token(Ident("x"), (0,3)->(0,4)),
                         ),
                         Ident(
-                            Ident("y"),
+                            Token(Ident("y"), (0,6)->(0,7)),
                         ),
                     ],
                     body: Scope {
@@ -19,13 +19,13 @@
                                         BinExp {
                                             lhs: Identifier(
                                                 Ident(
-                                                    Ident("x"),
+                                                    Token(Ident("x"), (1,8)->(1,9)),
                                                 ),
                                             ),
-                                            operator: Plus,
+                                            operator: Token(Plus, (1,10)->(1,11)),
                                             rhs: Identifier(
                                                 Ident(
-                                                    Ident("y"),
+                                                    Token(Ident("y"), (1,12)->(1,13)),
                                                 ),
                                             ),
                                         },
