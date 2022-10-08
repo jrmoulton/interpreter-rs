@@ -21,7 +21,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         let file = fs::read_to_string(&file_path)?;
         let env = Arc::new(Environment::default());
         let lexer = Lexer::new(&file);
-        let ast = match parse(lexer, &file) {
+        let ast = match parse(lexer) {
             Ok(ast) => Some(ast),
             Err(errs) => {
                 println!("{errs:?}");

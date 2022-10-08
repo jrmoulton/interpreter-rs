@@ -1,3 +1,2 @@
 Expected ';' after expression: True
-├╴suggestion: Add a semicolon to the end of this expression
-╰╴this in the source: true
+╰╴suggestion: Add a semicolon to the end of this expression

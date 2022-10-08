@@ -1,3 +1,2 @@
 Unexpected Token: `;`
-├╴this in the source: ;
 ╰╴expressions should be separated by commas
