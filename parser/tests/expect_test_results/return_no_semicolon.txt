@@ -1,2 +1,3 @@
 Expected ';' after expression: Int(5)
-╰╴suggestion: Add a semicolon to the end of this expression
+├╴suggestion: Add a semicolon to the end of this expression
+╰╴this in the source: 5

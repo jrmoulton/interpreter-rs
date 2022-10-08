@@ -18,7 +18,7 @@ pub fn start(env: Option<Arc<Environment>>) -> ! {
     for line in stdin.lines() {
         let line = line.unwrap();
         let lexer = Lexer::new(&line);
-        let ast = match parse(lexer) {
+        let ast = match parse(lexer, &line) {
             Ok(ast) => Some(ast),
             Err(errs) => {
                 println!("{errs:?}\n");

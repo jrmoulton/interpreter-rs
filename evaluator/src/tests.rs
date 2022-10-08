@@ -16,7 +16,7 @@ mod results {
     fn get_inner_helper(code: &'static str) -> object::Object {
         let lexer = Lexer::new(code);
         let env = Arc::new(Environment::default());
-        let statements = parse(lexer).unwrap();
+        let statements = parse(lexer, code).unwrap();
         eval(statements, env.clone()).unwrap()
     }
 
@@ -293,7 +293,7 @@ mod errors {
     fn index_out_of_bounds_string() {
         let code: &'static str = r#" "foo"[3] "#;
         let lexer = Lexer::new(code);
-        let statements = parse(lexer).unwrap();
+        let statements = parse(lexer, code).unwrap();
         let env = Arc::new(Environment::default());
         match eval(statements, env.clone()) {
             Ok(object) => {

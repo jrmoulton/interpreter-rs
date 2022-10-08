@@ -175,12 +175,17 @@ impl Token {
     }
 }
 
-#[derive(Clone)]
-pub struct LocTok {
+#[derive(Clone, Debug)]
+pub struct Location {
     pub line: u32,
     pub column: usize,
     pub abs_pos: usize,
     pub len: usize,
+}
+
+#[derive(Clone)]
+pub struct LocTok {
+    pub loc: Location,
     pub token: Token,
 }
 impl Debug for LocTok {
@@ -225,10 +230,12 @@ impl<'a> Lexer<'a> {
             self.pos += 1;
         }
         let mut token = LocTok {
-            line: self.line,
-            column: self.column,
-            abs_pos: self.pos,
-            len: 1,
+            loc: Location {
+                line: self.line,
+                column: self.column,
+                abs_pos: self.pos,
+                len: 1,
+            },
             token: Token::Illegal,
         };
         if let Some(ch) = self.input.get(self.pos) {
@@ -240,7 +247,7 @@ impl<'a> Lexer<'a> {
                     {
                         len += 1;
                     }
-                    token.len = len;
+                    token.loc.len = len;
                     token.token = Token::Int(
                         std::str::from_utf8(&self.input[self.pos..self.pos + len])
                             .into_report()
@@ -323,7 +330,7 @@ impl<'a> Lexer<'a> {
                 '&' => {
                     if self.input[self.pos + 1] as char == '&' {
                         token.token = Token::And;
-                        token.len = 2;
+                        token.loc.len = 2;
                         self.pos += 1;
                         self.column += 1;
                     } else {
@@ -333,7 +340,7 @@ impl<'a> Lexer<'a> {
                 '|' => {
                     if self.input[self.pos + 1] as char == '|' {
                         token.token = Token::Or;
-                        token.len = 2;
+                        token.loc.len = 2;
                         self.pos += 1;
                         self.column += 1;
                     } else {
@@ -351,7 +358,7 @@ impl<'a> Lexer<'a> {
                     {
                         len += 1;
                     }
-                    token.len = len + 1;
+                    token.loc.len = len + 1;
                     token.token = Token::String(
                         std::str::from_utf8(&self.input[self.pos + 1..self.pos + len])
                             .map_err(|e| Report::new(e).change_context(LexerError::InvalidUtf8))?
@@ -367,7 +374,7 @@ impl<'a> Lexer<'a> {
                     {
                         len += 1;
                     }
-                    token.len = len;
+                    token.loc.len = len;
                     match std::str::from_utf8(&self.input[self.pos..self.pos + len]) {
                         Ok("let") => {
                             token.token = Token::Let;
