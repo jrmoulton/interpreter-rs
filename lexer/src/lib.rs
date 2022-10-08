@@ -177,20 +177,17 @@ impl TokenKInd {
 
 #[derive(Clone)]
 pub struct Span {
-    pub line: u32,
-    pub column: usize,
-    pub abs_pos: usize,
-    pub len: usize,
+    pub start_row: usize,
+    pub start_column: usize,
+    pub end_row: usize,
+    pub end_col: usize,
 }
 impl Debug for Span {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(
             f,
             "({},{})->({},{})",
-            self.line,
-            self.column,
-            self.line,
-            self.column + self.len
+            self.start_row, self.start_column, self.end_row, self.end_col
         )
     }
 }
@@ -215,7 +212,7 @@ impl Display for Token {
 pub struct Lexer<'a> {
     input: &'a [u8],
     len: usize,
-    line: u32,
+    line: usize,
     column: usize,
     pos: usize,
 }
@@ -243,10 +240,10 @@ impl<'a> Lexer<'a> {
         }
         let mut token = Token {
             span: Span {
-                line: self.line,
-                column: self.column,
-                abs_pos: self.pos,
-                len: 1,
+                start_row: self.line,
+                start_column: self.column,
+                end_row: self.line,
+                end_col: self.column + 1,
             },
             kind: TokenKInd::Illegal,
         };
@@ -259,7 +256,7 @@ impl<'a> Lexer<'a> {
                     {
                         len += 1;
                     }
-                    token.span.len = len;
+                    token.span.end_col += len - 1;
                     token.kind = TokenKInd::Int(
                         std::str::from_utf8(&self.input[self.pos..self.pos + len])
                             .into_report()
@@ -342,7 +339,7 @@ impl<'a> Lexer<'a> {
                 '&' => {
                     if self.input[self.pos + 1] as char == '&' {
                         token.kind = TokenKInd::And;
-                        token.span.len = 2;
+                        token.span.end_col += 1;
                         self.pos += 1;
                         self.column += 1;
                     } else {
@@ -352,7 +349,7 @@ impl<'a> Lexer<'a> {
                 '|' => {
                     if self.input[self.pos + 1] as char == '|' {
                         token.kind = TokenKInd::Or;
-                        token.span.len = 2;
+                        token.span.end_col += 1;
                         self.pos += 1;
                         self.column += 1;
                     } else {
@@ -370,7 +367,7 @@ impl<'a> Lexer<'a> {
                     {
                         len += 1;
                     }
-                    token.span.len = len + 1;
+                    token.span.end_col += len;
                     token.kind = TokenKInd::String(
                         std::str::from_utf8(&self.input[self.pos + 1..self.pos + len])
                             .map_err(|e| Report::new(e).change_context(LexerError::InvalidUtf8))?
@@ -386,7 +383,7 @@ impl<'a> Lexer<'a> {
                     {
                         len += 1;
                     }
-                    token.span.len = len;
+                    token.span.end_col += len - 1;
                     match std::str::from_utf8(&self.input[self.pos..self.pos + len]) {
                         Ok("let") => {
                             token.kind = TokenKInd::Let;
