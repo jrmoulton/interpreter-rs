@@ -1,78 +1,39 @@
 use error_stack::Context;
-use lexer::{Lexer, Span, Token};
+use lexer::{Span, Token};
+use std::fmt::Display;
 use std::fmt::Write;
-use std::{fmt::Display, iter::Peekable};
-
-pub(crate) type PeekLex<'a> = Peekable<Lexer<'a>>;
 
 #[derive(Debug, Clone)]
-/// A binary epression has an operator that goes inbetween a lhs operand and a rhs operand.
-/// Both the lhs and rhs can be entire expressions themselves
-pub struct BinExp {
-    pub lhs: Box<ExprBase>,
-    pub operator: Token,
-    pub rhs: Box<ExprBase>,
-    pub span: Span,
+pub enum Statement {
+    Let {
+        ident: Token,
+        expr: Expr,
+        span: Span,
+    },
+    Return(Option<Expr>),
+    Expression(Expr),
+    Assign {
+        ident: Token,
+        expr: Box<ExprBase>,
+        span: Span,
+    },
 }
-
-#[derive(Debug, Clone)]
-/// A prefix expression has an operator before a single operand that can be an entire expression
-pub struct PreExpr {
-    pub operator: Token,
-    pub expression: Box<Expr>,
-    pub span: Span,
-}
-
-#[derive(Debug, Clone)]
-/// The optional alterantive of an if expression
-pub enum ElseIfExpr {
-    ElseIf(Box<ExprBase>),
-    Else(Scope),
-}
-impl ElseIfExpr {
-    pub fn get_span(&self) -> Span {
-        match self {
-            ElseIfExpr::ElseIf(expr_base) => expr_base.get_span(),
-            ElseIfExpr::Else(scope) => scope.span,
-        }
-    }
-}
-
-#[derive(Debug, Clone)]
-pub struct CallExpr {
-    pub function: Box<ExprBase>,
-    pub args: Vec<ExprBase>,
-    pub span: Span,
-}
-
-#[derive(Debug, Clone)]
-pub struct MethCall {
-    /// An expression that can resolve to a value
-    pub instance: Box<ExprBase>,
-    /// an call expression that with the method ident comes afer the Dot
-    pub method: Box<ExprBase>,
-    pub span: Span,
-}
-
-#[derive(Debug, Clone)]
-/// A faily self explanatory If expression
-pub struct IfExpr {
-    pub condition: Box<ExprBase>,
-    pub consequence: Scope,
-    pub alternative: Option<ElseIfExpr>,
-    pub span: Span,
-}
-
-#[derive(Debug, Clone)]
-pub struct Ident(pub Token);
-impl Display for Ident {
+impl Display for Statement {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.write_fmt(format_args!("{}", self.0))
+        let temp = match self {
+            Statement::Let { ident, expr, .. } => format!("let {} = {}", ident, expr),
+            Statement::Return(return_statement) => match return_statement {
+                Some(expr) => format!("return {expr};"),
+                None => "return;".into(),
+            },
+            Statement::Expression(expression_statement) => format!("{expression_statement}"),
+            Statement::Assign { ident, expr, .. } => format!("{} = {}", ident, expr),
+        };
+        f.write_str(&temp)
     }
 }
 
 #[derive(Debug, Clone)]
-// All of the differenct valid cases of expressions
 pub enum Expr {
     Terminated(ExprBase),
     NonTerminated(ExprBase),
@@ -117,111 +78,210 @@ impl Display for Expr {
 pub enum ExprBase {
     IntLiteral(Token),
     BoolLiteral(Token),
-    FuncLiteral(FnLiteral),
+    FuncLiteral {
+        parameters: Vec<Ident>,
+        body: Scope,
+        span: Span,
+    },
     StringLiteral(Token),
-    Array(Array),
-    CallExpression(CallExpr),
-    Identifier(Ident),
-    Scope(Scope),
-    PrefixExpression(PreExpr),
-    BinaryExpression(BinExp),
-    IndexExpression(IndExpr),
-    MethodCall(MethCall),
-    If(IfExpr),
+    Array {
+        exprs: Vec<ExprBase>,
+        span: Span,
+    },
+    CallExpression {
+        function: Box<ExprBase>,
+        args: Vec<ExprBase>,
+        span: Span,
+    },
+    Identifier(Token),
+    Scope {
+        statements: Vec<Statement>,
+        span: Span,
+    },
+    PrefixExpression {
+        operator: Token,
+        expression: Box<Expr>,
+        span: Span,
+    },
+    BinaryExpression {
+        lhs: Box<ExprBase>,
+        operator: Token,
+        rhs: Box<ExprBase>,
+        span: Span,
+    },
+    IndexExpression {
+        array: Box<ExprBase>,
+        index: Box<ExprBase>,
+        span: Span,
+    },
+    MethodCall {
+        /// An expression that can resolve to a value
+        instance: Box<ExprBase>,
+        /// an call expression that with the method ident comes afer the Dot
+        method: Box<ExprBase>,
+        span: Span,
+    },
+    If {
+        condition: Box<ExprBase>,
+        consequence: Scope,
+        alternative: Option<ElseIfExpr>,
+        span: Span,
+    },
 }
 impl ExprBase {
     pub fn get_span(&self) -> Span {
+        use ExprBase::*;
         match self {
-            ExprBase::IntLiteral(token) => token.span,
-            ExprBase::BoolLiteral(token) => token.span,
-            ExprBase::FuncLiteral(fn_literal) => fn_literal.span,
-            ExprBase::StringLiteral(token) => token.span,
-            ExprBase::Array(array) => array.span,
-            ExprBase::CallExpression(call_expr) => call_expr.span,
-            ExprBase::Identifier(ident) => ident.0.span,
-            ExprBase::Scope(scope) => scope.span,
-            ExprBase::PrefixExpression(pre_expr) => pre_expr.span,
-            ExprBase::BinaryExpression(bin_exp) => bin_exp.span,
-            ExprBase::IndexExpression(ind_exp) => ind_exp.span,
-            ExprBase::MethodCall(meth_call) => meth_call.span,
-            ExprBase::If(if_expr) => if_expr.span,
+            IntLiteral(token) | BoolLiteral(token) | StringLiteral(token) | Identifier(token) => {
+                token.span
+            }
+            FuncLiteral { span, .. }
+            | Array { span, .. }
+            | CallExpression { span, .. }
+            | Scope { span, .. }
+            | PrefixExpression { span, .. }
+            | BinaryExpression { span, .. }
+            | IndexExpression { span, .. }
+            | If { span, .. }
+            | MethodCall { span, .. } => *span,
         }
     }
 }
 
-#[derive(Debug, Clone)]
-pub struct Array {
-    pub exprs: Vec<ExprBase>,
-    span: Span,
-}
-impl Array {
-    pub fn new(expressions: Vec<ExprBase>, span: Span) -> Self {
-        Self {
-            exprs: expressions,
-            span,
-        }
-    }
-}
-
-#[derive(Debug, Clone)]
-pub struct IndExpr {
-    pub array: Box<ExprBase>,
-    pub index: Box<ExprBase>,
-    pub span: Span,
-}
-
-#[derive(Debug, Clone)]
-pub struct FnLiteral {
-    pub parameters: Vec<Ident>,
-    pub body: Scope,
-    pub span: Span,
-}
-
-#[derive(Debug, Clone)]
-pub struct AssignStatement {
-    pub ident: Token,
-    pub expr: Box<ExprBase>,
-    pub span: Span,
-}
-impl Display for AssignStatement {
+impl Display for ExprBase {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.write_fmt(format_args!("{} = {}", self.ident, self.expr))
-    }
-}
-
-#[derive(Debug, Clone)]
-pub struct LetStatement {
-    pub ident: Token,
-    pub expr: Expr,
-    pub span: Span,
-}
-impl Display for LetStatement {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.write_fmt(format_args!("let {} = {}", self.ident, self.expr))
-    }
-}
-
-#[derive(Debug, Clone)]
-pub enum Statement {
-    Let(LetStatement),
-    Return(Option<Expr>),
-    Expression(Expr),
-    Assign(AssignStatement),
-}
-impl Display for Statement {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        let temp = match self {
-            Statement::Let(let_statement) => format!("{let_statement}"),
-            Statement::Return(return_statement) => match return_statement {
-                Some(expr) => format!("return {expr};"),
-                None => "return;".into(),
-            },
-            Statement::Expression(expression_statement) => format!("{expression_statement}"),
-            Statement::Assign(assign_statement) => format!("{assign_statement}"),
+        let ret_str = match self {
+            ExprBase::IntLiteral(lok_tok)
+            | ExprBase::BoolLiteral(lok_tok)
+            | ExprBase::StringLiteral(lok_tok) => {
+                format!("{lok_tok}",)
+            }
+            ExprBase::Array { exprs, .. } => {
+                let mut ret_str = String::from("[ ");
+                for item in exprs.iter() {
+                    write!(ret_str, "{item}, ")?;
+                }
+                ret_str.push_str(" ]");
+                ret_str
+            }
+            ExprBase::IndexExpression { array, index, .. } => {
+                format!("{array}[{index}]")
+            }
+            ExprBase::MethodCall {
+                instance, method, ..
+            } => {
+                format!("{instance}.{method}")
+            }
+            ExprBase::FuncLiteral { parameters, .. } => {
+                let mut ret_str = String::from("(");
+                for param in parameters.iter() {
+                    write!(ret_str, "{param}, ")?;
+                }
+                ret_str.push(')');
+                format!("fn{ret_str}{{...}}")
+            }
+            ExprBase::CallExpression { function, args, .. } => {
+                let mut ret_str = String::from("[ ");
+                for arg in args.iter() {
+                    write!(ret_str, "{arg}, ")?;
+                }
+                ret_str.push_str(" ]");
+                format!("Call: func{{{function}}}, args{{{ret_str}}}")
+            }
+            ExprBase::Identifier(ident) => format!("{ident}"),
+            ExprBase::Scope { statements, .. } => {
+                let mut ret_str = String::from("[ ");
+                for statement in statements.iter() {
+                    write!(ret_str, "{statement}, ")?;
+                }
+                ret_str.push_str(" ]");
+                ret_str
+            }
+            ExprBase::PrefixExpression {
+                operator,
+                expression,
+                ..
+            } => {
+                format!("{operator}:{}", expression)
+            }
+            ExprBase::BinaryExpression {
+                lhs, operator, rhs, ..
+            } => {
+                format!("({} {} {})", lhs, operator, rhs)
+            }
+            ExprBase::If { condition, .. } => {
+                format!("{condition}")
+            }
         };
-        f.write_str(&temp)
+        f.write_str(&ret_str)
     }
 }
+
+// Sub types
+
+#[derive(Debug, Clone)]
+pub struct Scope {
+    pub statements: Vec<Statement>,
+    pub span: Span,
+}
+impl IntoIterator for Scope {
+    type Item = Statement;
+    type IntoIter = std::vec::IntoIter<Statement>;
+    fn into_iter(self) -> Self::IntoIter {
+        self.statements.into_iter()
+    }
+}
+impl From<Scope> for ExprBase {
+    fn from(scope: Scope) -> Self {
+        ExprBase::Scope {
+            statements: scope.statements,
+            span: scope.span,
+        }
+    }
+}
+
+/// The optional alterantive of an if expression
+#[derive(Debug, Clone)]
+pub enum ElseIfExpr {
+    ElseIf(Box<IfExpr>),
+    Else(Scope),
+}
+impl ElseIfExpr {
+    pub fn get_span(&self) -> Span {
+        match self {
+            ElseIfExpr::ElseIf(if_expr) => if_expr.span,
+            ElseIfExpr::Else(scope) => scope.span,
+        }
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct IfExpr {
+    pub condition: Box<ExprBase>,
+    pub consequence: Scope,
+    pub alternative: Option<ElseIfExpr>,
+    pub span: Span,
+}
+impl From<IfExpr> for ExprBase {
+    fn from(if_expr: IfExpr) -> Self {
+        ExprBase::If {
+            condition: if_expr.condition,
+            consequence: if_expr.consequence,
+            alternative: if_expr.alternative,
+            span: if_expr.span,
+        }
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct Ident(pub Token);
+impl Display for Ident {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_fmt(format_args!("{}", self.0))
+    }
+}
+
+// Errors
 
 #[derive(Debug)]
 pub enum ParseError {
@@ -239,10 +299,10 @@ impl Display for ParseError {
                 format!("Unexpected token `;` after expression: {expr}")
             }
             ParseError::ExpectedTerminatedExpr(expr) => {
-                format!("Expected ';' after expression: {expr}")
+                format!("Expected token ';' after expression: {expr}")
             }
             ParseError::MultipleUnterminatedExpressions(expr) => {
-                format!("Expected ';' before expression: {expr}")
+                format!("Expected token ';' before expression: {expr}")
             }
             ParseError::Eof => "Unexpected end of input".into(),
         };
@@ -253,90 +313,7 @@ impl Context for ParseError {}
 
 pub struct Suggestion(pub &'static str);
 
-#[derive(Debug, Clone)]
-pub struct Scope {
-    pub statements: Vec<Statement>,
-    pub span: Span,
-}
-impl Scope {
-    pub(crate) fn new(statements: Vec<Statement>, span: Span) -> Self {
-        Self { statements, span }
-    }
-}
-impl IntoIterator for Scope {
-    type Item = Statement;
-    type IntoIter = std::vec::IntoIter<Statement>;
-    fn into_iter(self) -> Self::IntoIter {
-        self.statements.into_iter()
-    }
-}
-
-impl Display for ExprBase {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        let ret_str = match self {
-            ExprBase::IntLiteral(lok_tok)
-            | ExprBase::BoolLiteral(lok_tok)
-            | ExprBase::StringLiteral(lok_tok) => {
-                format!("{lok_tok}",)
-            }
-            ExprBase::Array(items) => {
-                let mut ret_str = String::from("[ ");
-                for item in items.exprs.iter() {
-                    write!(ret_str, "{item}, ")?;
-                }
-                ret_str.push_str(" ]");
-                ret_str
-            }
-            ExprBase::IndexExpression(IndExpr { array, index, .. }) => {
-                format!("{array}[{index}]")
-            }
-            ExprBase::MethodCall(MethCall {
-                instance, method, ..
-            }) => {
-                format!("{instance}.{method}")
-            }
-            ExprBase::FuncLiteral(FnLiteral { parameters, .. }) => {
-                let mut ret_str = String::from("(");
-                for param in parameters.iter() {
-                    write!(ret_str, "{param}, ")?;
-                }
-                ret_str.push(')');
-                format!("fn{ret_str}{{...}}")
-            }
-            ExprBase::CallExpression(CallExpr { function, args, .. }) => {
-                let mut ret_str = String::from("[ ");
-                for arg in args.iter() {
-                    write!(ret_str, "{arg}, ")?;
-                }
-                ret_str.push_str(" ]");
-                format!("Call: func{{{function}}}, args{{{ret_str}}}")
-            }
-            ExprBase::Identifier(ident) => format!("{ident}"),
-            ExprBase::Scope(statements) => {
-                let mut ret_str = String::from("[ ");
-                for statement in statements.statements.iter() {
-                    write!(ret_str, "{statement}, ")?;
-                }
-                ret_str.push_str(" ]");
-                ret_str
-            }
-            ExprBase::PrefixExpression(PreExpr {
-                operator,
-                expression,
-                ..
-            }) => {
-                format!("{operator}:{}", expression)
-            }
-            ExprBase::BinaryExpression(bin_expr) => {
-                format!("({} {} {})", bin_expr.lhs, bin_expr.operator, bin_expr.rhs)
-            }
-            ExprBase::If(IfExpr { condition, .. }) => {
-                format!("{condition}")
-            }
-        };
-        f.write_str(&ret_str)
-    }
-}
+// Extras
 
 pub(crate) enum TermState {
     None,

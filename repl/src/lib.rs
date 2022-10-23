@@ -3,22 +3,29 @@ use std::sync::Arc;
 
 use evaluator::eval;
 use evaluator::{object::Object, structs::Environment};
-use lexer::Lexer;
+use lexer::{Lexer, PeekLex};
+use owo_colors::OwoColorize;
 use parser::parse;
 
-pub fn start(env: Option<Arc<Environment>>) -> ! {
+pub fn start(env: Option<(Arc<Environment>, PeekLex)>) -> ! {
     println!("Welcome to Awesome Name Lang REPL!");
-    print!(">> ");
+    let mut line_num = 1;
+    let prompt = |num| format!("{num}: >> ").red().to_string();
+    print!("{}", prompt(line_num));
     std::io::stdout().flush().unwrap();
     let stdin = std::io::stdin().lock();
-    let env = match env {
-        Some(env) => env,
-        None => Arc::new(Environment::default()),
+    let (env, mut peek_lex) = match env {
+        Some(inner) => inner,
+        None => (
+            Arc::new(Environment::default()),
+            PeekLex::new(Lexer::default()),
+        ),
     };
     for line in stdin.lines() {
+        line_num += 1;
         let line = line.unwrap();
-        let lexer = Lexer::new(&line);
-        let ast = match parse(lexer) {
+        peek_lex.update(line);
+        let ast = match parse(&mut peek_lex) {
             Ok(ast) => Some(ast),
             Err(errs) => {
                 println!("{errs:?}\n");
@@ -37,7 +44,7 @@ pub fn start(env: Option<Arc<Environment>>) -> ! {
                 Err(errs) => println!("{errs:?}\n"),
             };
         }
-        print!(">> ");
+        print!("{}", prompt(line_num));
         std::io::stdout().flush().unwrap();
     }
     unreachable!()

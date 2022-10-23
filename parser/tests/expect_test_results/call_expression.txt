@@ -1,28 +1,20 @@
 [
     Expression(
         NonTerminated(
-            CallExpression(
-                CallExpr {
-                    function: Identifier(
-                        Ident(
-                            Token(Ident("add"), (0,0)->(0,2)),
-                        ),
+            CallExpression {
+                function: Identifier(
+                    Token(Ident("add"), (0,0)->(0,2)),
+                ),
+                args: [
+                    Identifier(
+                        Token(Ident("x"), (0,4)->(0,4)),
                     ),
-                    args: [
-                        Identifier(
-                            Ident(
-                                Token(Ident("x"), (0,4)->(0,4)),
-                            ),
-                        ),
-                        Identifier(
-                            Ident(
-                                Token(Ident("y"), (0,7)->(0,7)),
-                            ),
-                        ),
-                    ],
-                    span: (0,0)->(0,8),
-                },
-            ),
+                    Identifier(
+                        Token(Ident("y"), (0,7)->(0,7)),
+                    ),
+                ],
+                span: (0,0)->(0,8),
+            },
         ),
     ),
 ]

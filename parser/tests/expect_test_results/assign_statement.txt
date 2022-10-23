@@ -1,11 +1,9 @@
 [
-    Assign(
-        AssignStatement {
-            ident: Token(Ident("x"), (0,0)->(0,0)),
-            expr: BoolLiteral(
-                Token(True, (0,4)->(0,7)),
-            ),
-            span: (0,0)->(0,7),
-        },
-    ),
+    Assign {
+        ident: Token(Ident("x"), (0,0)->(0,0)),
+        expr: BoolLiteral(
+            Token(True, (0,4)->(0,7)),
+        ),
+        span: (0,0)->(0,7),
+    },
 ]

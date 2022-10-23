@@ -2,7 +2,7 @@ use std::{error::Error, fs, sync::Arc};
 
 use clap::Parser;
 use evaluator::{eval, structs::Environment};
-use lexer::Lexer;
+use lexer::{Lexer, PeekLex};
 use parser::parse;
 use repl::start;
 
@@ -16,12 +16,14 @@ struct Args {
 }
 
 fn main() -> Result<(), Box<dyn Error>> {
+    owo_colors::set_override(true);
     let args = Args::parse();
     if let Some(file_path) = args.file {
         let file = fs::read_to_string(&file_path)?;
         let env = Arc::new(Environment::default());
-        let lexer = Lexer::new(&file);
-        let ast = match parse(lexer) {
+        let lexer = Lexer::new(file);
+        let mut peek_lex = PeekLex::new(lexer);
+        let ast = match parse(&mut peek_lex) {
             Ok(ast) => Some(ast),
             Err(errs) => {
                 println!("{errs:?}");
@@ -39,7 +41,7 @@ fn main() -> Result<(), Box<dyn Error>> {
             };
         }
         if args.interactive {
-            start(Some(env));
+            start(Some((env, peek_lex)));
         }
     } else {
         start(None)

@@ -1,1 +1,1 @@
-[ ((((Int(5) Plus (Int(5) Asterisk Int(3))) BitOr Int(2)) And (Int(4) Minus Minus:Int(2))) Or (Int(3) BitOr Int(1))) ]
+[ ((((`5` `+` (`5` `*` `3`)) `|` `2`) `&&` (`4` `-` `-`:`2`)) `||` (`3` `|` `1`)) ]

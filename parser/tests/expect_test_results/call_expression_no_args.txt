@@ -1,17 +1,13 @@
 [
     Expression(
         Terminated(
-            CallExpression(
-                CallExpr {
-                    function: Identifier(
-                        Ident(
-                            Token(Ident("add"), (0,0)->(0,2)),
-                        ),
-                    ),
-                    args: [],
-                    span: (0,0)->(0,4),
-                },
-            ),
+            CallExpression {
+                function: Identifier(
+                    Token(Ident("add"), (0,0)->(0,2)),
+                ),
+                args: [],
+                span: (0,0)->(0,4),
+            },
         ),
     ),
 ]

@@ -1,1 +1,1 @@
-Expected ';' before expression: fn(){...}
+[1mExpected token ';' before expression: fn(){...}[0m[0m

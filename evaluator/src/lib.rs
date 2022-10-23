@@ -3,15 +3,11 @@ pub mod structs;
 pub mod object;
 
 use std::{collections::HashMap,  sync::Arc};
-
 use error_stack::{ Report, Result};
 use lexer::{Token, TokenKInd};
 use parser::structs::*;
 
-use object::{Array, Integer};
-use structs::*;
-
-use crate::object::{FuncIntern, Object, ObjectTrait};
+use crate::{structs::*, object::{FuncIntern, Object, ObjectTrait, Array, Integer}};
 
 trait ExtendAssign {
     fn extend(&mut self, e: Report<EvalError>);
@@ -33,13 +29,14 @@ pub fn eval(
     Report::install_debug_hook::<Suggestion>(|value, context| {
         context.push_body(format!("suggestion: {}", value.0));
     });
+    owo_colors::set_override(true);
     let mut error: Option<Report<EvalError>> = None;
     let mut last_obj_tup = None;
     for statement in statements {
         let temp_res = match statement {
-            Statement::Let(let_statement) => {
-                let expr_obj = eval_expression(let_statement.expr, env.clone())?.0;
-                let ident_string = match let_statement.ident.kind {
+            Statement::Let { ident, expr, .. } => {
+                let expr_obj = eval_expression(expr, env.clone())?.0;
+                let ident_string = match ident.kind {
                     TokenKInd::Ident(inner) => inner,
                     _ => unreachable!(),
                 };
@@ -69,11 +66,11 @@ pub fn eval(
                 break;
             }
             Statement::Expression(expr) => eval_expression(expr, env.clone()),
-            Statement::Assign(AssignStatement {
+            Statement::Assign {
                 ident,
                 expr,
                 ..
-            }) => {
+            } => {
                 let ident_string = match ident {
                     Token {
                         kind: TokenKInd::Ident(ref ident_string),
@@ -139,24 +136,24 @@ fn eval_expr_base(
             }
         }, 
         ExprBase::StringLiteral(Token {kind: TokenKInd::String(inner_str), ..}) => Ok(Object::String(object::String::new(inner_str))),
-        ExprBase::FuncLiteral(FnLiteral { parameters, body, .. }) => Ok(Object::Function(object::Function::new(FuncIntern::new(parameters, body, env)))),
-        ExprBase::CallExpression(CallExpr { function, args, .. }) => {
+        ExprBase::FuncLiteral { parameters, body, .. } => Ok(Object::Function(object::Function::new(FuncIntern::new(parameters, body, env)))),
+        ExprBase::CallExpression {  function, args, .. }  => {
             let function_obj = eval_expr_base(*function, env.clone())?;
             let args: Result<Vec<Object>, EvalError> = args.iter().map(|arg| eval_expr_base(arg.clone(), env.clone())).collect();
             Ok(apply_function(function_obj, args?)?)
         },
-        ExprBase::MethodCall(MethCall { instance, method, .. }) => {
+        ExprBase::MethodCall{ instance, method, .. } => {
             let _value = eval_expr_base(*instance, env.clone())?;
             let _value_type = _value.type_string();
             let _method_call = eval_expr_base(*method, env)?;
             // let env.find(&value_type).expect("Exists");
             unimplemented!()
         },
-        ExprBase::Array(items) => {
-            let items: Result<Vec<Object>, EvalError> = items.exprs.iter().map(|item| eval_expr_base(item.clone(), env.clone())).collect();
+        ExprBase::Array{exprs, ..} => {
+            let items: Result<Vec<Object>, EvalError> = exprs.iter().map(|item| eval_expr_base(item.clone(), env.clone())).collect();
             Ok(Object::Array(object::Array::new(items?.into())))
         }
-        ExprBase::IndexExpression(IndExpr { array, index, .. }) => {
+        ExprBase::IndexExpression{ array, index, .. } => {
             let array_obj = eval_expr_base(*array, env.clone())?;
             let index = eval_expr_base(*index, env)?;
             let index = match index {
@@ -181,30 +178,30 @@ fn eval_expr_base(
                 _ =>  Err(Report::new(EvalError::UnexpectedObject(array_obj)))?
             } 
         }
-        ExprBase::Identifier(Ident(Token {
+        ExprBase::Identifier(Token {
             kind: TokenKInd::Ident(ref ident_string),
             ..
-        })) => {
+        }) => {
                 match env.find(ident_string) {
                     Some(obj) => Ok(obj),
                     None => Err(Report::new(EvalError::IdentifierNotFound(ident_string.clone())).attach(expr_base))?
                 }
         }
-        ExprBase::Scope(_) => unimplemented!(),
-        ExprBase::PrefixExpression(PreExpr {
+        ExprBase::Scope { statements, .. } => eval(statements, env),
+        ExprBase::PrefixExpression {
             ref operator,
             ref expression,
             ..
-        }) => {
+         } => {
             let right = eval_expression((**expression).clone(), env)?.0;
-            Ok(eval_prefix_expr(&operator.kind, right, expr_base.clone())?)
+            eval_prefix_expr(&operator.kind, right, expr_base.clone())
         } 
-        ExprBase::BinaryExpression(BinExp {
+        ExprBase::BinaryExpression {
             ref lhs,
             ref operator,
             ref rhs,
             ..
-        }) => {
+        } => {
             let left = eval_expr_base((**lhs).clone(), env.clone())?;
             let right = eval_expr_base((**rhs).clone(), env)?;
             Ok(eval_binary_expr(
@@ -214,12 +211,7 @@ fn eval_expr_base(
                 expr_base.clone(),
             )?)
         }
-        ExprBase::If(IfExpr {
-            ref condition,
-            consequence,
-            alternative,
-            ..
-        }) => eval_if_expr(condition, consequence, alternative, env),
+        ExprBase::If { condition, consequence, alternative, .. } => eval_if_expr(*condition, consequence, alternative, env),
         ExprBase::IntLiteral(_) => unreachable!(
             "Int token matched above. An IntLiteral will never have a token that is not an Int"
         ),
@@ -252,12 +244,12 @@ fn apply_function(function_obj: Object, args: Vec<Object>) -> Result<Object, Eva
 }
 
 fn eval_if_expr(
-    condition: &ExprBase,
+    condition: ExprBase,
     consequence: Scope,
     alternative: Option<ElseIfExpr>,
     env: Arc<Environment>,
 ) -> Result<Object, EvalError> {
-    let cond_bool = eval_expr_base((*condition).clone(), env.clone())?;
+    let cond_bool = eval_expr_base(condition.clone(), env.clone())?;
     match cond_bool {
         Object::Boolean(object::Boolean { value, .. }) => {
             if value {
@@ -265,7 +257,7 @@ fn eval_if_expr(
             } else if let Some(alt) = alternative {
                 match alt {
                     ElseIfExpr::ElseIf(else_expr_base) => {
-                        eval_expr_base(*else_expr_base, env)
+                        eval_if_expr(*else_expr_base.condition, else_expr_base.consequence, else_expr_base.alternative, env)
                     }
                     ElseIfExpr::Else(if_expr) => eval(if_expr.statements, env),
                 }
@@ -273,7 +265,7 @@ fn eval_if_expr(
                 Ok(Object::Empty(object::Empty::new(().into())))
             }
         }
-        _ => Err(Report::new(EvalError::InvalidIfCondition(condition.clone())))?,
+        _ => Err(Report::new(EvalError::InvalidIfCondition(condition)))?,
     }
 }
 

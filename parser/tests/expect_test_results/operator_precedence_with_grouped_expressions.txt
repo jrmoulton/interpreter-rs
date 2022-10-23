@@ -1,27 +1,23 @@
 [
     Expression(
         NonTerminated(
-            BinaryExpression(
-                BinExp {
-                    lhs: BinaryExpression(
-                        BinExp {
-                            lhs: IntLiteral(
-                                Token(Int(5), (0,1)->(0,1)),
-                            ),
-                            operator: Token(Plus, (0,3)->(0,3)),
-                            rhs: IntLiteral(
-                                Token(Int(5), (0,5)->(0,5)),
-                            ),
-                            span: (0,1)->(0,5),
-                        },
+            BinaryExpression {
+                lhs: BinaryExpression {
+                    lhs: IntLiteral(
+                        Token(Int(5), (0,1)->(0,1)),
                     ),
-                    operator: Token(Asterisk, (0,8)->(0,8)),
+                    operator: Token(Plus, (0,3)->(0,3)),
                     rhs: IntLiteral(
-                        Token(Int(5), (0,10)->(0,10)),
+                        Token(Int(5), (0,5)->(0,5)),
                     ),
-                    span: (0,1)->(0,10),
+                    span: (0,1)->(0,5),
                 },
-            ),
+                operator: Token(Asterisk, (0,8)->(0,8)),
+                rhs: IntLiteral(
+                    Token(Int(5), (0,10)->(0,10)),
+                ),
+                span: (0,1)->(0,10),
+            },
         ),
     ),
 ]

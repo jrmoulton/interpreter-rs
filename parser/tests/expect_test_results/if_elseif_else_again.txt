@@ -1,76 +1,62 @@
 [
     Expression(
         NonTerminated(
-            If(
-                IfExpr {
-                    condition: Identifier(
-                        Ident(
-                            Token(Ident("x"), (1,11)->(1,11)),
-                        ),
-                    ),
-                    consequence: Scope {
-                        statements: [
-                            Expression(
-                                NonTerminated(
-                                    Identifier(
-                                        Ident(
-                                            Token(Ident("x"), (2,12)->(2,12)),
-                                        ),
-                                    ),
+            If {
+                condition: Identifier(
+                    Token(Ident("x"), (1,11)->(1,11)),
+                ),
+                consequence: Scope {
+                    statements: [
+                        Expression(
+                            NonTerminated(
+                                Identifier(
+                                    Token(Ident("x"), (2,12)->(2,12)),
                                 ),
                             ),
-                        ],
-                        span: (1,13)->(3,8),
-                    },
-                    alternative: Some(
-                        ElseIf(
-                            If(
-                                IfExpr {
-                                    condition: Identifier(
-                                        Ident(
-                                            Token(Ident("y"), (3,19)->(3,19)),
+                        ),
+                    ],
+                    span: (1,13)->(3,8),
+                },
+                alternative: Some(
+                    ElseIf(
+                        IfExpr {
+                            condition: Identifier(
+                                Token(Ident("y"), (3,19)->(3,19)),
+                            ),
+                            consequence: Scope {
+                                statements: [
+                                    Expression(
+                                        NonTerminated(
+                                            Identifier(
+                                                Token(Ident("y"), (4,12)->(4,12)),
+                                            ),
                                         ),
                                     ),
-                                    consequence: Scope {
+                                ],
+                                span: (3,22)->(5,8),
+                            },
+                            alternative: Some(
+                                Else(
+                                    Scope {
                                         statements: [
                                             Expression(
                                                 NonTerminated(
                                                     Identifier(
-                                                        Ident(
-                                                            Token(Ident("y"), (4,12)->(4,12)),
-                                                        ),
+                                                        Token(Ident("foobar"), (6,12)->(6,17)),
                                                     ),
                                                 ),
                                             ),
                                         ],
-                                        span: (3,22)->(5,8),
+                                        span: (5,15)->(7,8),
                                     },
-                                    alternative: Some(
-                                        Else(
-                                            Scope {
-                                                statements: [
-                                                    Expression(
-                                                        NonTerminated(
-                                                            Identifier(
-                                                                Ident(
-                                                                    Token(Ident("foobar"), (6,12)->(6,17)),
-                                                                ),
-                                                            ),
-                                                        ),
-                                                    ),
-                                                ],
-                                                span: (5,15)->(7,8),
-                                            },
-                                        ),
-                                    ),
-                                    span: (3,15)->(7,8),
-                                },
+                                ),
                             ),
-                        ),
+                            span: (3,15)->(7,8),
+                        },
                     ),
-                    span: (1,8)->(7,8),
-                },
-            ),
+                ),
+                span: (1,8)->(7,8),
+            },
         ),
     ),
 ]

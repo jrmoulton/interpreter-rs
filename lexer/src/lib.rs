@@ -215,40 +215,105 @@ impl Debug for Token {
 }
 impl Display for Token {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.write_fmt(format_args!("{:?}", self.kind))
+        f.write_fmt(format_args!("{}", self.kind))
     }
 }
 
 #[derive(Debug, Clone)]
-pub struct Lexer<'a> {
-    input: &'a [u8],
-    len: usize,
-    line: usize,
-    column: usize,
-    pos: usize,
+pub struct PeekLex {
+    iter: Lexer,
+    /// Remember a peeked value, even if it was None.
+    peeked: Option<Option<Token>>,
 }
-impl<'a> Lexer<'a> {
-    pub fn new(input: &'a str) -> Self {
-        let input = input.as_bytes();
-        let len = input.len();
-        Self {
-            input,
-            len,
-            line: 0,
-            column: 0,
-            pos: 0,
+impl Iterator for PeekLex {
+    type Item = Token;
+    fn next(&mut self) -> Option<Token> {
+        match self.peeked.take() {
+            Some(v) => v,
+            None => match self.iter.next_token() {
+                Ok(val) => val,
+                Err(e) => {
+                    println!("{:?}", e);
+                    None
+                }
+            },
         }
     }
+}
+impl PeekLex {
+    pub fn new(iter: Lexer) -> Self {
+        Self { iter, peeked: None }
+    }
+
+    pub fn update(&mut self, input: String) {
+        self.iter.update(input)
+    }
+
+    pub fn get_input(&self) -> &Vec<String> {
+        &self.iter.input
+    }
+}
+impl PeekLex
+where
+    PeekLex: Iterator,
+{
+    pub fn peek(&mut self) -> Option<&Token> {
+        let iter = &mut self.iter;
+        self.peeked
+            .get_or_insert_with(|| iter.next_token().unwrap_or(None))
+            .as_ref()
+    }
+}
+
+#[derive(Debug, Clone, Default)]
+pub struct Lexer {
+    input: Vec<String>,
+    line: usize,
+    column: usize,
+}
+impl Lexer {
+    pub fn new(input: String) -> Self {
+        Self {
+            input: input.split('\n').map(String::from).collect::<Vec<String>>(),
+            line: 0,
+            column: 0,
+        }
+    }
+
+    fn update(&mut self, input: String) {
+        self.input.push(input);
+    }
+
+    // if at end of line move to next, eat white space, if at end of line move to next, eat white space
     fn next_token(&mut self) -> Result<Option<Token>, LexerError> {
-        while self.pos < self.len && (self.input[self.pos] as char).is_whitespace() {
-            if self.input[self.pos] as char == '\n' {
+        let mut line = match self.input.get(self.line) {
+            Some(line) => line.as_bytes(),
+            None => {
+                return Ok(None);
+            }
+        };
+        while line
+            .get(self.column)
+            .map(|val| *val as char)
+            .unwrap_or(' ')
+            .is_whitespace()
+            || self.column >= line.len()
+        {
+            if self.column >= line.len() {
                 self.line += 1;
                 self.column = 0;
-            } else {
+                line = match self.input.get(self.line) {
+                    Some(line) => line.as_bytes(),
+                    None => {
+                        return Ok(None);
+                    }
+                };
+            }
+            while self.column < line.len() && (line[self.column] as char).is_whitespace() {
                 self.column += 1;
             }
-            self.pos += 1;
         }
+
         let mut token = Token {
             span: Span {
                 start_row: self.line,
@@ -258,18 +323,18 @@ impl<'a> Lexer<'a> {
             },
             kind: TokenKInd::Illegal,
         };
-        if let Some(ch) = self.input.get(self.pos) {
+        if let Some(ch) = line.get(self.column) {
             match *ch as char {
                 '0'..='9' => {
                     let mut len = 1;
-                    while self.pos + len < self.len
-                        && matches!(self.input[self.pos + len] as char, '0'..='9')
+                    while self.column + len < line.len()
+                        && matches!(line[self.column + len] as char, '0'..='9')
                     {
                         len += 1;
                     }
                     token.span.end_col += len - 1;
                     token.kind = TokenKInd::Int(
-                        std::str::from_utf8(&self.input[self.pos..self.pos + len])
+                        std::str::from_utf8(&line[self.column..self.column + len])
                             .into_report()
                             .change_context(LexerError::InvalidUtf8)?
                             .parse::<i64>()
@@ -279,15 +344,13 @@ impl<'a> Lexer<'a> {
                                 "Got a number that doesn't fit into a signed 64 bit integer",
                             )?,
                     );
-                    self.pos += len - 1;
                     self.column += len - 1;
                 }
                 '=' => {
                     token.kind = TokenKInd::Assign;
-                    if let Some(ch) = self.input.get(self.pos + 1) {
+                    if let Some(ch) = line.get(self.column + 1) {
                         if *ch as char == '=' {
                             token.kind = TokenKInd::Eq;
-                            self.pos += 1;
                             self.column += 1;
                         }
                     }
@@ -324,10 +387,9 @@ impl<'a> Lexer<'a> {
                 }
                 '!' => {
                     token.kind = TokenKInd::Bang;
-                    if let Some(ch) = self.input.get(self.pos + 1) {
+                    if let Some(ch) = line.get(self.column + 1) {
                         if *ch as char == '=' {
                             token.kind = TokenKInd::Ne;
-                            self.pos += 1;
                             self.column += 1;
                         }
                     }
@@ -348,20 +410,18 @@ impl<'a> Lexer<'a> {
                     token.kind = TokenKInd::Dot;
                 }
                 '&' => {
-                    if self.input[self.pos + 1] as char == '&' {
+                    if line[self.column + 1] as char == '&' {
                         token.kind = TokenKInd::And;
                         token.span.end_col += 1;
-                        self.pos += 1;
                         self.column += 1;
                     } else {
                         token.kind = TokenKInd::BitAnd;
                     }
                 }
                 '|' => {
-                    if self.input[self.pos + 1] as char == '|' {
+                    if line[self.column + 1] as char == '|' {
                         token.kind = TokenKInd::Or;
                         token.span.end_col += 1;
-                        self.pos += 1;
                         self.column += 1;
                     } else {
                         token.kind = TokenKInd::BitOr;
@@ -370,32 +430,31 @@ impl<'a> Lexer<'a> {
                 '"' => {
                     let mut len = 1;
                     // While in bounds
-                    while self.pos + len < self.len
+                    while self.column + len < line.len()
                         // and char is not ending quote or new line
-                        && !matches!(self.input[self.pos + len] as char, '"' | '\n')
+                        && !matches!(line[self.column + len] as char, '"' | '\n')
                         // and if there is a ending quote a new line make sure it's not escaped
-                        || (matches!(self.input[self.pos + len] as char, '"' | '\n') && self.input[self.pos + len - 1] as char == '\\')
+                        || (matches!(line[self.column + len] as char, '"' | '\n') && line[self.column + len - 1] as char == '\\')
                     {
                         len += 1;
                     }
                     token.span.end_col += len;
                     token.kind = TokenKInd::String(
-                        std::str::from_utf8(&self.input[self.pos + 1..self.pos + len])
+                        std::str::from_utf8(&line[self.column + 1..self.column + len])
                             .map_err(|e| Report::new(e).change_context(LexerError::InvalidUtf8))?
                             .into(),
                     );
-                    self.pos += len;
                     self.column += len;
                 }
                 'A'..='Z' | 'a'..='z' => {
                     let mut len = 1;
-                    while self.pos + len < self.len
-                        && matches!(self.input[self.pos+len] as char, 'A'..='Z' | 'a'..='z' | '0'..='9' | '_')
+                    while self.column + len < line.len()
+                        && matches!(line[self.column+len] as char, 'A'..='Z' | 'a'..='z' | '0'..='9' | '_')
                     {
                         len += 1;
                     }
                     token.span.end_col += len - 1;
-                    match std::str::from_utf8(&self.input[self.pos..self.pos + len]) {
+                    match std::str::from_utf8(&line[self.column..self.column + len]) {
                         Ok("let") => {
                             token.kind = TokenKInd::Let;
                         }
@@ -445,7 +504,6 @@ impl<'a> Lexer<'a> {
                             return Err(Report::new(e).change_context(LexerError::InvalidUtf8));
                         }
                     };
-                    self.pos += len - 1;
                     self.column += len - 1;
                 }
                 _ => {
@@ -455,12 +513,11 @@ impl<'a> Lexer<'a> {
         } else {
             return Ok(None);
         }
-        self.pos += 1;
         self.column += 1;
         Ok(Some(token))
     }
 }
-impl<'a> Iterator for Lexer<'a> {
+impl Iterator for Lexer {
     type Item = Token;
     fn next(&mut self) -> Option<Self::Item> {
         match self.next_token() {

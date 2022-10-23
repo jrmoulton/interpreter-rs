@@ -1,5 +1,6 @@
 #![cfg(test)]
 use lexer::Lexer;
+use lexer::PeekLex;
 use parser::parse;
 use std::sync::Arc;
 
@@ -14,9 +15,10 @@ mod results {
     use super::*;
 
     fn get_inner_helper(code: &'static str) -> object::Object {
-        let lexer = Lexer::new(code);
+        let lexer = Lexer::new(code.into());
+        let mut peek_lex = PeekLex::new(lexer);
         let env = Arc::new(Environment::default());
-        let statements = parse(lexer).unwrap();
+        let statements = parse(&mut peek_lex).unwrap();
         eval(statements, env.clone()).unwrap()
     }
 
@@ -292,8 +294,9 @@ mod errors {
     #[test]
     fn index_out_of_bounds_string() {
         let code: &'static str = r#" "foo"[3] "#;
-        let lexer = Lexer::new(code);
-        let statements = parse(lexer).unwrap();
+        let lexer = Lexer::new(code.into());
+        let mut peek_lex = PeekLex::new(lexer);
+        let statements = parse(&mut peek_lex).unwrap();
         let env = Arc::new(Environment::default());
         match eval(statements, env.clone()) {
             Ok(object) => {

@@ -10,7 +10,7 @@ mod results {
     fn single_expr() {
         let code: &'static str = r#"5 + 5"#;
         let correct = vec![Int(5), Plus, Int(5)];
-        let lexer = Lexer::new(code);
+        let lexer = Lexer::new(code.into());
         assert_eq!(
             correct,
             lexer
@@ -24,7 +24,7 @@ mod results {
     fn single_string() {
         let code: &'static str = r#" "foo bar" "#;
         let correct = vec![String("foo bar".into())];
-        let lexer = Lexer::new(code);
+        let lexer = Lexer::new(code.into());
         assert_eq!(
             correct,
             lexer
@@ -38,7 +38,7 @@ mod results {
     fn escaped_quote() {
         let code: &'static str = r#" "foo \" bar" "#;
         let correct = vec![String("foo \\\" bar".into())];
-        let lexer = Lexer::new(code);
+        let lexer = Lexer::new(code.into());
         assert_eq!(
             correct,
             lexer
@@ -52,7 +52,7 @@ mod results {
     fn let_ident_string() {
         let code: &'static str = r#" let x = "foo bar" "#;
         let correct = vec![Let, Ident("x".into()), Assign, String("foo bar".into())];
-        let lexer = Lexer::new(code);
+        let lexer = Lexer::new(code.into());
         assert_eq!(
             correct,
             lexer
@@ -66,7 +66,7 @@ mod results {
     fn single_let() {
         let code: &'static str = r#"let"#;
         let correct = vec![Let];
-        let lexer = Lexer::new(code);
+        let lexer = Lexer::new(code.into());
         assert_eq!(
             correct,
             lexer
@@ -80,7 +80,7 @@ mod results {
     fn single_assign() {
         let code: &'static str = r#"let five = 5;"#;
         let correct = vec![Let, Ident("five".into()), Assign, Int(5), Semicolon];
-        let lexer = Lexer::new(code);
+        let lexer = Lexer::new(code.into());
         assert_eq!(
             correct,
             lexer
@@ -94,7 +94,7 @@ mod results {
     fn bool_or() {
         let code: &'static str = r#"3 == 3 || 5 == 6"#;
         let correct = vec![Int(3), Eq, Int(3), Or, Int(5), Eq, Int(6)];
-        let lexer = Lexer::new(code);
+        let lexer = Lexer::new(code.into());
         assert_eq!(
             correct,
             lexer
@@ -108,7 +108,7 @@ mod results {
     fn bit_or() {
         let code: &'static str = r#"3 | 5"#;
         let correct = vec![Int(3), BitOr, Int(5)];
-        let lexer = Lexer::new(code);
+        let lexer = Lexer::new(code.into());
         assert_eq!(
             correct,
             lexer
@@ -122,7 +122,7 @@ mod results {
     fn bool_and() {
         let code: &'static str = r#"3 == 3 && 5 == 6"#;
         let correct = vec![Int(3), Eq, Int(3), And, Int(5), Eq, Int(6)];
-        let lexer = Lexer::new(code);
+        let lexer = Lexer::new(code.into());
         assert_eq!(
             correct,
             lexer
@@ -136,7 +136,7 @@ mod results {
     fn bit_and() {
         let code: &'static str = r#"3 & 5"#;
         let correct = vec![Int(3), BitAnd, Int(5)];
-        let lexer = Lexer::new(code);
+        let lexer = Lexer::new(code.into());
         assert_eq!(
             correct,
             lexer
@@ -153,7 +153,7 @@ mod results {
     let correct = vec![
         Let, Ident("five".into()), Assign, Int(5), Semicolon, Let, Ident("ten".into()), Assign, Int(10), Semicolon,
     ];
-        let lexer = Lexer::new(code);
+        let lexer = Lexer::new(code.into());
         assert_eq!(
             correct,
             lexer
@@ -174,7 +174,7 @@ mod results {
         Ident("add".into()), Assign, Func, LParen, Ident("x".into()), Comma, Ident("y".into()), RParen, LBrace, Ident("x".into()),
         Minus, Ident("y".into()), RBrace, Semicolon,
     ];
-        let lexer = Lexer::new(code);
+        let lexer = Lexer::new(code.into());
         assert_eq!(
             correct,
             lexer
@@ -191,7 +191,7 @@ mod results {
         let correct = vec![
         Let, Ident("x".into()), Assign, LBracket, Int(12), Comma, Int(15), Comma, Int(30), RBracket, Semicolon,
         ];
-        let lexer = Lexer::new(code);
+        let lexer = Lexer::new(code.into());
         assert_eq!(
             correct,
             lexer
@@ -208,7 +208,7 @@ mod results {
         let correct = vec![
             Let, Ident("x".into()), Assign, Int(10), Plus
         ];
-        let lexer = Lexer::new(code);
+        let lexer = Lexer::new(code.into());
         assert_eq!(
             correct,
             lexer
@@ -225,7 +225,7 @@ mod results {
         let correct = vec![
             Let, Ident("x".into()), Assign, Int(10), Plus
         ];
-        let lexer = Lexer::new(code);
+        let lexer = Lexer::new(code.into());
         assert_eq!(
             correct,
             lexer
@@ -269,7 +269,7 @@ mod results {
             RBrace,
             Int(10), Eq, Int(10), Semicolon, Int(10), Ne, Int(9), Semicolon
         ];
-        let lexer = Lexer::new(code);
+        let lexer = Lexer::new(code.into());
         assert_eq!(
             correct,
             lexer
@@ -281,8 +281,7 @@ mod results {
 
     #[test]
     fn comprehensive_expect_test() {
-        let code: &'static str = r#"
-                let five = 5;
+        let code: &'static str = r#"let five = 5;
                 let ten = 10;
                    let add = fn(x, y) {
                      x - y;
@@ -300,7 +299,7 @@ mod results {
                 1 == 2 && false;
                 2 == 2 || false;
                 10 == 10; 10 != 9;"#;
-        let lexer = Lexer::new(code).into_iter().collect::<Vec<_>>();
+        let lexer = Lexer::new(code.into()).into_iter().collect::<Vec<_>>();
         let expected = expect_file!["./../tests/expect_test_results/comprehensive_expect_test.txt"];
         expected.assert_eq(&format!("{lexer:#?}"));
     }
@@ -311,7 +310,7 @@ mod errors {
     #[test]
     fn bad_character() {
         let code: &'static str = r#"?"#;
-        let lexer = Lexer::new(code).into_iter().collect::<Vec<_>>();
+        let lexer = Lexer::new(code.into()).into_iter().collect::<Vec<_>>();
         let expected = expect_file!["./../tests/expect_test_results/bad_character.txt"];
         expected.assert_eq(&format!("{lexer:#?}"));
     }

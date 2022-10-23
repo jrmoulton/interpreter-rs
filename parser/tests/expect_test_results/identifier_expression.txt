@@ -2,9 +2,7 @@
     Expression(
         NonTerminated(
             Identifier(
-                Ident(
-                    Token(Ident("foobar"), (0,0)->(0,5)),
-                ),
+                Token(Ident("foobar"), (0,0)->(0,5)),
             ),
         ),
     ),
