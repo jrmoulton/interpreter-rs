@@ -1,8 +1,8 @@
 [
     Expression(
         NonTerminated(
-            BinaryExpression {
-                lhs: BinaryExpression {
+            Binary {
+                lhs: Binary {
                     lhs: IntLiteral(
                         Token(Int(5), (0,1)->(0,1)),
                     ),

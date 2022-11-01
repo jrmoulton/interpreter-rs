@@ -1,1 +1,3 @@
-[1mExpected token ';' before expression: fn(){...}[0m[0m
+Error: Multiple Unterminated Expressions
+├╴ Suggestion: Add a semicolon before the expression
+╰╴ 1    | x fn(){true}

@@ -1,9 +1,16 @@
-let fib = fn(n) {
-    if n < 2 {
-        n
-    } else {
-        fib(n-1) + fib(n-2)
-    }
-};
-fib(25)
+// let fib = fn(n) {
+//    if n < 2 {
+//        n
+//    } else {
+//        fib(n-1) + fib(n-2)
+//    }
+//};
+//fib(25)
+//return 5
 
+let x = 3; // this is awesome
+let x = fn(x, y, z) {
+    x + y + z
+};
+x(1, 2, 3)
+x(1, 2, 3)

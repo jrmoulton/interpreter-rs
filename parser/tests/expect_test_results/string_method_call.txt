@@ -5,7 +5,7 @@
                 instance: StringLiteral(
                     Token(String("foobar"), (0,1)->(0,8)),
                 ),
-                method: CallExpression {
+                method: Call {
                     function: Identifier(
                         Token(Ident("len"), (0,10)->(0,12)),
                     ),

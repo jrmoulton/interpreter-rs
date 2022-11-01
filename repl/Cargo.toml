@@ -6,8 +6,12 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-evaluator = {path = "../evaluator/"}
 lexer = {path = "../lexer/"}
 parser = {path = "../parser/"}
+evaluator = {path = "../evaluator/"}
+
 clap = {version = "3.2.22", features = ["derive"]}
-owo-colors = "3.5.0"
+owo-colors = { workspace = true }
+
+# [target.'cfg(not(target_env = "msvc"))'.dependencies]
+# tikv-jemallocator = "0.5"

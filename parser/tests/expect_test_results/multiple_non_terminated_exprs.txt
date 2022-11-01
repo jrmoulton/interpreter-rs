@@ -1,0 +1,3 @@
+Error: Multiple Unterminated Expressions
+├╴ Suggestion: Add a semicolon before this expression
+╰╴ 1    | x x

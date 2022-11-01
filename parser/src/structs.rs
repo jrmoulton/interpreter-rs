@@ -1,5 +1,6 @@
 use error_stack::Context;
 use lexer::{Span, Token};
+use owo_colors::OwoColorize;
 use std::fmt::Display;
 use std::fmt::Write;
 
@@ -7,16 +8,16 @@ use std::fmt::Write;
 pub enum Statement {
     Let {
         ident: Token,
-        expr: Expr,
+        expr: ExprBase,
+        span: Span,
+    },
+    Assign {
+        ident: Token,
+        expr: ExprBase,
         span: Span,
     },
     Return(Option<Expr>),
     Expression(Expr),
-    Assign {
-        ident: Token,
-        expr: Box<ExprBase>,
-        span: Span,
-    },
 }
 impl Display for Statement {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
@@ -78,38 +79,38 @@ impl Display for Expr {
 pub enum ExprBase {
     IntLiteral(Token),
     BoolLiteral(Token),
-    FuncLiteral {
-        parameters: Vec<Ident>,
-        body: Scope,
-        span: Span,
-    },
     StringLiteral(Token),
+    Identifier(Token),
     Array {
         exprs: Vec<ExprBase>,
         span: Span,
     },
-    CallExpression {
+    Func {
+        parameters: Vec<Ident>,
+        body: Scope,
+        span: Span,
+    },
+    Call {
         function: Box<ExprBase>,
         args: Vec<ExprBase>,
         span: Span,
     },
-    Identifier(Token),
     Scope {
         statements: Vec<Statement>,
         span: Span,
     },
-    PrefixExpression {
+    Prefix {
         operator: Token,
-        expression: Box<Expr>,
+        expression: Box<ExprBase>,
         span: Span,
     },
-    BinaryExpression {
+    Binary {
         lhs: Box<ExprBase>,
         operator: Token,
         rhs: Box<ExprBase>,
         span: Span,
     },
-    IndexExpression {
+    Index {
         array: Box<ExprBase>,
         index: Box<ExprBase>,
         span: Span,
@@ -135,13 +136,13 @@ impl ExprBase {
             IntLiteral(token) | BoolLiteral(token) | StringLiteral(token) | Identifier(token) => {
                 token.span
             }
-            FuncLiteral { span, .. }
+            Func { span, .. }
             | Array { span, .. }
-            | CallExpression { span, .. }
+            | Call { span, .. }
             | Scope { span, .. }
-            | PrefixExpression { span, .. }
-            | BinaryExpression { span, .. }
-            | IndexExpression { span, .. }
+            | Prefix { span, .. }
+            | Binary { span, .. }
+            | Index { span, .. }
             | If { span, .. }
             | MethodCall { span, .. } => *span,
         }
@@ -164,7 +165,7 @@ impl Display for ExprBase {
                 ret_str.push_str(" ]");
                 ret_str
             }
-            ExprBase::IndexExpression { array, index, .. } => {
+            ExprBase::Index { array, index, .. } => {
                 format!("{array}[{index}]")
             }
             ExprBase::MethodCall {
@@ -172,7 +173,7 @@ impl Display for ExprBase {
             } => {
                 format!("{instance}.{method}")
             }
-            ExprBase::FuncLiteral { parameters, .. } => {
+            ExprBase::Func { parameters, .. } => {
                 let mut ret_str = String::from("(");
                 for param in parameters.iter() {
                     write!(ret_str, "{param}, ")?;
@@ -180,7 +181,7 @@ impl Display for ExprBase {
                 ret_str.push(')');
                 format!("fn{ret_str}{{...}}")
             }
-            ExprBase::CallExpression { function, args, .. } => {
+            ExprBase::Call { function, args, .. } => {
                 let mut ret_str = String::from("[ ");
                 for arg in args.iter() {
                     write!(ret_str, "{arg}, ")?;
@@ -197,14 +198,14 @@ impl Display for ExprBase {
                 ret_str.push_str(" ]");
                 ret_str
             }
-            ExprBase::PrefixExpression {
+            ExprBase::Prefix {
                 operator,
                 expression,
                 ..
             } => {
                 format!("{operator}:{}", expression)
             }
-            ExprBase::BinaryExpression {
+            ExprBase::Binary {
                 lhs, operator, rhs, ..
             } => {
                 format!("({} {} {})", lhs, operator, rhs)
@@ -240,21 +241,6 @@ impl From<Scope> for ExprBase {
     }
 }
 
-/// The optional alterantive of an if expression
-#[derive(Debug, Clone)]
-pub enum ElseIfExpr {
-    ElseIf(Box<IfExpr>),
-    Else(Scope),
-}
-impl ElseIfExpr {
-    pub fn get_span(&self) -> Span {
-        match self {
-            ElseIfExpr::ElseIf(if_expr) => if_expr.span,
-            ElseIfExpr::Else(scope) => scope.span,
-        }
-    }
-}
-
 #[derive(Debug, Clone)]
 pub struct IfExpr {
     pub condition: Box<ExprBase>,
@@ -269,6 +255,21 @@ impl From<IfExpr> for ExprBase {
             consequence: if_expr.consequence,
             alternative: if_expr.alternative,
             span: if_expr.span,
+        }
+    }
+}
+
+/// The optional alterantive of an if expression
+#[derive(Debug, Clone)]
+pub enum ElseIfExpr {
+    ElseIf(Box<IfExpr>),
+    Else(Scope),
+}
+impl ElseIfExpr {
+    pub fn get_span(&self) -> Span {
+        match self {
+            ElseIfExpr::ElseIf(if_expr) => if_expr.span,
+            ElseIfExpr::Else(scope) => scope.span,
         }
     }
 }
@@ -288,7 +289,7 @@ pub enum ParseError {
     UnexpectedToken(Token),
     UnexpectedTerminatedExpr(Expr),
     ExpectedTerminatedExpr(Expr),
-    MultipleUnterminatedExpressions(Expr),
+    MultipleUnterminatedExpressions,
     Eof,
 }
 impl Display for ParseError {
@@ -301,8 +302,8 @@ impl Display for ParseError {
             ParseError::ExpectedTerminatedExpr(expr) => {
                 format!("Expected token ';' after expression: {expr}")
             }
-            ParseError::MultipleUnterminatedExpressions(expr) => {
-                format!("Expected token ';' before expression: {expr}")
+            ParseError::MultipleUnterminatedExpressions => {
+                ("Error: Multiple Unterminated Expressions").to_string()
             }
             ParseError::Eof => "Unexpected end of input".into(),
         };
@@ -312,6 +313,25 @@ impl Display for ParseError {
 impl Context for ParseError {}
 
 pub struct Suggestion(pub &'static str);
+impl Display for Suggestion {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str(&if cfg!(not(test)) {
+            format!("Suggestion: {}", self.0.bright_green().bold())
+        } else {
+            format!("Suggestion: {}", self.0)
+        })
+    }
+}
+pub struct Help(pub &'static str);
+impl Display for Help {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str(&if cfg!(not(test)) {
+            format!("Help: {}", self.0.bright_blue().bold())
+        } else {
+            format!("Help: {}", self.0)
+        })
+    }
+}
 
 // Extras
 
@@ -323,4 +343,13 @@ pub(crate) enum TermState {
 
 pub(crate) trait ExtendAssign {
     fn extend_assign(&mut self, e: error_stack::Report<ParseError>);
+}
+impl ExtendAssign for Option<error_stack::Report<ParseError>> {
+    fn extend_assign(&mut self, e: error_stack::Report<ParseError>) {
+        if let Some(error) = self.as_mut() {
+            error.extend_one(e);
+        } else {
+            *self = Some(e);
+        }
+    }
 }

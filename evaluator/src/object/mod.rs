@@ -98,6 +98,16 @@ impl From<()> for EmptyWrapper {
         Self(())
     }
 }
+impl EmptyWrapper {
+    pub fn new() -> Self {
+        Self(())
+    }
+}
+impl Default for EmptyWrapper {
+    fn default() -> Self {
+        Self::new()
+    }
+}
 
 make_literal_types!(
     (Integer, i64, "Integer"),

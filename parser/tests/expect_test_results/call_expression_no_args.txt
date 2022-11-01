@@ -1,7 +1,7 @@
 [
     Expression(
         Terminated(
-            CallExpression {
+            Call {
                 function: Identifier(
                     Token(Ident("add"), (0,0)->(0,2)),
                 ),

@@ -1,7 +1,7 @@
 [
     Expression(
         NonTerminated(
-            CallExpression {
+            Call {
                 function: Identifier(
                     Token(Ident("call_func"), (0,0)->(0,8)),
                 ),
@@ -12,7 +12,7 @@
                     IntLiteral(
                         Token(Int(3), (0,13)->(0,13)),
                     ),
-                    FuncLiteral {
+                    Func {
                         parameters: [
                             Ident(
                                 Token(Ident("x"), (0,19)->(0,19)),
@@ -25,7 +25,7 @@
                             statements: [
                                 Expression(
                                     NonTerminated(
-                                        BinaryExpression {
+                                        Binary {
                                             lhs: Identifier(
                                                 Token(Ident("x"), (0,24)->(0,24)),
                                             ),

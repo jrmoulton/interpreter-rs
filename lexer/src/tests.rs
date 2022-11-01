@@ -1,7 +1,7 @@
 #![cfg(test)]
 use super::*;
 use expect_test::expect_file;
-use TokenKInd::*;
+use TokenKind::*;
 
 mod results {
     use super::*;
@@ -24,6 +24,20 @@ mod results {
     fn single_string() {
         let code: &'static str = r#" "foo bar" "#;
         let correct = vec![String("foo bar".into())];
+        let lexer = Lexer::new(code.into());
+        assert_eq!(
+            correct,
+            lexer
+                .into_iter()
+                .map(|lok_tok| lok_tok.kind)
+                .collect::<Vec<_>>()
+        );
+    }
+
+    #[test]
+    fn comment() {
+        let code: &'static str = r#" //foo bar"#;
+        let correct = vec![Comment("foo bar".into())];
         let lexer = Lexer::new(code.into());
         assert_eq!(
             correct,

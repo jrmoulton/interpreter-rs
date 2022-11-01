@@ -1,12 +1,12 @@
 [
     Expression(
         NonTerminated(
-            BinaryExpression {
+            Binary {
                 lhs: IntLiteral(
                     Token(Int(5), (0,0)->(0,0)),
                 ),
                 operator: Token(Plus, (0,2)->(0,2)),
-                rhs: BinaryExpression {
+                rhs: Binary {
                     lhs: IntLiteral(
                         Token(Int(5), (0,4)->(0,4)),
                     ),

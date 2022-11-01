@@ -4,7 +4,7 @@ pub mod object;
 
 use std::{collections::HashMap,  sync::Arc};
 use error_stack::{ Report, Result};
-use lexer::{Token, TokenKInd};
+use lexer::{Token, TokenKind};
 use parser::structs::*;
 
 use crate::{structs::*, object::{FuncIntern, Object, ObjectTrait, Array, Integer}};
@@ -26,18 +26,24 @@ pub fn eval(
     statements: Vec<Statement>,
     env: Arc<Environment>,
 ) -> Result<Object, EvalError> {
-    Report::install_debug_hook::<Suggestion>(|value, context| {
-        context.push_body(format!("suggestion: {}", value.0));
+    Report::install_debug_hook::<Suggestion>(|suggestion, context| context.push_body(suggestion.to_string()));
+    Report::install_debug_hook::<Help>(|help, context| context.push_body(help.to_string()));
+    Report::install_debug_hook::<ExprBase>(|value, context| {
+        context.push_body(format!("{value}"))
     });
-    owo_colors::set_override(true);
+    if cfg!(any(not(debug_assertions), test)) {
+        use std::panic::Location;
+        Report::install_debug_hook::<Location>(|_value, _context| {});
+    }
+
     let mut error: Option<Report<EvalError>> = None;
     let mut last_obj_tup = None;
     for statement in statements {
         let temp_res = match statement {
             Statement::Let { ident, expr, .. } => {
-                let expr_obj = eval_expression(expr, env.clone())?.0;
+                let expr_obj = eval_expr_base(expr, env.clone())?;
                 let ident_string = match ident.kind {
-                    TokenKInd::Ident(inner) => inner,
+                    TokenKind::Ident(inner) => inner,
                     _ => unreachable!(),
                 };
                 env.set(ident_string, expr_obj);
@@ -73,17 +79,17 @@ pub fn eval(
             } => {
                 let ident_string = match ident {
                     Token {
-                        kind: TokenKInd::Ident(ref ident_string),
+                        kind: TokenKind::Ident(ref ident_string),
                         ..
                     } => ident_string,
                     _ => unreachable!()
                     };
                 let key_exists = env.has(&ident_string.to_string());
-                let expr_obj = eval_expr_base(*expr, env.clone())?;
+                let expr_obj = eval_expr_base(expr, env.clone())?;
                 if key_exists {
                     env.set(ident_string.into(), expr_obj);
                 } else {
-                    Err(Report::new(EvalError::IdentifierNotFound(ident_string.clone())).attach(ident))?
+                    Err(Report::new(EvalError::IdentifierNotFound(ident_string.clone())).attach(Help("Variables need to be instantiated with the `let` keyword")).attach(ident))?
                 }
                 Ok((object::Empty::new(().into()).into(), true))
             }
@@ -102,10 +108,10 @@ pub fn eval(
         if !obj.1 || obj.0.is_return() {
             Ok(obj.0)
         } else {
-            Ok(Object::Empty(object::Empty::new(().into())))
+            Ok(object::Empty::new(().into()).into())
         }
     } else {
-        Err(Report::new(EvalError::NothingGiven))
+        Ok(object::Empty::new(object::EmptyWrapper::new()).into())
     }
 }
 
@@ -125,19 +131,19 @@ fn eval_expr_base(
 ) -> Result<Object, EvalError> {
     match expr_base {
         ExprBase::IntLiteral(Token {
-            kind: TokenKInd::Int(int),
+            kind: TokenKind::Int(int),
             ..
         }) => Ok(Object::Integer(object::Integer::new(int))),
         ExprBase::BoolLiteral(Token { kind: token, .. }) => match token {
-            TokenKInd::True => Ok(Object::Boolean(object::Boolean::new(true))),
-            TokenKInd::False => Ok(Object::Boolean(object::Boolean::new(false))),
+            TokenKind::True => Ok(Object::Boolean(object::Boolean::new(true))),
+            TokenKind::False => Ok(Object::Boolean(object::Boolean::new(false))),
             _ => {
                 unreachable!("BoolLiteral will never have a token that is not either true or false")
             }
         }, 
-        ExprBase::StringLiteral(Token {kind: TokenKInd::String(inner_str), ..}) => Ok(Object::String(object::String::new(inner_str))),
-        ExprBase::FuncLiteral { parameters, body, .. } => Ok(Object::Function(object::Function::new(FuncIntern::new(parameters, body, env)))),
-        ExprBase::CallExpression {  function, args, .. }  => {
+        ExprBase::StringLiteral(Token {kind: TokenKind::String(inner_str), ..}) => Ok(Object::String(object::String::new(inner_str))),
+        ExprBase::Func { parameters, body, .. } => Ok(Object::Function(object::Function::new(FuncIntern::new(parameters, body, env)))),
+        ExprBase::Call {  function, args, .. }  => {
             let function_obj = eval_expr_base(*function, env.clone())?;
             let args: Result<Vec<Object>, EvalError> = args.iter().map(|arg| eval_expr_base(arg.clone(), env.clone())).collect();
             Ok(apply_function(function_obj, args?)?)
@@ -153,7 +159,7 @@ fn eval_expr_base(
             let items: Result<Vec<Object>, EvalError> = exprs.iter().map(|item| eval_expr_base(item.clone(), env.clone())).collect();
             Ok(Object::Array(object::Array::new(items?.into())))
         }
-        ExprBase::IndexExpression{ array, index, .. } => {
+        ExprBase::Index{ array, index, .. } => {
             let array_obj = eval_expr_base(*array, env.clone())?;
             let index = eval_expr_base(*index, env)?;
             let index = match index {
@@ -179,24 +185,24 @@ fn eval_expr_base(
             } 
         }
         ExprBase::Identifier(Token {
-            kind: TokenKInd::Ident(ref ident_string),
+            kind: TokenKind::Ident(ref ident_string),
             ..
         }) => {
                 match env.find(ident_string) {
                     Some(obj) => Ok(obj),
-                    None => Err(Report::new(EvalError::IdentifierNotFound(ident_string.clone())).attach(expr_base))?
+                    None => Err(Report::new(EvalError::IdentifierNotFound(ident_string.clone())).attach(Help("Variables need to be instantiated with the `let` keyword")).attach(expr_base))?
                 }
         }
         ExprBase::Scope { statements, .. } => eval(statements, env),
-        ExprBase::PrefixExpression {
+        ExprBase::Prefix {
             ref operator,
             ref expression,
             ..
          } => {
-            let right = eval_expression((**expression).clone(), env)?.0;
+            let right = eval_expr_base((**expression).clone(), env)?;
             eval_prefix_expr(&operator.kind, right, expr_base.clone())
         } 
-        ExprBase::BinaryExpression {
+        ExprBase::Binary {
             ref lhs,
             ref operator,
             ref rhs,
@@ -229,7 +235,7 @@ fn apply_function(function_obj: Object, args: Vec<Object>) -> Result<Object, Eva
         Object::Function(function_obj) => {
             let fn_literal = function_obj.value;
             let param_strings: Vec<String> = fn_literal.parameters.iter().map(|param_ident| {match &param_ident.0.kind {
-                TokenKInd::Ident(ident_string) => ident_string.clone(),
+                TokenKind::Ident(ident_string) => ident_string.clone(),
                 _ => unreachable!()
             }}).collect();
             if param_strings.len() != args.len() {
@@ -262,7 +268,7 @@ fn eval_if_expr(
                     ElseIfExpr::Else(if_expr) => eval(if_expr.statements, env),
                 }
             } else {
-                Ok(Object::Empty(object::Empty::new(().into())))
+                Ok(object::Empty::new(().into()).into())
             }
         }
         _ => Err(Report::new(EvalError::InvalidIfCondition(condition)))?,
@@ -271,7 +277,7 @@ fn eval_if_expr(
 
 #[allow(unreachable_patterns)]
 fn eval_binary_expr(
-    operator: &TokenKInd,
+    operator: &TokenKind,
     left: Object,
     right: Object,
     expr_base: ExprBase,
@@ -284,7 +290,7 @@ fn eval_binary_expr(
     }
 }
 
-fn eval_string_binary_expr(operator: &TokenKInd, left: Object, right: Object, expr_base: ExprBase) -> Result<Object, EvalError> {
+fn eval_string_binary_expr(operator: &TokenKind, left: Object, right: Object, expr_base: ExprBase) -> Result<Object, EvalError> {
     let left = match left {
         Object::String(object::String { value, .. }) => value,
         _ => unreachable!("string was already matched"),
@@ -294,16 +300,16 @@ fn eval_string_binary_expr(operator: &TokenKInd, left: Object, right: Object, ex
         _ => unimplemented!("Here I would add support for operator overloading"),
     };
     match operator {
-        TokenKInd::Eq => Ok(object::Boolean::new(left == right).into()),
-        TokenKInd::Ne => Ok(object::Boolean::new(left != right).into()),
-        TokenKInd::Plus => Ok(object::String::new(left + &right).into()),
+        TokenKind::Eq => Ok(object::Boolean::new(left == right).into()),
+        TokenKind::Ne => Ok(object::Boolean::new(left != right).into()),
+        TokenKind::Plus => Ok(object::String::new(left + &right).into()),
         _ => Err(Report::new(EvalError::UnsupportedOperation(expr_base))),
     }
     
 }
 
 fn eval_bool_binary_expr(
-    operator: &TokenKInd,
+    operator: &TokenKind,
     left: Object,
     right: Object,
     expr_base: ExprBase,
@@ -317,16 +323,16 @@ fn eval_bool_binary_expr(
         _ => unimplemented!("Here I would add support for operator overloading"),
     };
     match operator {
-        TokenKInd::Eq => Ok(object::Boolean::new(left == right).into()),
-        TokenKInd::Ne => Ok(object::Boolean::new(left != right).into()),
-        TokenKInd::Or => Ok(object::Boolean::new(left || right).into()),
-        TokenKInd::And => Ok(object::Boolean::new(left && right).into()),
+        TokenKind::Eq => Ok(object::Boolean::new(left == right).into()),
+        TokenKind::Ne => Ok(object::Boolean::new(left != right).into()),
+        TokenKind::Or => Ok(object::Boolean::new(left || right).into()),
+        TokenKind::And => Ok(object::Boolean::new(left && right).into()),
         _ => Err(Report::new(EvalError::UnsupportedOperation(expr_base))),
     }
 }
 
 fn eval_int_binary_expr(
-    operator: &TokenKInd,
+    operator: &TokenKind,
     left: Object,
     right: Object,
     expr_base: ExprBase,
@@ -340,26 +346,26 @@ fn eval_int_binary_expr(
         _ => unimplemented!("Here I would add support for operator overloading"),
     };
     match operator {
-        TokenKInd::Plus => Ok(object::Integer::new(left + right).into()),
-        TokenKInd::Minus => Ok(object::Integer::new(left - right).into()),
-        TokenKInd::Slash => Ok(object::Integer::new(left / right).into()),
-        TokenKInd::Asterisk => Ok(object::Integer::new(left * right).into()),
-        TokenKInd::LT => Ok(object::Boolean::new(left < right).into()),
-        TokenKInd::GT => Ok(object::Boolean::new(left > right).into()),
-        TokenKInd::Eq => Ok(object::Boolean::new(left == right).into()),
-        TokenKInd::Ne => Ok(object::Boolean::new(left != right).into()),
+        TokenKind::Plus => Ok(object::Integer::new(left + right).into()),
+        TokenKind::Minus => Ok(object::Integer::new(left - right).into()),
+        TokenKind::Slash => Ok(object::Integer::new(left / right).into()),
+        TokenKind::Asterisk => Ok(object::Integer::new(left * right).into()),
+        TokenKind::LT => Ok(object::Boolean::new(left < right).into()),
+        TokenKind::GT => Ok(object::Boolean::new(left > right).into()),
+        TokenKind::Eq => Ok(object::Boolean::new(left == right).into()),
+        TokenKind::Ne => Ok(object::Boolean::new(left != right).into()),
         _ => Err(Report::new(EvalError::UnsupportedOperation(expr_base))),
     }
 }
 
 fn eval_prefix_expr(
-    operator: &TokenKInd,
+    operator: &TokenKind,
     right: Object,
     expr_base: ExprBase,
 ) -> Result<Object, EvalError> {
     match operator {
-        TokenKInd::Minus => eval_minux_prefix_op(right, expr_base),
-        TokenKInd::Bang => eval_bang_prefix_op(right, expr_base),
+        TokenKind::Minus => eval_minux_prefix_op(right, expr_base),
+        TokenKind::Bang => eval_bang_prefix_op(right, expr_base),
         _ => Err(Report::new(EvalError::UnsupportedOperation(expr_base))),
     }
 }

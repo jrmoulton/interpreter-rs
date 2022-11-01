@@ -38,10 +38,11 @@ pub enum Precedence {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub enum TokenKInd {
+pub enum TokenKind {
     // Extra stuff
     Illegal,
     Eof,
+    Comment(String),
 
     // keywords
     Let,
@@ -97,63 +98,64 @@ pub enum TokenKInd {
     Dot,
 }
 
-impl Display for TokenKInd {
+impl Display for TokenKind {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let ret: String = match self {
-            TokenKInd::Illegal => "`Illegal`".into(),
-            TokenKInd::Eof => "`End of File`".into(),
-            TokenKInd::Let => "`let`".into(),
-            TokenKInd::Mut => "`mut`".into(),
-            TokenKInd::Func => "`fn`".into(),
-            TokenKInd::True => "`true`".into(),
-            TokenKInd::False => "`false`".into(),
-            TokenKInd::If => "`if`".into(),
-            TokenKInd::Else => "`else`".into(),
-            TokenKInd::Return => "`return`".into(),
-            TokenKInd::For => "`for`".into(),
-            TokenKInd::In => "`in`".into(),
-            TokenKInd::Break => "`break`".into(),
-            TokenKInd::Continue => "`continue`".into(),
-            TokenKInd::Loop => "`loop`".into(),
-            TokenKInd::While => "`while`".into(),
-            TokenKInd::Ident(ident) => format!("`{ident}`"),
-            TokenKInd::Int(int) => format!("`{int}`"),
-            TokenKInd::String(string) => format!("`{string}`"),
-            TokenKInd::Assign => "`=`".into(),
-            TokenKInd::Plus => "`+`".into(),
-            TokenKInd::Minus => "`-`".into(),
-            TokenKInd::Slash => "`/`".into(),
-            TokenKInd::Asterisk => "`*`".into(),
-            TokenKInd::Bang => "`!`".into(),
-            TokenKInd::BitAnd => "`&`".into(),
-            TokenKInd::BitOr => "`|`".into(),
-            TokenKInd::Or => "`||`".into(),
-            TokenKInd::And => "`&&`".into(),
-            TokenKInd::LT => "`<`".into(),
-            TokenKInd::GT => "`>`".into(),
-            TokenKInd::Eq => "`==`".into(),
-            TokenKInd::Ne => "`!=`".into(),
-            TokenKInd::Comma => "`,`".into(),
-            TokenKInd::Semicolon => "`;`".into(),
-            TokenKInd::LParen => "`(`".into(),
-            TokenKInd::RParen => "`)`".into(),
-            TokenKInd::LBrace => "`{`".into(),
-            TokenKInd::RBrace => "`}`".into(),
-            TokenKInd::LBracket => "`[`".into(),
-            TokenKInd::RBracket => "`]`".into(),
-            TokenKInd::Dot => "`.`".into(),
+            Self::Illegal => "`Illegal`".into(),
+            Self::Eof => "`End of File`".into(),
+            Self::Let => "`let`".into(),
+            Self::Mut => "`mut`".into(),
+            Self::Func => "`fn`".into(),
+            Self::True => "`true`".into(),
+            Self::False => "`false`".into(),
+            Self::If => "`if`".into(),
+            Self::Else => "`else`".into(),
+            Self::Return => "`return`".into(),
+            Self::For => "`for`".into(),
+            Self::In => "`in`".into(),
+            Self::Break => "`break`".into(),
+            Self::Continue => "`continue`".into(),
+            Self::Loop => "`loop`".into(),
+            Self::While => "`while`".into(),
+            Self::Ident(ident) => format!("`{ident}`"),
+            Self::Int(int) => format!("`{int}`"),
+            Self::String(string) => format!("`{string}`"),
+            Self::Comment(string) => format!("`//{string}`"),
+            Self::Assign => "`=`".into(),
+            Self::Plus => "`+`".into(),
+            Self::Minus => "`-`".into(),
+            Self::Slash => "`/`".into(),
+            Self::Asterisk => "`*`".into(),
+            Self::Bang => "`!`".into(),
+            Self::BitAnd => "`&`".into(),
+            Self::BitOr => "`|`".into(),
+            Self::Or => "`||`".into(),
+            Self::And => "`&&`".into(),
+            Self::LT => "`<`".into(),
+            Self::GT => "`>`".into(),
+            Self::Eq => "`==`".into(),
+            Self::Ne => "`!=`".into(),
+            Self::Comma => "`,`".into(),
+            Self::Semicolon => "`;`".into(),
+            Self::LParen => "`(`".into(),
+            Self::RParen => "`)`".into(),
+            Self::LBrace => "`{`".into(),
+            Self::RBrace => "`}`".into(),
+            Self::LBracket => "`[`".into(),
+            Self::RBracket => "`]`".into(),
+            Self::Dot => "`.`".into(),
         };
         f.write_str(&ret)
     }
 }
-impl TokenKInd {
+impl TokenKind {
     /// Checks if the token type matches without checking the internal data
     pub fn token_matches(&self, other: &Self) -> bool {
         discriminant(self) == discriminant(other)
     }
     pub fn precedence(&self) -> Precedence {
         use Precedence::*;
-        use TokenKInd::*;
+        use TokenKind::*;
         match self {
             LBracket => Index,
             LParen => Call,
@@ -168,8 +170,8 @@ impl TokenKInd {
             Ne => Equals,
             Or => LogicOr,
             And => LogicAnd,
-            TokenKInd::BitOr => Precedence::BitOr,
-            TokenKInd::BitAnd => Precedence::BitAnd,
+            TokenKind::BitOr => Precedence::BitOr,
+            TokenKind::BitAnd => Precedence::BitAnd,
             _ => Lowest,
         }
     }
@@ -177,10 +179,10 @@ impl TokenKInd {
 
 #[derive(Clone, Copy)]
 pub struct Span {
-    pub start_row: usize,
-    pub start_col: usize,
-    pub end_row: usize,
-    pub end_col: usize,
+    start_row: usize,
+    start_col: usize,
+    end_row: usize,
+    end_col: usize,
 }
 impl Debug for Span {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
@@ -202,11 +204,25 @@ impl core::ops::Add for Span {
         }
     }
 }
+impl Span {
+    pub fn get_row_range(&self, before: usize, after: usize) -> std::ops::RangeInclusive<usize> {
+        self.start_row - before..=self.end_row + after
+    }
+    pub fn get_start_row(&self) -> usize {
+        self.start_row
+    }
+    pub fn get_end_row(&self) -> usize {
+        self.end_row
+    }
+    pub fn get_end_col(&self) -> usize {
+        self.end_col
+    }
+}
 
 #[derive(Clone)]
 pub struct Token {
     pub span: Span,
-    pub kind: TokenKInd,
+    pub kind: TokenKind,
 }
 impl Debug for Token {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
@@ -273,6 +289,11 @@ pub struct Lexer {
 }
 impl Lexer {
     pub fn new(input: String) -> Self {
+        #[cfg(any(not(debug_assertions), test))]
+        {
+            use std::panic::Location;
+            Report::install_debug_hook::<Location>(|_value, _context| {});
+        }
         Self {
             input: input.split('\n').map(String::from).collect::<Vec<String>>(),
             line: 0,
@@ -321,7 +342,7 @@ impl Lexer {
                 end_row: self.line,
                 end_col: self.column,
             },
-            kind: TokenKInd::Illegal,
+            kind: TokenKind::Illegal,
         };
         if let Some(ch) = line.get(self.column) {
             match *ch as char {
@@ -333,7 +354,7 @@ impl Lexer {
                         len += 1;
                     }
                     token.span.end_col += len - 1;
-                    token.kind = TokenKInd::Int(
+                    token.kind = TokenKind::Int(
                         std::str::from_utf8(&line[self.column..self.column + len])
                             .into_report()
                             .change_context(LexerError::InvalidUtf8)?
@@ -347,84 +368,104 @@ impl Lexer {
                     self.column += len - 1;
                 }
                 '=' => {
-                    token.kind = TokenKInd::Assign;
+                    token.kind = TokenKind::Assign;
                     if let Some(ch) = line.get(self.column + 1) {
                         if *ch as char == '=' {
-                            token.kind = TokenKInd::Eq;
+                            token.kind = TokenKind::Eq;
                             self.column += 1;
                         }
                     }
                 }
                 '+' => {
-                    token.kind = TokenKInd::Plus;
+                    token.kind = TokenKind::Plus;
                 }
                 '(' => {
-                    token.kind = TokenKInd::LParen;
+                    token.kind = TokenKind::LParen;
                 }
                 ')' => {
-                    token.kind = TokenKInd::RParen;
+                    token.kind = TokenKind::RParen;
                 }
                 '{' => {
-                    token.kind = TokenKInd::LBrace;
+                    token.kind = TokenKind::LBrace;
                 }
                 '}' => {
-                    token.kind = TokenKInd::RBrace;
+                    token.kind = TokenKind::RBrace;
                 }
                 '[' => {
-                    token.kind = TokenKInd::LBracket;
+                    token.kind = TokenKind::LBracket;
                 }
                 ']' => {
-                    token.kind = TokenKInd::RBracket;
+                    token.kind = TokenKind::RBracket;
                 }
                 ',' => {
-                    token.kind = TokenKInd::Comma;
+                    token.kind = TokenKind::Comma;
                 }
                 ';' => {
-                    token.kind = TokenKInd::Semicolon;
+                    token.kind = TokenKind::Semicolon;
                 }
                 '-' => {
-                    token.kind = TokenKInd::Minus;
+                    token.kind = TokenKind::Minus;
                 }
                 '!' => {
-                    token.kind = TokenKInd::Bang;
+                    token.kind = TokenKind::Bang;
                     if let Some(ch) = line.get(self.column + 1) {
                         if *ch as char == '=' {
-                            token.kind = TokenKInd::Ne;
+                            token.kind = TokenKind::Ne;
                             self.column += 1;
                         }
                     }
                 }
                 '*' => {
-                    token.kind = TokenKInd::Asterisk;
+                    token.kind = TokenKind::Asterisk;
                 }
                 '/' => {
-                    token.kind = TokenKInd::Slash;
+                    if line[self.column + 1] as char == '/' {
+                        let mut len = 1;
+                        // While in bounds
+                        while self.column + len < line.len()
+                        // and char is not ending quote or new line
+                        && line[self.column + len] as char != '\n'
+                        {
+                            len += 1;
+                        }
+                        token.span.end_col += len;
+                        token.kind = TokenKind::Comment(
+                            std::str::from_utf8(&line[self.column + 2..self.column + len])
+                                .map_err(|e| {
+                                    Report::new(e).change_context(LexerError::InvalidUtf8)
+                                })?
+                                .into(),
+                        );
+                        self.column += len;
+                    } else {
+                        token.kind = TokenKind::Slash;
+                    }
                 }
                 '<' => {
-                    token.kind = TokenKInd::LT;
+                    token.kind = TokenKind::LT;
                 }
                 '>' => {
-                    token.kind = TokenKInd::GT;
+                    token.kind = TokenKind::GT;
                 }
                 '.' => {
-                    token.kind = TokenKInd::Dot;
+                    token.kind = TokenKind::Dot;
                 }
                 '&' => {
                     if line[self.column + 1] as char == '&' {
-                        token.kind = TokenKInd::And;
+                        token.kind = TokenKind::And;
                         token.span.end_col += 1;
                         self.column += 1;
                     } else {
-                        token.kind = TokenKInd::BitAnd;
+                        token.kind = TokenKind::BitAnd;
                     }
                 }
                 '|' => {
                     if line[self.column + 1] as char == '|' {
-                        token.kind = TokenKInd::Or;
+                        token.kind = TokenKind::Or;
                         token.span.end_col += 1;
                         self.column += 1;
                     } else {
-                        token.kind = TokenKInd::BitOr;
+                        token.kind = TokenKind::BitOr;
                     }
                 }
                 '"' => {
@@ -439,7 +480,7 @@ impl Lexer {
                         len += 1;
                     }
                     token.span.end_col += len;
-                    token.kind = TokenKInd::String(
+                    token.kind = TokenKind::String(
                         std::str::from_utf8(&line[self.column + 1..self.column + len])
                             .map_err(|e| Report::new(e).change_context(LexerError::InvalidUtf8))?
                             .into(),
@@ -456,49 +497,49 @@ impl Lexer {
                     token.span.end_col += len - 1;
                     match std::str::from_utf8(&line[self.column..self.column + len]) {
                         Ok("let") => {
-                            token.kind = TokenKInd::Let;
+                            token.kind = TokenKind::Let;
                         }
                         Ok("fn") => {
-                            token.kind = TokenKInd::Func;
+                            token.kind = TokenKind::Func;
                         }
                         Ok("true") => {
-                            token.kind = TokenKInd::True;
+                            token.kind = TokenKind::True;
                         }
                         Ok("false") => {
-                            token.kind = TokenKInd::False;
+                            token.kind = TokenKind::False;
                         }
                         Ok("if") => {
-                            token.kind = TokenKInd::If;
+                            token.kind = TokenKind::If;
                         }
                         Ok("else") => {
-                            token.kind = TokenKInd::Else;
+                            token.kind = TokenKind::Else;
                         }
                         Ok("return") => {
-                            token.kind = TokenKInd::Return;
+                            token.kind = TokenKind::Return;
                         }
                         Ok("for") => {
-                            token.kind = TokenKInd::For;
+                            token.kind = TokenKind::For;
                         }
                         Ok("in") => {
-                            token.kind = TokenKInd::In;
+                            token.kind = TokenKind::In;
                         }
                         Ok("mut") => {
-                            token.kind = TokenKInd::Mut;
+                            token.kind = TokenKind::Mut;
                         }
                         Ok("break") => {
-                            token.kind = TokenKInd::Break;
+                            token.kind = TokenKind::Break;
                         }
                         Ok("continue") => {
-                            token.kind = TokenKInd::Continue;
+                            token.kind = TokenKind::Continue;
                         }
                         Ok("loop") => {
-                            token.kind = TokenKInd::Loop;
+                            token.kind = TokenKind::Loop;
                         }
                         Ok("while") => {
-                            token.kind = TokenKInd::While;
+                            token.kind = TokenKind::While;
                         }
                         Ok(ident) => {
-                            token.kind = TokenKInd::Ident(ident.into());
+                            token.kind = TokenKind::Ident(ident.into());
                         }
                         Err(e) => {
                             return Err(Report::new(e).change_context(LexerError::InvalidUtf8));
@@ -507,7 +548,7 @@ impl Lexer {
                     self.column += len - 1;
                 }
                 _ => {
-                    token.kind = TokenKInd::Illegal;
+                    token.kind = TokenKind::Illegal;
                 }
             }; // End of main match statement matching on first chars
         } else {

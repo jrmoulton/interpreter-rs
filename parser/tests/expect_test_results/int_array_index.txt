@@ -1,7 +1,7 @@
 [
     Expression(
         NonTerminated(
-            IndexExpression {
+            Index {
                 array: Array {
                     exprs: [
                         IntLiteral(

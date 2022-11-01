@@ -2,7 +2,7 @@ use std::io::{BufRead, Write};
 use std::sync::Arc;
 
 use evaluator::eval;
-use evaluator::{object::Object, structs::Environment};
+use evaluator::structs::Environment;
 use lexer::{Lexer, PeekLex};
 use owo_colors::OwoColorize;
 use parser::parse;
@@ -35,11 +35,11 @@ pub fn start(env: Option<(Arc<Environment>, PeekLex)>) -> ! {
         if let Some(ast) = ast {
             match eval(ast, env.clone()) {
                 Ok(obj) => {
-                    if let Object::Empty(_) = obj {
-                        // Don't print anything
-                    } else {
-                        println!("{}", obj);
-                    }
+                    // if let Object::Empty(_) = obj {
+                    //     // Don't print anything
+                    // } else {
+                    println!("{}", obj);
+                    // }
                 }
                 Err(errs) => println!("{errs:?}\n"),
             };

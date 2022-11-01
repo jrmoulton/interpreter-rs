@@ -6,6 +6,13 @@ use lexer::{Lexer, PeekLex};
 use parser::parse;
 use repl::start;
 
+// #[cfg(not(target_env = "msvc"))]
+// use tikv_jemallocator::Jemalloc;
+
+// #[cfg(not(target_env = "msvc"))]
+// #[global_allocator]
+// static GLOBAL: Jemalloc = Jemalloc;
+
 #[derive(Parser, Debug)]
 #[clap(author, version, about, long_about = None)]
 struct Args {
@@ -16,7 +23,6 @@ struct Args {
 }
 
 fn main() -> Result<(), Box<dyn Error>> {
-    owo_colors::set_override(true);
     let args = Args::parse();
     if let Some(file_path) = args.file {
         let file = fs::read_to_string(&file_path)?;

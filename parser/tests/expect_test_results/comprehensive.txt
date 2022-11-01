@@ -1,10 +1,8 @@
 [
     Let {
         ident: Token(Ident("x"), (1,8)->(1,8)),
-        expr: Terminated(
-            IntLiteral(
-                Token(Int(5), (1,12)->(1,12)),
-            ),
+        expr: IntLiteral(
+            Token(Int(5), (1,12)->(1,12)),
         ),
         span: (1,4)->(1,12),
     },
@@ -17,25 +15,23 @@
     ),
     Let {
         ident: Token(Ident("y"), (3,8)->(3,8)),
-        expr: Terminated(
-            BinaryExpression {
-                lhs: BinaryExpression {
-                    lhs: IntLiteral(
-                        Token(Int(3), (3,13)->(3,13)),
-                    ),
-                    operator: Token(Plus, (3,15)->(3,15)),
-                    rhs: IntLiteral(
-                        Token(Int(3), (3,17)->(3,17)),
-                    ),
-                    span: (3,13)->(3,17),
-                },
-                operator: Token(Asterisk, (3,20)->(3,20)),
-                rhs: IntLiteral(
-                    Token(Int(5), (3,22)->(3,22)),
+        expr: Binary {
+            lhs: Binary {
+                lhs: IntLiteral(
+                    Token(Int(3), (3,13)->(3,13)),
                 ),
-                span: (3,13)->(3,22),
+                operator: Token(Plus, (3,15)->(3,15)),
+                rhs: IntLiteral(
+                    Token(Int(3), (3,17)->(3,17)),
+                ),
+                span: (3,13)->(3,17),
             },
-        ),
+            operator: Token(Asterisk, (3,20)->(3,20)),
+            rhs: IntLiteral(
+                Token(Int(5), (3,22)->(3,22)),
+            ),
+            span: (3,13)->(3,22),
+        },
         span: (3,4)->(3,22),
     },
     Expression(
@@ -100,43 +96,41 @@
     ),
     Let {
         ident: Token(Ident("multiply"), (11,8)->(11,15)),
-        expr: Terminated(
-            FuncLiteral {
-                parameters: [
-                    Ident(
-                        Token(Ident("x"), (11,22)->(11,22)),
-                    ),
-                    Ident(
-                        Token(Ident("y"), (11,25)->(11,25)),
+        expr: Func {
+            parameters: [
+                Ident(
+                    Token(Ident("x"), (11,22)->(11,22)),
+                ),
+                Ident(
+                    Token(Ident("y"), (11,25)->(11,25)),
+                ),
+            ],
+            body: Scope {
+                statements: [
+                    Expression(
+                        NonTerminated(
+                            Binary {
+                                lhs: Identifier(
+                                    Token(Ident("x"), (11,28)->(11,28)),
+                                ),
+                                operator: Token(Asterisk, (11,30)->(11,30)),
+                                rhs: Identifier(
+                                    Token(Ident("y"), (11,32)->(11,32)),
+                                ),
+                                span: (11,28)->(11,32),
+                            },
+                        ),
                     ),
                 ],
-                body: Scope {
-                    statements: [
-                        Expression(
-                            NonTerminated(
-                                BinaryExpression {
-                                    lhs: Identifier(
-                                        Token(Ident("x"), (11,28)->(11,28)),
-                                    ),
-                                    operator: Token(Asterisk, (11,30)->(11,30)),
-                                    rhs: Identifier(
-                                        Token(Ident("y"), (11,32)->(11,32)),
-                                    ),
-                                    span: (11,28)->(11,32),
-                                },
-                            ),
-                        ),
-                    ],
-                    span: (11,27)->(11,33),
-                },
-                span: (11,19)->(11,33),
+                span: (11,27)->(11,33),
             },
-        ),
+            span: (11,19)->(11,33),
+        },
         span: (11,4)->(11,33),
     },
     Expression(
         NonTerminated(
-            BinaryExpression {
+            Binary {
                 lhs: IntLiteral(
                     Token(Int(100), (12,4)->(12,6)),
                 ),

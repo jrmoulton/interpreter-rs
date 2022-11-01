@@ -304,10 +304,9 @@ mod errors {
             }
             Err(errs) => {
                 let err_string = format!("{errs}");
-                let remove = regex::Regex::new(r"(at .*src.*)?(line:.*)?(col:.*)?").unwrap();
                 let expected =
                     expect_file!["./../tests/expect_test_results/index_out_of_bounds_string.txt"];
-                expected.assert_eq(&remove.replace_all(&err_string, ""));
+                expected.assert_eq(&err_string);
             }
         }
     }
