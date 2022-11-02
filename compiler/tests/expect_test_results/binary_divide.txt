@@ -1,0 +1,32 @@
+VM {
+    constants: [
+        Integer(
+            Integer {
+                value: 10,
+                is_return: false,
+            },
+        ),
+        Integer(
+            Integer {
+                value: 5,
+                is_return: false,
+            },
+        ),
+    ],
+    bytecode: [
+        Const(
+            0,
+        ),
+        Const(
+            1,
+        ),
+        Div,
+    ],
+    sp: 0,
+    top_of_stack: Integer(
+        Integer {
+            value: 2,
+            is_return: false,
+        },
+    ),
+}

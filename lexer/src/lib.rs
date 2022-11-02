@@ -177,7 +177,7 @@ impl TokenKind {
     }
 }
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, PartialEq, Eq)]
 pub struct Span {
     start_row: usize,
     start_col: usize,
@@ -219,7 +219,7 @@ impl Span {
     }
 }
 
-#[derive(Clone)]
+#[derive(Clone, PartialEq, Eq)]
 pub struct Token {
     pub span: Span,
     pub kind: TokenKind,

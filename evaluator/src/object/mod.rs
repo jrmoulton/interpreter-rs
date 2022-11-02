@@ -20,6 +20,12 @@ pub struct FuncIntern {
     pub body: Scope,
     pub env: Arc<Environment>,
 }
+impl PartialEq for FuncIntern {
+    fn eq(&self, other: &Self) -> bool {
+        self.parameters == other.parameters && self.body == other.body
+    }
+}
+impl Eq for FuncIntern {}
 impl Debug for FuncIntern {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.write_fmt(format_args!("{:?}{:?}", self.parameters, self.body))
@@ -45,7 +51,7 @@ impl Display for FuncIntern {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ArrayWrapper(pub Vec<Object>);
 impl Display for ArrayWrapper {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
@@ -86,8 +92,8 @@ impl Display for ClassObject {
     }
 }
 
-#[derive(Debug, Clone)]
-pub struct EmptyWrapper(pub ());
+#[derive(Debug, Clone, Eq, PartialEq)]
+pub struct EmptyWrapper;
 impl Display for EmptyWrapper {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.write_str("()")
@@ -95,12 +101,12 @@ impl Display for EmptyWrapper {
 }
 impl From<()> for EmptyWrapper {
     fn from(_: ()) -> Self {
-        Self(())
+        Self
     }
 }
 impl EmptyWrapper {
     pub fn new() -> Self {
-        Self(())
+        Self
     }
 }
 impl Default for EmptyWrapper {
@@ -110,13 +116,13 @@ impl Default for EmptyWrapper {
 }
 
 make_literal_types!(
-    (Integer, i64, "Integer"),
-    (Boolean, bool, "Boolean"),
-    (Empty, EmptyWrapper, "Empty"),
-    (Function, FuncIntern, "Function"),
-    (String, std::string::String, "String"),
-    (Array, ArrayWrapper, "Array"),
-    (Class, ClassObject, "Class")
+    (Integer, expect_int, i64, "Integer"),
+    (Boolean, expect_bool, bool, "Boolean"),
+    (Empty, expect_empty, EmptyWrapper, "Empty"),
+    (Function, expect_func, FuncIntern, "Function"),
+    (String, expect_string, std::string::String, "String"),
+    (Array, expect_arr, ArrayWrapper, "Array"),
+    // (Class, expect_class, ClassObject, "Class")
 );
 
 #[enum_dispatch(Object)]

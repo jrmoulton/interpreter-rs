@@ -1,0 +1,23 @@
+VM {
+    constants: [
+        Integer(
+            Integer {
+                value: 57,
+                is_return: false,
+            },
+        ),
+    ],
+    bytecode: [
+        Const(
+            0,
+        ),
+        Neg,
+    ],
+    sp: 1,
+    top_of_stack: Integer(
+        Integer {
+            value: -57,
+            is_return: false,
+        },
+    ),
+}

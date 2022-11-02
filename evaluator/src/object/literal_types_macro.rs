@@ -1,7 +1,7 @@
 macro_rules! make_literal_types {
-    ($(($name:ident, $type:ty, $type_string:expr) $(,)?)*) => {
+    ($(($name:ident, $expect_inner:ident, $type:ty, $type_string:expr) $(,)?)*) => {
         $(
-            #[derive(Debug, Clone)]
+            #[derive(Debug, Clone, PartialEq, Eq)]
             pub struct $name {
                 pub value: $type,
                 pub is_return: bool,
@@ -12,6 +12,10 @@ macro_rules! make_literal_types {
                         value,
                         is_return: false,
                     }
+                }
+                #[inline]
+                pub fn get_value(&self) -> &$type {
+                    &self.value
                 }
             }
             impl std::fmt::Display for $name {
@@ -35,10 +39,20 @@ macro_rules! make_literal_types {
             }
         )*
         #[enum_dispatch]
-        #[derive(Debug, Clone)]
+        #[derive(Debug, Clone, PartialEq, Eq)]
         pub enum Object {
             $(
                 $name,
+            )*
+        }
+        impl Object {
+            $(
+                pub fn $expect_inner(self) -> Option<$type> {
+                    match self {
+                        Object::$name($name {value, ..}) => Some(value),
+                        _ => None,
+                    }
+                }
             )*
         }
         impl Display for Object {
@@ -53,5 +67,12 @@ macro_rules! make_literal_types {
                 ))
             }
         }
+        $(
+            impl From<$type> for Object {
+                fn from(ty: $type) -> Self {
+                    Object::$name($name::new(ty))
+                }
+            }
+        )*
     };
 }

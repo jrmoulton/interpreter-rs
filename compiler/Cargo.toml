@@ -1,17 +1,18 @@
 [package]
-name = "repl"
+name = "compiler"
 version = "0.1.0"
 edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-lexer = { workspace = true }
-parser = { workspace = true }
-evaluator = { workspace = true }
-
 clap = {workspace = true}
-owo-colors = { workspace = true }
+error-stack = {workspace = true}
 
-# [target.'cfg(not(target_env = "msvc"))'.dependencies]
-# tikv-jemallocator = "0.5"
+parser = { workspace = true }
+lexer = { workspace = true }
+evaluator = { workspace = true }
+bytecode = { workspace = true }
+
+[dev-dependencies]
+expect-test = { workspace = true }

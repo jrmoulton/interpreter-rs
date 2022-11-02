@@ -1,10 +1,10 @@
-use error_stack::Context;
 use lexer::{Span, Token};
 use owo_colors::OwoColorize;
+use std::error::Error;
 use std::fmt::Display;
 use std::fmt::Write;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Statement {
     Let {
         ident: Token,
@@ -34,7 +34,7 @@ impl Display for Statement {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Expr {
     Terminated(ExprBase),
     NonTerminated(ExprBase),
@@ -75,7 +75,7 @@ impl Display for Expr {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ExprBase {
     IntLiteral(Token),
     BoolLiteral(Token),
@@ -220,7 +220,7 @@ impl Display for ExprBase {
 
 // Sub types
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Scope {
     pub statements: Vec<Statement>,
     pub span: Span,
@@ -241,7 +241,7 @@ impl From<Scope> for ExprBase {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct IfExpr {
     pub condition: Box<ExprBase>,
     pub consequence: Scope,
@@ -260,7 +260,7 @@ impl From<IfExpr> for ExprBase {
 }
 
 /// The optional alterantive of an if expression
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ElseIfExpr {
     ElseIf(Box<IfExpr>),
     Else(Scope),
@@ -274,7 +274,7 @@ impl ElseIfExpr {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Ident(pub Token);
 impl Display for Ident {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
@@ -310,7 +310,7 @@ impl Display for ParseError {
         f.write_str(&temp)
     }
 }
-impl Context for ParseError {}
+impl Error for ParseError {}
 
 pub struct Suggestion(pub &'static str);
 impl Display for Suggestion {

@@ -66,6 +66,11 @@ pub struct Environment {
     pub env: Mutex<EnvWrapper>,
     pub outer: Option<Arc<Environment>>,
 }
+impl PartialEq for Environment {
+    fn eq(&self, _other: &Self) -> bool {
+        false
+    }
+}
 impl Default for Environment {
     fn default() -> Self {
         Self {
