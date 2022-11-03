@@ -1,26 +1,28 @@
-VM {
+Compiler {
     constants: [
-        Empty(
-            (),
-        ),
-        Integer(
-            10,
+        Boolean(
+            true,
         ),
         Integer(
             5,
         ),
+        Integer(
+            404,
+        ),
     ],
     bytecode: [
         Const(
+            0,
+        ),
+        JumpNotTruthy(
+            4,
+        ),
+        Const(
             1,
         ),
+        Pop,
         Const(
             2,
         ),
-        Div,
     ],
-    sp: 1,
-    top_of_stack: Integer(
-        2,
-    ),
 }

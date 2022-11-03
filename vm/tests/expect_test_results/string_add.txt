@@ -3,10 +3,10 @@ VM {
         Empty(
             (),
         ),
-        Integer(
-            10,
+        String(
+            5,
         ),
-        Integer(
+        String(
             5,
         ),
     ],
@@ -17,10 +17,10 @@ VM {
         Const(
             2,
         ),
-        Div,
+        Add,
     ],
     sp: 1,
-    top_of_stack: Integer(
-        2,
+    top_of_stack: String(
+        55,
     ),
 }

@@ -1,5 +1,4 @@
 use std::{
-    any::Any,
     collections::HashMap,
     fmt::{Debug, Display, Write},
     ops::{Deref, DerefMut},
@@ -122,12 +121,11 @@ make_literal_types!(
     (Function, expect_func, FuncIntern, "Function"),
     (String, expect_string, std::string::String, "String"),
     (Array, expect_arr, ArrayWrapper, "Array"),
-    // (Class, expect_class, ClassObject, "Class")
 );
 
 #[enum_dispatch(Object)]
 pub(crate) trait ObjectTrait: Display + Debug {
-    fn inner(&self) -> &dyn Any;
+    fn inner(&self) -> &dyn std::any::Any;
     fn set_return(&mut self);
     fn is_return(&self) -> bool;
     fn type_string(&self) -> std::string::String;

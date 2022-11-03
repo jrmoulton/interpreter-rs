@@ -1,7 +1,7 @@
 macro_rules! make_literal_types {
     ($(($name:ident, $expect_inner:ident, $type:ty, $type_string:expr) $(,)?)*) => {
         $(
-            #[derive(Debug, Clone, PartialEq, Eq)]
+            #[derive(Clone, PartialEq, Eq)]
             pub struct $name {
                 pub value: $type,
                 pub is_return: bool,
@@ -19,6 +19,11 @@ macro_rules! make_literal_types {
                 }
             }
             impl std::fmt::Display for $name {
+                fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                    f.write_fmt(format_args!("{}", self.value))
+                }
+            }
+            impl std::fmt::Debug for $name {
                 fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
                     f.write_fmt(format_args!("{}", self.value))
                 }
@@ -55,7 +60,7 @@ macro_rules! make_literal_types {
                 }
             )*
         }
-        impl Display for Object {
+        impl std::fmt::Display for Object {
             fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
                 f.write_fmt(format_args!(
                     "{}",

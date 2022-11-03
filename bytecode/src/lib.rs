@@ -1,12 +1,20 @@
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum OpCode {
     Const(usize),
+    JumpNotTruthy(usize),
+    Jump(usize),
     Add,
     Sub,
     Mul,
     Div,
     Neg,
-    Pos,
+    Positive,
+    Equal,
+    NotEqual,
+    GreaterThan,
+    LessThan,
+    Bang,
     Pop,
     Print,
+    NoOp,
 }

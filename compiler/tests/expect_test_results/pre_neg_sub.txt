@@ -1,13 +1,13 @@
-VM {
+Compiler {
     constants: [
         Empty(
             (),
         ),
         Integer(
-            10,
+            5,
         ),
         Integer(
-            5,
+            4,
         ),
     ],
     bytecode: [
@@ -17,10 +17,7 @@ VM {
         Const(
             2,
         ),
-        Div,
+        Neg,
+        Sub,
     ],
-    sp: 1,
-    top_of_stack: Integer(
-        2,
-    ),
 }

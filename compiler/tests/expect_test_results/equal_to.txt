@@ -1,10 +1,10 @@
-VM {
+Compiler {
     constants: [
         Empty(
             (),
         ),
         Integer(
-            10,
+            5,
         ),
         Integer(
             5,
@@ -17,10 +17,6 @@ VM {
         Const(
             2,
         ),
-        Div,
+        Equal,
     ],
-    sp: 1,
-    top_of_stack: Integer(
-        2,
-    ),
 }

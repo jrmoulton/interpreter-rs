@@ -3,24 +3,35 @@ VM {
         Empty(
             (),
         ),
-        Integer(
-            10,
+        Boolean(
+            false,
         ),
         Integer(
             5,
+        ),
+        Integer(
+            3,
         ),
     ],
     bytecode: [
         Const(
             1,
         ),
+        JumpNotTruthy(
+            4,
+        ),
         Const(
             2,
         ),
-        Div,
+        Jump(
+            5,
+        ),
+        Const(
+            3,
+        ),
     ],
     sp: 1,
     top_of_stack: Integer(
-        2,
+        3,
     ),
 }

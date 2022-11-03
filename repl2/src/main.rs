@@ -1,7 +1,7 @@
 use std::{error::Error, fmt::Display, fs};
 
 use clap::Parser;
-use compiler::compiler::Compiler;
+use compiler::Compiler;
 use error_stack::{IntoReport, Result, ResultExt};
 use lexer::{Lexer, PeekLex};
 use parser::parse;

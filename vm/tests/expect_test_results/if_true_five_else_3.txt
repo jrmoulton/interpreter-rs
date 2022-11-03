@@ -1,26 +1,34 @@
 VM {
     constants: [
-        Empty(
-            (),
-        ),
-        Integer(
-            10,
+        Boolean(
+            true,
         ),
         Integer(
             5,
         ),
+        Integer(
+            3,
+        ),
     ],
     bytecode: [
         Const(
+            0,
+        ),
+        JumpNotTruthy(
+            4,
+        ),
+        Const(
             1,
+        ),
+        Jump(
+            5,
         ),
         Const(
             2,
         ),
-        Div,
     ],
-    sp: 1,
+    sp: 6,
     top_of_stack: Integer(
-        2,
+        3,
     ),
 }

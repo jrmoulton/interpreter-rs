@@ -1,32 +1,26 @@
 VM {
     constants: [
-        Integer(
-            Integer {
-                value: 10,
-                is_return: false,
-            },
+        Empty(
+            (),
         ),
         Integer(
-            Integer {
-                value: 5,
-                is_return: false,
-            },
+            10,
+        ),
+        Integer(
+            5,
         ),
     ],
     bytecode: [
         Const(
-            0,
+            1,
         ),
         Const(
-            1,
+            2,
         ),
         Mul,
     ],
-    sp: 0,
+    sp: 1,
     top_of_stack: Integer(
-        Integer {
-            value: 50,
-            is_return: false,
-        },
+        50,
     ),
 }

@@ -1,0 +1,41 @@
+VM {
+    constants: [
+        Empty(
+            (),
+        ),
+        Boolean(
+            true,
+        ),
+        Integer(
+            5,
+        ),
+        Integer(
+            404,
+        ),
+    ],
+    bytecode: [
+        Const(
+            1,
+        ),
+        JumpNotTruthy(
+            4,
+        ),
+        Const(
+            2,
+        ),
+        Jump(
+            5,
+        ),
+        Const(
+            0,
+        ),
+        Pop,
+        Const(
+            3,
+        ),
+    ],
+    sp: 1,
+    top_of_stack: Integer(
+        404,
+    ),
+}

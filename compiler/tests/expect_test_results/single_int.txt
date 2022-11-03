@@ -1,22 +1,15 @@
-VM {
+Compiler {
     constants: [
+        Empty(
+            (),
+        ),
         Integer(
-            Integer {
-                value: 57,
-                is_return: false,
-            },
+            57,
         ),
     ],
     bytecode: [
         Const(
-            0,
+            1,
         ),
     ],
-    sp: 1,
-    top_of_stack: Integer(
-        Integer {
-            value: 57,
-            is_return: false,
-        },
-    ),
 }

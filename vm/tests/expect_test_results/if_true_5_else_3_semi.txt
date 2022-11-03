@@ -1,0 +1,38 @@
+VM {
+    constants: [
+        Empty(
+            (),
+        ),
+        Boolean(
+            true,
+        ),
+        Integer(
+            5,
+        ),
+        Integer(
+            3,
+        ),
+    ],
+    bytecode: [
+        Const(
+            1,
+        ),
+        JumpNotTruthy(
+            4,
+        ),
+        Const(
+            2,
+        ),
+        Jump(
+            5,
+        ),
+        Const(
+            3,
+        ),
+        Pop,
+    ],
+    sp: 0,
+    top_of_stack: Empty(
+        (),
+    ),
+}

@@ -3,8 +3,8 @@ VM {
         Empty(
             (),
         ),
-        Integer(
-            57,
+        Boolean(
+            false,
         ),
     ],
     bytecode: [
@@ -13,7 +13,7 @@ VM {
         ),
     ],
     sp: 1,
-    top_of_stack: Integer(
-        57,
+    top_of_stack: Boolean(
+        false,
     ),
 }
