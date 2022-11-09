@@ -1,20 +1,23 @@
 [
-    Expression(
-        NonTerminated(
-            Call {
-                function: Identifier(
-                    Token(Ident("add"), (0,0)->(0,2)),
-                ),
-                args: [
-                    Identifier(
-                        Token(Ident("x"), (0,4)->(0,4)),
-                    ),
-                    Identifier(
-                        Token(Ident("y"), (0,7)->(0,7)),
-                    ),
-                ],
-                span: (0,0)->(0,8),
+    Expression {
+        expr: Call {
+            function: Identifier {
+                ident: "add",
+                span: (0,0)->(0,2),
             },
-        ),
-    ),
+            args: [
+                Identifier {
+                    ident: "x",
+                    span: (0,4)->(0,4),
+                },
+                Identifier {
+                    ident: "y",
+                    span: (0,7)->(0,7),
+                },
+            ],
+            span: (0,0)->(0,8),
+        },
+        terminated: false,
+        span: (0,0)->(0,8),
+    },
 ]

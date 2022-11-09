@@ -18,7 +18,7 @@ impl Compiler {
         match statement {
             Statement::Let { ident, expr, span } => {
                 self.compile_expr_base(expr);
-                self.compile_token(ident, OpType::Other);
+                self.compile_string(ident);
                 self.bytecode.push(OpCode::SetGlobal);
                 self.bytecode.push(OpCode::Pop); // Pop the ident
                 self.bytecode.push(OpCode::Pop); // Pop the expr (this pop matches the semicolon)
@@ -30,27 +30,44 @@ impl Compiler {
                 }
                 self.bytecode.push(OpCode::Jump(9999))
             }
-            Statement::Expression(expr) => self.compile_expr_base(expr),
-        }
-    }
-
-    fn compile_expression(&mut self, expr: parser::structs::Expr) {
-        match expr {
-            parser::structs::Expr::Terminated(expr_base) => {
-                self.compile_expr_base(expr_base);
-                self.bytecode.push(OpCode::Pop);
+            Statement::Expression {
+                expr, terminated, ..
+            } => {
+                self.compile_expr_base(expr);
+                if terminated {
+                    self.bytecode.push(OpCode::Pop)
+                }
             }
-            parser::structs::Expr::NonTerminated(expr_base) => self.compile_expr_base(expr_base),
         }
     }
 
     fn compile_expr_base(&mut self, expr_base: parser::structs::ExprBase) {
         use parser::structs::ExprBase::*;
         match expr_base {
-            IntLiteral(token) => self.compile_token(token, OpType::Other),
-            BoolLiteral(token) => self.compile_token(token, OpType::Other),
-            StringLiteral(token) => self.compile_token(token, OpType::Other),
-            Identifier(_) => todo!(),
+            IntLiteral { val, .. } => {
+                let len = self.constants.len();
+                let idx = self.constants.entry(val.into()).or_insert(len);
+                self.bytecode.push(OpCode::Const(*idx))
+            }
+            BoolLiteral { val, .. } => {
+                let len = self.constants.len();
+                let idx = if val {
+                    self.constants.entry(true.into()).or_insert(len)
+                } else {
+                    self.constants.entry(false.into()).or_insert(len)
+                };
+                self.bytecode.push(OpCode::Const(*idx));
+            }
+            StringLiteral { val, .. } => {
+                let len = self.constants.len();
+                let idx = self.constants.entry(val.into()).or_insert(len);
+                self.bytecode.push(OpCode::Const(*idx))
+            }
+            Identifier { ident, .. } => {
+                let len = self.constants.len();
+                let idx = self.constants.entry(ident.into()).or_insert(len);
+                self.bytecode.push(OpCode::Const(*idx));
+            }
             Array { exprs, span } => todo!(),
             Func {
                 parameters,
@@ -182,10 +199,7 @@ impl Compiler {
             lexer::TokenKind::Let => todo!(),
             lexer::TokenKind::Mut => todo!(),
             lexer::TokenKind::Func => todo!(),
-            lexer::TokenKind::True => {
-                let idx = self.constants.entry(true.into()).or_insert(len);
-                self.bytecode.push(OpCode::Const(*idx))
-            }
+            lexer::TokenKind::True => unreachable!(),
             lexer::TokenKind::False => {
                 let idx = self.constants.entry(false.into()).or_insert(len);
                 self.bytecode.push(OpCode::Const(*idx))
@@ -199,18 +213,10 @@ impl Compiler {
             lexer::TokenKind::Continue => todo!(),
             lexer::TokenKind::Loop => todo!(),
             lexer::TokenKind::While => todo!(),
-            lexer::TokenKind::Ident(ident_str) => {
-                let idx = self.constants.entry(ident_str.into()).or_insert(len);
-                self.bytecode.push(OpCode::Const(*idx));
-            }
-            lexer::TokenKind::Int(int_const) => {
-                let idx = self.constants.entry(int_const.into()).or_insert(len);
-                self.bytecode.push(OpCode::Const(*idx))
-            }
-            lexer::TokenKind::String(str_constant) => {
-                let idx = self.constants.entry(str_constant.into()).or_insert(len);
-                self.bytecode.push(OpCode::Const(*idx))
-            }
+            lexer::TokenKind::Ident(ident_str) => unreachable!(),
+            lexer::TokenKind::Int(int_const) => unreachable!(),
+
+            lexer::TokenKind::String(str_constant) => unreachable!(),
             lexer::TokenKind::Assign => todo!(),
             lexer::TokenKind::Plus => match op_type {
                 OpType::Prefix => {}
@@ -247,6 +253,12 @@ impl Compiler {
             lexer::TokenKind::RBracket => todo!(),
             lexer::TokenKind::Dot => todo!(),
         }
+    }
+
+    fn compile_string(&mut self, s: String) {
+        let len = self.constants.len();
+        let idx = self.constants.entry(s.into()).or_insert(len);
+        self.bytecode.push(OpCode::Const(*idx))
     }
 }
 

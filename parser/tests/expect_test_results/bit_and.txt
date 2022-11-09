@@ -1,16 +1,18 @@
 [
-    Expression(
-        NonTerminated(
-            Binary {
-                lhs: IntLiteral(
-                    Token(Int(3), (0,0)->(0,0)),
-                ),
-                operator: Token(BitAnd, (0,2)->(0,2)),
-                rhs: IntLiteral(
-                    Token(Int(6), (0,4)->(0,4)),
-                ),
-                span: (0,0)->(0,4),
+    Expression {
+        expr: Binary {
+            lhs: IntLiteral {
+                val: 3,
+                span: (0,0)->(0,0),
             },
-        ),
-    ),
+            operator: Token(BitAnd, (0,2)->(0,2)),
+            rhs: IntLiteral {
+                val: 6,
+                span: (0,4)->(0,4),
+            },
+            span: (0,0)->(0,4),
+        },
+        terminated: false,
+        span: (0,0)->(0,4),
+    },
 ]

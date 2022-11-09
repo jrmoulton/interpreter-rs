@@ -1,19 +1,19 @@
 [
-    Expression(
-        NonTerminated(
-            Scope {
-                statements: [
-                    Expression(
-                        NonTerminated(
-                            Scope {
-                                statements: [],
-                                span: (2,12)->(4,12),
-                            },
-                        ),
-                    ),
-                ],
-                span: (1,8)->(5,8),
-            },
-        ),
-    ),
+    Expression {
+        expr: Scope {
+            statements: [
+                Expression {
+                    expr: Scope {
+                        statements: [],
+                        span: (2,12)->(4,12),
+                    },
+                    terminated: false,
+                    span: (2,12)->(4,12),
+                },
+            ],
+            span: (1,8)->(5,8),
+        },
+        terminated: false,
+        span: (1,8)->(5,8),
+    },
 ]

@@ -1,36 +1,38 @@
 [
-    Expression(
-        NonTerminated(
-            Func {
-                parameters: [
-                    Ident(
-                        Token(Ident("x"), (0,3)->(0,3)),
-                    ),
-                    Ident(
-                        Token(Ident("y"), (0,6)->(0,6)),
-                    ),
+    Expression {
+        expr: Func {
+            parameters: [
+                Ident(
+                    Token(Ident("x"), (0,3)->(0,3)),
+                ),
+                Ident(
+                    Token(Ident("y"), (0,6)->(0,6)),
+                ),
+            ],
+            body: Scope {
+                statements: [
+                    Expression {
+                        expr: Binary {
+                            lhs: Identifier {
+                                ident: "x",
+                                span: (1,8)->(1,8),
+                            },
+                            operator: Token(Plus, (1,10)->(1,10)),
+                            rhs: Identifier {
+                                ident: "y",
+                                span: (1,12)->(1,12),
+                            },
+                            span: (1,8)->(1,12),
+                        },
+                        terminated: false,
+                        span: (1,8)->(1,12),
+                    },
                 ],
-                body: Scope {
-                    statements: [
-                        Expression(
-                            NonTerminated(
-                                Binary {
-                                    lhs: Identifier(
-                                        Token(Ident("x"), (1,8)->(1,8)),
-                                    ),
-                                    operator: Token(Plus, (1,10)->(1,10)),
-                                    rhs: Identifier(
-                                        Token(Ident("y"), (1,12)->(1,12)),
-                                    ),
-                                    span: (1,8)->(1,12),
-                                },
-                            ),
-                        ),
-                    ],
-                    span: (0,9)->(2,4),
-                },
-                span: (0,0)->(2,4),
+                span: (0,9)->(2,4),
             },
-        ),
-    ),
+            span: (0,0)->(2,4),
+        },
+        terminated: false,
+        span: (0,0)->(2,4),
+    },
 ]

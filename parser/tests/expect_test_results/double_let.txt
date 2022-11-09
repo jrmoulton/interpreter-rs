@@ -1,16 +1,18 @@
 [
-    Let {
-        ident: Token(Ident("x"), (0,4)->(0,4)),
-        expr: IntLiteral(
-            Token(Int(5), (0,8)->(0,8)),
-        ),
+    Assign {
+        ident: "x",
+        expr: IntLiteral {
+            val: 5,
+            span: (0,8)->(0,8),
+        },
         span: (0,0)->(0,8),
     },
-    Let {
-        ident: Token(Ident("y"), (1,12)->(1,12)),
-        expr: IntLiteral(
-            Token(Int(3), (1,16)->(1,16)),
-        ),
+    Assign {
+        ident: "y",
+        expr: IntLiteral {
+            val: 3,
+            span: (1,16)->(1,16),
+        },
         span: (1,8)->(1,16),
     },
 ]

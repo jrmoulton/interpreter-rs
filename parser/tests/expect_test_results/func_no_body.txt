@@ -1,5 +1,5 @@
-Unexpected end of input
-╰╴ Expected a LBrace
+Error: Unexpected end of input
+╰╴ Expected a `{`
 
-Unexpected end of input
+Error: Unexpected end of input
 ╰╴ Expected a `}`

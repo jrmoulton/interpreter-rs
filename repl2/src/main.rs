@@ -24,7 +24,7 @@ struct Args {
 #[derive(Debug)]
 enum Errors {
     IO,
-    Parse,
+    Parser,
     VirtualMachine,
 }
 impl Display for Errors {
@@ -43,7 +43,7 @@ fn main() -> Result<(), Errors> {
     let lexer = Lexer::new(file);
     let mut peek_lex = PeekLex::new(lexer);
     let mut ast = parse(&mut peek_lex)
-        .change_context(Errors::Parse)?
+        .change_context(Errors::Parser)?
         .into_iter();
     let mut compiler = Compiler::new();
     compiler.compile(&mut ast);

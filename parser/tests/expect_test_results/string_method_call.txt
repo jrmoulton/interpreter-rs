@@ -1,19 +1,21 @@
 [
-    Expression(
-        NonTerminated(
-            MethodCall {
-                instance: StringLiteral(
-                    Token(String("foobar"), (0,1)->(0,8)),
-                ),
-                method: Call {
-                    function: Identifier(
-                        Token(Ident("len"), (0,10)->(0,12)),
-                    ),
-                    args: [],
-                    span: (0,10)->(0,14),
-                },
-                span: (0,9)->(0,14),
+    Expression {
+        expr: MethodCall {
+            instance: StringLiteral {
+                val: "foobar",
+                span: (0,1)->(0,8),
             },
-        ),
-    ),
+            method: Call {
+                function: Identifier {
+                    ident: "len",
+                    span: (0,10)->(0,12),
+                },
+                args: [],
+                span: (0,10)->(0,14),
+            },
+            span: (0,9)->(0,14),
+        },
+        terminated: false,
+        span: (0,9)->(0,14),
+    },
 ]

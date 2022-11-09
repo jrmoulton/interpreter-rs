@@ -1,71 +1,76 @@
 [
-    Expression(
-        NonTerminated(
-            If {
-                condition: If {
-                    condition: BoolLiteral(
-                        Token(True, (0,6)->(0,9)),
-                    ),
-                    consequence: Scope {
-                        statements: [
-                            Expression(
-                                NonTerminated(
-                                    BoolLiteral(
-                                        Token(True, (0,12)->(0,15)),
-                                    ),
-                                ),
-                            ),
-                        ],
-                        span: (0,11)->(0,16),
-                    },
-                    alternative: Some(
-                        Else(
-                            Scope {
-                                statements: [
-                                    Expression(
-                                        NonTerminated(
-                                            BoolLiteral(
-                                                Token(False, (0,24)->(0,28)),
-                                            ),
-                                        ),
-                                    ),
-                                ],
-                                span: (0,23)->(0,29),
-                            },
-                        ),
-                    ),
-                    span: (0,3)->(0,29),
+    Expression {
+        expr: If {
+            condition: If {
+                condition: BoolLiteral {
+                    val: true,
+                    span: (0,6)->(0,9),
                 },
                 consequence: Scope {
                     statements: [
-                        Expression(
-                            NonTerminated(
-                                BoolLiteral(
-                                    Token(True, (0,32)->(0,35)),
-                                ),
-                            ),
-                        ),
+                        Expression {
+                            expr: BoolLiteral {
+                                val: true,
+                                span: (0,12)->(0,15),
+                            },
+                            terminated: false,
+                            span: (0,12)->(0,15),
+                        },
                     ],
-                    span: (0,31)->(0,36),
+                    span: (0,11)->(0,16),
                 },
                 alternative: Some(
                     Else(
                         Scope {
                             statements: [
-                                Expression(
-                                    NonTerminated(
-                                        BoolLiteral(
-                                            Token(False, (0,44)->(0,48)),
-                                        ),
-                                    ),
-                                ),
+                                Expression {
+                                    expr: BoolLiteral {
+                                        val: false,
+                                        span: (0,24)->(0,28),
+                                    },
+                                    terminated: false,
+                                    span: (0,24)->(0,28),
+                                },
                             ],
-                            span: (0,43)->(0,49),
+                            span: (0,23)->(0,29),
                         },
                     ),
                 ),
-                span: (0,0)->(0,49),
+                span: (0,3)->(0,29),
             },
-        ),
-    ),
+            consequence: Scope {
+                statements: [
+                    Expression {
+                        expr: BoolLiteral {
+                            val: true,
+                            span: (0,32)->(0,35),
+                        },
+                        terminated: false,
+                        span: (0,32)->(0,35),
+                    },
+                ],
+                span: (0,31)->(0,36),
+            },
+            alternative: Some(
+                Else(
+                    Scope {
+                        statements: [
+                            Expression {
+                                expr: BoolLiteral {
+                                    val: false,
+                                    span: (0,44)->(0,48),
+                                },
+                                terminated: false,
+                                span: (0,44)->(0,48),
+                            },
+                        ],
+                        span: (0,43)->(0,49),
+                    },
+                ),
+            ),
+            span: (0,0)->(0,49),
+        },
+        terminated: false,
+        span: (0,0)->(0,49),
+    },
 ]

@@ -1,101 +1,111 @@
 [
-    Let {
-        ident: Token(Ident("x"), (1,8)->(1,8)),
-        expr: IntLiteral(
-            Token(Int(5), (1,12)->(1,12)),
-        ),
+    Assign {
+        ident: "x",
+        expr: IntLiteral {
+            val: 5,
+            span: (1,12)->(1,12),
+        },
         span: (1,4)->(1,12),
     },
-    Expression(
-        Terminated(
-            Identifier(
-                Token(Ident("foobar"), (2,4)->(2,9)),
-            ),
-        ),
-    ),
-    Let {
-        ident: Token(Ident("y"), (3,8)->(3,8)),
+    Expression {
+        expr: Identifier {
+            ident: "foobar",
+            span: (2,4)->(2,9),
+        },
+        terminated: true,
+        span: (2,4)->(2,9),
+    },
+    Assign {
+        ident: "y",
         expr: Binary {
             lhs: Binary {
-                lhs: IntLiteral(
-                    Token(Int(3), (3,13)->(3,13)),
-                ),
+                lhs: IntLiteral {
+                    val: 3,
+                    span: (3,13)->(3,13),
+                },
                 operator: Token(Plus, (3,15)->(3,15)),
-                rhs: IntLiteral(
-                    Token(Int(3), (3,17)->(3,17)),
-                ),
+                rhs: IntLiteral {
+                    val: 3,
+                    span: (3,17)->(3,17),
+                },
                 span: (3,13)->(3,17),
             },
             operator: Token(Asterisk, (3,20)->(3,20)),
-            rhs: IntLiteral(
-                Token(Int(5), (3,22)->(3,22)),
-            ),
+            rhs: IntLiteral {
+                val: 5,
+                span: (3,22)->(3,22),
+            },
             span: (3,13)->(3,22),
         },
         span: (3,4)->(3,22),
     },
-    Expression(
-        NonTerminated(
-            If {
-                condition: Identifier(
-                    Token(Ident("a"), (4,7)->(4,7)),
-                ),
-                consequence: Scope {
-                    statements: [
-                        Expression(
-                            NonTerminated(
-                                Identifier(
-                                    Token(Ident("b"), (5,6)->(5,6)),
-                                ),
+    Expression {
+        expr: If {
+            condition: Identifier {
+                ident: "a",
+                span: (4,7)->(4,7),
+            },
+            consequence: Scope {
+                statements: [
+                    Expression {
+                        expr: Identifier {
+                            ident: "b",
+                            span: (5,6)->(5,6),
+                        },
+                        terminated: false,
+                        span: (5,6)->(5,6),
+                    },
+                ],
+                span: (4,9)->(6,4),
+            },
+            alternative: Some(
+                ElseIf(
+                    IfExpr {
+                        condition: Identifier {
+                            ident: "c",
+                            span: (6,14)->(6,14),
+                        },
+                        consequence: Scope {
+                            statements: [
+                                Expression {
+                                    expr: Identifier {
+                                        ident: "d",
+                                        span: (7,6)->(7,6),
+                                    },
+                                    terminated: false,
+                                    span: (7,6)->(7,6),
+                                },
+                            ],
+                            span: (6,16)->(8,4),
+                        },
+                        alternative: Some(
+                            Else(
+                                Scope {
+                                    statements: [
+                                        Expression {
+                                            expr: Identifier {
+                                                ident: "e",
+                                                span: (9,6)->(9,6),
+                                            },
+                                            terminated: false,
+                                            span: (9,6)->(9,6),
+                                        },
+                                    ],
+                                    span: (8,11)->(10,4),
+                                },
                             ),
                         ),
-                    ],
-                    span: (4,9)->(6,4),
-                },
-                alternative: Some(
-                    ElseIf(
-                        IfExpr {
-                            condition: Identifier(
-                                Token(Ident("c"), (6,14)->(6,14)),
-                            ),
-                            consequence: Scope {
-                                statements: [
-                                    Expression(
-                                        NonTerminated(
-                                            Identifier(
-                                                Token(Ident("d"), (7,6)->(7,6)),
-                                            ),
-                                        ),
-                                    ),
-                                ],
-                                span: (6,16)->(8,4),
-                            },
-                            alternative: Some(
-                                Else(
-                                    Scope {
-                                        statements: [
-                                            Expression(
-                                                NonTerminated(
-                                                    Identifier(
-                                                        Token(Ident("e"), (9,6)->(9,6)),
-                                                    ),
-                                                ),
-                                            ),
-                                        ],
-                                        span: (8,11)->(10,4),
-                                    },
-                                ),
-                            ),
-                            span: (6,11)->(10,4),
-                        },
-                    ),
+                        span: (6,11)->(10,4),
+                    },
                 ),
-                span: (4,4)->(10,4),
-            },
-        ),
-    ),
-    Let {
-        ident: Token(Ident("multiply"), (11,8)->(11,15)),
+            ),
+            span: (4,4)->(10,4),
+        },
+        terminated: true,
+        span: (4,4)->(10,4),
+    },
+    Assign {
+        ident: "multiply",
         expr: Func {
             parameters: [
                 Ident(
@@ -107,20 +117,22 @@
             ],
             body: Scope {
                 statements: [
-                    Expression(
-                        NonTerminated(
-                            Binary {
-                                lhs: Identifier(
-                                    Token(Ident("x"), (11,28)->(11,28)),
-                                ),
-                                operator: Token(Asterisk, (11,30)->(11,30)),
-                                rhs: Identifier(
-                                    Token(Ident("y"), (11,32)->(11,32)),
-                                ),
-                                span: (11,28)->(11,32),
+                    Expression {
+                        expr: Binary {
+                            lhs: Identifier {
+                                ident: "x",
+                                span: (11,28)->(11,28),
                             },
-                        ),
-                    ),
+                            operator: Token(Asterisk, (11,30)->(11,30)),
+                            rhs: Identifier {
+                                ident: "y",
+                                span: (11,32)->(11,32),
+                            },
+                            span: (11,28)->(11,32),
+                        },
+                        terminated: false,
+                        span: (11,28)->(11,32),
+                    },
                 ],
                 span: (11,27)->(11,33),
             },
@@ -128,18 +140,20 @@
         },
         span: (11,4)->(11,33),
     },
-    Expression(
-        NonTerminated(
-            Binary {
-                lhs: IntLiteral(
-                    Token(Int(100), (12,4)->(12,6)),
-                ),
-                operator: Token(Slash, (12,8)->(12,8)),
-                rhs: IntLiteral(
-                    Token(Int(20), (12,10)->(12,11)),
-                ),
-                span: (12,4)->(12,11),
+    Expression {
+        expr: Binary {
+            lhs: IntLiteral {
+                val: 100,
+                span: (12,4)->(12,6),
             },
-        ),
-    ),
+            operator: Token(Slash, (12,8)->(12,8)),
+            rhs: IntLiteral {
+                val: 20,
+                span: (12,10)->(12,11),
+            },
+            span: (12,4)->(12,11),
+        },
+        terminated: false,
+        span: (12,4)->(12,11),
+    },
 ]

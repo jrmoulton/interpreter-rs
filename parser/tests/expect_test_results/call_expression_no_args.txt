@@ -1,13 +1,14 @@
 [
-    Expression(
-        Terminated(
-            Call {
-                function: Identifier(
-                    Token(Ident("add"), (0,0)->(0,2)),
-                ),
-                args: [],
-                span: (0,0)->(0,4),
+    Expression {
+        expr: Call {
+            function: Identifier {
+                ident: "add",
+                span: (0,0)->(0,2),
             },
-        ),
-    ),
+            args: [],
+            span: (0,0)->(0,4),
+        },
+        terminated: true,
+        span: (0,0)->(0,4),
+    },
 ]

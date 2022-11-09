@@ -1,3 +1,2 @@
-Error: Multiple Unterminated Expressions
-├╴ Suggestion: Add a semicolon after the expression
-╰╴ 1    | x fn(){true}
+Error: Unexpected statement: fn(){...}
+╰╴ Help: The statement before this one does not have a semicolon. Did you mean to add one?

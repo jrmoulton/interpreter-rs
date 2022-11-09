@@ -1,26 +1,30 @@
 [
-    Expression(
-        NonTerminated(
-            Index {
-                array: Array {
-                    exprs: [
-                        IntLiteral(
-                            Token(Int(15), (0,2)->(0,3)),
-                        ),
-                        IntLiteral(
-                            Token(Int(30), (0,6)->(0,7)),
-                        ),
-                        IntLiteral(
-                            Token(Int(90), (0,10)->(0,11)),
-                        ),
-                    ],
-                    span: (0,1)->(0,12),
-                },
-                index: IntLiteral(
-                    Token(Int(1), (0,14)->(0,14)),
-                ),
-                span: (0,13)->(0,15),
+    Expression {
+        expr: Index {
+            array: Array {
+                exprs: [
+                    IntLiteral {
+                        val: 15,
+                        span: (0,2)->(0,3),
+                    },
+                    IntLiteral {
+                        val: 30,
+                        span: (0,6)->(0,7),
+                    },
+                    IntLiteral {
+                        val: 90,
+                        span: (0,10)->(0,11),
+                    },
+                ],
+                span: (0,1)->(0,12),
             },
-        ),
-    ),
+            index: IntLiteral {
+                val: 1,
+                span: (0,14)->(0,14),
+            },
+            span: (0,13)->(0,15),
+        },
+        terminated: false,
+        span: (0,13)->(0,15),
+    },
 ]

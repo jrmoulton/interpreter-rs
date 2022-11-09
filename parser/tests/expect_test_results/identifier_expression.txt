@@ -1,9 +1,10 @@
 [
-    Expression(
-        NonTerminated(
-            Identifier(
-                Token(Ident("foobar"), (0,0)->(0,5)),
-            ),
-        ),
-    ),
+    Expression {
+        expr: Identifier {
+            ident: "foobar",
+            span: (0,0)->(0,5),
+        },
+        terminated: false,
+        span: (0,0)->(0,5),
+    },
 ]

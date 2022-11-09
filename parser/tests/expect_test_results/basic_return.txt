@@ -1,11 +1,11 @@
 [
-    Return(
-        Some(
-            Terminated(
-                IntLiteral(
-                    Token(Int(35), (0,7)->(0,8)),
-                ),
-            ),
+    Return {
+        expr: Some(
+            IntLiteral {
+                val: 35,
+                span: (0,7)->(0,8),
+            },
         ),
-    ),
+        span: (0,0)->(0,8),
+    },
 ]

@@ -1,9 +1,10 @@
 [
-    Let {
-        ident: Token(Ident("x"), (0,4)->(0,4)),
-        expr: StringLiteral(
-            Token(String("foo bar"), (0,8)->(0,16)),
-        ),
+    Assign {
+        ident: "x",
+        expr: StringLiteral {
+            val: "foo bar",
+            span: (0,8)->(0,16),
+        },
         span: (0,0)->(0,16),
     },
 ]

@@ -1,9 +1,10 @@
 [
-    Expression(
-        NonTerminated(
-            IntLiteral(
-                Token(Int(35), (0,0)->(0,1)),
-            ),
-        ),
-    ),
+    Expression {
+        expr: IntLiteral {
+            val: 35,
+            span: (0,0)->(0,1),
+        },
+        terminated: false,
+        span: (0,0)->(0,1),
+    },
 ]

@@ -175,24 +175,6 @@ impl TokenKind {
             _ => Lowest,
         }
     }
-
-    pub fn is_expr_start(&self) -> bool {
-        use TokenKind::*;
-        matches!(
-            self,
-            Int(_)
-                | String(_)
-                | If
-                | LParen
-                | LBrace
-                | LBracket
-                | Minus
-                | Bang
-                | True
-                | False
-                | Func
-        )
-    }
 }
 
 #[derive(Clone, Copy, PartialEq, Eq, Hash)]

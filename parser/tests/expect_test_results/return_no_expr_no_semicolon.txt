@@ -1,2 +1,2 @@
-Unexpected end of input
+Error: Unexpected end of input
 ╰╴ Expected an expression

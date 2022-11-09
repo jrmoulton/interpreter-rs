@@ -205,6 +205,21 @@ mod results {
     }
 
     #[test]
+    fn early_return_nested_scope() {
+        let code: &'static str = r#"
+        {
+        let x = 5 + {
+                return 3;
+            };
+        }
+        "#;
+        assert_eq!(
+            get_inner_helper(code).inner().downcast_ref::<i64>(),
+            Some(&3)
+        );
+    }
+
+    #[test]
     fn let_ident_x() {
         let code: &'static str = r#"let x = 29; x"#;
         assert_eq!(

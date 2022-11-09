@@ -1,19 +1,21 @@
 [
-    Expression(
-        NonTerminated(
-            MethodCall {
-                instance: IntLiteral(
-                    Token(Int(55), (0,1)->(0,2)),
-                ),
-                method: Call {
-                    function: Identifier(
-                        Token(Ident("abs"), (0,4)->(0,6)),
-                    ),
-                    args: [],
-                    span: (0,4)->(0,8),
-                },
-                span: (0,3)->(0,8),
+    Expression {
+        expr: MethodCall {
+            instance: IntLiteral {
+                val: 55,
+                span: (0,1)->(0,2),
             },
-        ),
-    ),
+            method: Call {
+                function: Identifier {
+                    ident: "abs",
+                    span: (0,4)->(0,6),
+                },
+                args: [],
+                span: (0,4)->(0,8),
+            },
+            span: (0,3)->(0,8),
+        },
+        terminated: false,
+        span: (0,3)->(0,8),
+    },
 ]

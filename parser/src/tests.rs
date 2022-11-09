@@ -402,7 +402,7 @@ mod results {
       d
     } else {
       e
-    }
+    };
     let multiply = fn(x, y){x * y};
     100 / 20
     "#;

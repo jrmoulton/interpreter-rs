@@ -1,50 +1,55 @@
 [
-    Expression(
-        NonTerminated(
-            Call {
-                function: Identifier(
-                    Token(Ident("call_func"), (0,0)->(0,8)),
-                ),
-                args: [
-                    IntLiteral(
-                        Token(Int(2), (0,10)->(0,10)),
-                    ),
-                    IntLiteral(
-                        Token(Int(3), (0,13)->(0,13)),
-                    ),
-                    Func {
-                        parameters: [
-                            Ident(
-                                Token(Ident("x"), (0,19)->(0,19)),
-                            ),
-                            Ident(
-                                Token(Ident("y"), (0,21)->(0,21)),
-                            ),
-                        ],
-                        body: Scope {
-                            statements: [
-                                Expression(
-                                    NonTerminated(
-                                        Binary {
-                                            lhs: Identifier(
-                                                Token(Ident("x"), (0,24)->(0,24)),
-                                            ),
-                                            operator: Token(Plus, (0,26)->(0,26)),
-                                            rhs: Identifier(
-                                                Token(Ident("y"), (0,28)->(0,28)),
-                                            ),
-                                            span: (0,24)->(0,28),
-                                        },
-                                    ),
-                                ),
-                            ],
-                            span: (0,23)->(0,29),
-                        },
-                        span: (0,16)->(0,29),
-                    },
-                ],
-                span: (0,0)->(0,30),
+    Expression {
+        expr: Call {
+            function: Identifier {
+                ident: "call_func",
+                span: (0,0)->(0,8),
             },
-        ),
-    ),
+            args: [
+                IntLiteral {
+                    val: 2,
+                    span: (0,10)->(0,10),
+                },
+                IntLiteral {
+                    val: 3,
+                    span: (0,13)->(0,13),
+                },
+                Func {
+                    parameters: [
+                        Ident(
+                            Token(Ident("x"), (0,19)->(0,19)),
+                        ),
+                        Ident(
+                            Token(Ident("y"), (0,21)->(0,21)),
+                        ),
+                    ],
+                    body: Scope {
+                        statements: [
+                            Expression {
+                                expr: Binary {
+                                    lhs: Identifier {
+                                        ident: "x",
+                                        span: (0,24)->(0,24),
+                                    },
+                                    operator: Token(Plus, (0,26)->(0,26)),
+                                    rhs: Identifier {
+                                        ident: "y",
+                                        span: (0,28)->(0,28),
+                                    },
+                                    span: (0,24)->(0,28),
+                                },
+                                terminated: false,
+                                span: (0,24)->(0,28),
+                            },
+                        ],
+                        span: (0,23)->(0,29),
+                    },
+                    span: (0,16)->(0,29),
+                },
+            ],
+            span: (0,0)->(0,30),
+        },
+        terminated: false,
+        span: (0,0)->(0,30),
+    },
 ]

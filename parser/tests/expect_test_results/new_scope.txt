@@ -1,10 +1,10 @@
 [
-    Expression(
-        NonTerminated(
-            Scope {
-                statements: [],
-                span: (1,8)->(3,8),
-            },
-        ),
-    ),
+    Expression {
+        expr: Scope {
+            statements: [],
+            span: (1,8)->(3,8),
+        },
+        terminated: false,
+        span: (1,8)->(3,8),
+    },
 ]
