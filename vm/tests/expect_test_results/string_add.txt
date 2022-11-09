@@ -6,16 +6,13 @@ VM {
         String(
             5,
         ),
-        String(
-            5,
-        ),
     ],
     bytecode: [
         Const(
             1,
         ),
         Const(
-            2,
+            1,
         ),
         Add,
     ],

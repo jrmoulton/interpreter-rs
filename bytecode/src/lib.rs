@@ -3,6 +3,8 @@ pub enum OpCode {
     Const(usize),
     JumpNotTruthy(usize),
     Jump(usize),
+    SetGlobal,
+    GetGlobal,
     Add,
     Sub,
     Mul,

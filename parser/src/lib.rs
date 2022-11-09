@@ -1,12 +1,62 @@
 pub mod structs;
 mod tests;
 
-use error_stack::{Report, Result};
+use error_stack::Report;
 use lexer::{PeekLex, Precedence, Token, TokenKind};
 use owo_colors::OwoColorize;
 use structs::*;
 
-pub fn parse(lexer: &mut PeekLex) -> Result<Vec<Statement>, ParseError> {
+trait ESResultExt<T> {
+    fn handle_statement_err(
+        self,
+        lexer: &mut PeekLex,
+        statements: &mut Vec<T>,
+        error: &mut Option<Report<ParseError>>,
+        term_state: &mut TermState,
+    );
+}
+
+type ParseResult<T> = error_stack::Result<T, ParseError>;
+
+impl<T: HasSpan> ESResultExt<T> for ParseResult<T> {
+    fn handle_statement_err(
+        self,
+        lexer: &mut PeekLex,
+        statements: &mut Vec<T>,
+        error: &mut Option<Report<ParseError>>,
+        term_state: &mut TermState,
+    ) {
+        match self {
+            Ok(statement) => {
+                statements.push(statement);
+            }
+            Err(e) => error.extend_assign(e),
+        }
+        match term_state {
+            TermState::None | TermState::Term => {
+                match expect_peek(lexer, lexer::TokenKind::Semicolon) {
+                    Ok(_) => std::mem::replace(term_state, TermState::Term),
+                    Err(_) => std::mem::replace(term_state, TermState::NonTerm),
+                };
+            }
+            TermState::NonTerm => match expect_peek(lexer, lexer::TokenKind::Semicolon) {
+                Ok(_) => {}
+                Err(_) => {
+                    let e = error_stack::Report::new(ParseError::MultipleUnterminatedExpressions)
+                        .attach(SEMI_SUGGEST)
+                        // .attach_printable(crate::pretty_output(
+                        //     statement.get_span(),
+                        //     lexer.get_input(),
+                        // ))
+                    ;
+                    error.extend_assign(e);
+                }
+            },
+        };
+    }
+}
+
+pub fn parse(lexer: &mut PeekLex) -> ParseResult<Vec<Statement>> {
     if cfg!(test) {
         owo_colors::set_override(false);
     }
@@ -20,71 +70,43 @@ pub fn parse(lexer: &mut PeekLex) -> Result<Vec<Statement>, ParseError> {
     statements
 }
 
-fn parse_statements(lexer: &mut PeekLex, inside_scope: bool) -> Result<Vec<Statement>, ParseError> {
+fn parse_statements(lexer: &mut PeekLex, inside_scope: bool) -> ParseResult<Vec<Statement>> {
     let mut statements = Vec::new();
     let mut error: Option<Report<ParseError>> = None;
     let mut start_statement_peek = lexer.peek().cloned();
     let mut term_state = TermState::None;
+
     while let Some(lok_tok) = start_statement_peek {
         use TokenKind::*;
         match lok_tok.kind {
-            // Handle all tokens that could be the start of an expression
-            Int(_) | If | LParen | LBrace | LBracket | Minus | Bang | True | False | Func
-            | String(_) => match parse_expression(lexer, Precedence::Lowest, true) {
-                Ok(statement) => match term_state {
-                    // Matching on the temination state improves error messages and hnadling
-                    TermState::None | TermState::Term => {
-                        term_state = match statement {
-                            Expr::Terminated(_) => TermState::Term,
-                            Expr::NonTerminated(_) => TermState::NonTerm,
-                        };
-                        statements.push(Statement::Expression(statement));
-                    }
-                    TermState::NonTerm => match statement {
-                        Expr::Terminated(_) => statements.push(Statement::Expression(statement)),
-                        Expr::NonTerminated(_) => {
-                            let e = Report::new(ParseError::MultipleUnterminatedExpressions)
-                                .attach(Suggestion("Add a semicolon before the expression"))
-                                .attach_printable(pretty_output(
-                                    statement.get_span(),
-                                    lexer.get_input(),
-                                ));
-                            error.extend_assign(e);
-                        }
-                    },
-                },
-                Err(e) => {
-                    error.extend_assign(e);
-                }
-            },
-
-            // Match on the tokens that could start statements [Let, Return, Ident]
+            // Match on the tokens that could start statements [Let, Return, Ident, expr_start]
             Let => {
-                match parse_let_statement(lexer) {
-                    Ok(statement) => statements.push(statement),
-                    Err(e) => {
-                        error.extend_assign(e);
-                    }
-                }
-                term_state = TermState::Term;
+                parse_let_statement(lexer).handle_statement_err(
+                    lexer,
+                    &mut statements,
+                    &mut error,
+                    &mut term_state,
+                );
             }
             Return => {
-                term_state = TermState::Term;
-                match parse_return_statement(lexer) {
-                    Ok(statement) => statements.push(Statement::Return(statement)),
-                    Err(e) => {
-                        error.extend_assign(e);
-                    }
-                }
+                parse_return_statement(lexer).handle_statement_err(
+                    lexer,
+                    &mut statements,
+                    &mut error,
+                    &mut term_state,
+                );
             }
-            Ident(_) => match parse_ident_statement(lexer, &mut term_state) {
-                Ok(statement) => {
-                    statements.push(statement);
-                }
-                Err(e) => {
-                    error.extend_assign(e);
-                }
-            },
+            Ident(_) => {
+                parse_assign_statement(lexer).handle_statement_err(
+                    lexer,
+                    &mut statements,
+                    &mut error,
+                    &mut term_state,
+                );
+            }
+            t if t.is_expr_start() => parse_expression(lexer, Precedence::Lowest)
+                .map(Statement::Expression)
+                .handle_statement_err(lexer, &mut statements, &mut error, &mut term_state),
 
             // Skip over comments
             Comment(_) => {
@@ -115,86 +137,42 @@ fn parse_statements(lexer: &mut PeekLex, inside_scope: bool) -> Result<Vec<State
         let e = expect_peek(lexer, TokenKind::RBrace).unwrap_err();
         error.extend_assign(e);
     }
-    if let Some(e) = error {
-        Err(e)
-    } else {
-        Ok(statements)
-    }
+    let Some(e) = error else {
+        return Ok(statements);
+    };
+    Err(e)
 }
 
-fn parse_ident_statement(
-    lexer: &mut PeekLex,
-    term_state: &mut TermState,
-) -> Result<Statement, ParseError> {
-    let mut lexer_clone = lexer.clone();
-    let _ident = lexer_clone.next();
-    match is_peek(&mut lexer_clone, TokenKind::Assign) {
-        Ok(_) => match parse_assign_statement(lexer) {
-            Ok(statement) => Ok(statement),
-            Err(e) => Err(e),
-        },
-        Err(_) => match parse_expression(lexer, Precedence::Lowest, true) {
-            Ok(statement) => match term_state {
-                TermState::None | TermState::Term => {
-                    *term_state = TermState::NonTerm;
-                    Ok(Statement::Expression(statement))
-                }
-                TermState::NonTerm => match statement {
-                    Expr::Terminated(_) => Ok(Statement::Expression(statement)),
-                    Expr::NonTerminated(_) => {
-                        let e = Report::new(ParseError::MultipleUnterminatedExpressions)
-                            .attach(Suggestion("Add a semicolon before this expression"))
-                            .attach_printable(pretty_output(
-                                statement.get_span(),
-                                lexer.get_input(),
-                            ));
-                        Err(e)
-                    }
-                },
-            },
-            Err(e) => Err(e),
-        },
-    }
-}
-
-fn parse_assign_statement(lexer: &mut PeekLex) -> Result<Statement, ParseError> {
+fn parse_assign_statement(lexer: &mut PeekLex) -> ParseResult<Statement> {
     let ident = lexer
         .next()
         .expect("The ident was already peeked and matched");
     let _assign_tok = lexer.next();
-    let expr = parse_expression(lexer, Precedence::Lowest, true)?;
-    let expr_base = match expr {
-        Expr::Terminated(expr) => expr,
-        Expr::NonTerminated(_) => Err(Report::new(ParseError::ExpectedTerminatedExpr(expr))
-            .attach(Suggestion("Add a semicolon to the end of this expression")))?,
-    };
+    let expr = parse_expression(lexer, Precedence::Lowest)?;
     let assign_statement = Statement::Assign {
-        span: ident.span + expr_base.get_span(),
+        span: ident.span + expr.get_span(),
         ident,
-        expr: expr_base,
+        expr,
     };
     Ok(assign_statement)
 }
 
-fn parse_return_statement(lexer: &mut PeekLex) -> Result<Option<Expr>, ParseError> {
-    lexer
+fn parse_return_statement(lexer: &mut PeekLex) -> ParseResult<Statement> {
+    let ret = lexer
         .next()
         .expect("The return keyword was already peeked and matched");
     if expect_peek(lexer, TokenKind::Semicolon).is_ok() {
         // A return with no expression is valid if there is a semicolon
-        return Ok(None);
+        return Ok(Statement::Return {
+            expr: None,
+            span: ret.span,
+        });
     }
-    let expr = parse_expression(lexer, Precedence::Lowest, true)?;
-    let expr_base = match expr {
-        Expr::Terminated(expr) => expr,
-        Expr::NonTerminated(_) => {
-            let span = expr.get_span();
-            Err(Report::new(ParseError::ExpectedTerminatedExpr(expr))
-                .attach(Suggestion("Add a semicolon to the end of this expression"))
-                .attach_printable(pretty_output(span, lexer.get_input())))?
-        }
-    };
-    Ok(Some(Expr::Terminated(expr_base)))
+    let expr = parse_expression(lexer, Precedence::Lowest)?;
+    Ok(Statement::Return {
+        span: ret.span + expr.get_span(),
+        expr: Some(expr),
+    })
 }
 
 fn pretty_output(span: lexer::Span, source: &[String]) -> String {
@@ -219,7 +197,7 @@ fn pretty_output(span: lexer::Span, source: &[String]) -> String {
     ret.join("\n")
 }
 
-fn parse_let_statement(lexer: &mut PeekLex) -> Result<Statement, ParseError> {
+fn parse_let_statement(lexer: &mut PeekLex) -> ParseResult<Statement> {
     let let_tok = lexer
         .next()
         .expect("The let keyword was already peeked and matched");
@@ -237,40 +215,18 @@ fn parse_let_statement(lexer: &mut PeekLex) -> Result<Statement, ParseError> {
     if let Err(e) = expect_peek(lexer, TokenKind::Assign) {
         error.extend_assign(e);
     };
-    let expr_base = match parse_expression(lexer, Precedence::Lowest, true) {
-        Ok(expr) => match expr {
-            Expr::Terminated(expr_base) => Some(expr_base),
-            Expr::NonTerminated(ref expr_base) => {
-                let span = expr_base.get_span();
-                let e = Report::new(ParseError::ExpectedTerminatedExpr(expr))
-                    .attach(Suggestion("Add a semicolon to the end of this expression"))
-                    .attach_printable(pretty_output(span, lexer.get_input()));
-                if let Some(error) = error.as_mut() {
-                    error.extend_one(e);
-                } else {
-                    error = Some(e);
-                };
-                None
-            }
-        },
-        Err(e) => {
-            error.extend_assign(e);
-            None
-        }
-    };
-    if let Some(e) = error {
-        Err(e)
-    } else {
-        let expr = expr_base.expect("Some because there are no errors");
-        Ok(Statement::Let {
+    let expr = parse_expression(lexer, Precedence::Lowest)?;
+    let Some(e) = error else {
+        return Ok(Statement::Let {
             span: let_tok.span + expr.get_span(),
             ident: ident.expect("Some because there are no errors"),
             expr,
-        })
-    }
+        });
+    };
+    Err(e)
 }
 
-fn parse_identifier(lexer: &mut PeekLex) -> error_stack::Result<Token, ParseError> {
+fn parse_identifier(lexer: &mut PeekLex) -> ParseResult<Token> {
     let next = lexer.peek().cloned();
     match next {
         Some(lok_tok) => match lok_tok.kind {
@@ -297,20 +253,16 @@ fn parse_identifier(lexer: &mut PeekLex) -> error_stack::Result<Token, ParseErro
 /// call. the This ensures proper parsing of oprator precedence. This includes the lparen token
 /// which in a way acts as a binary expression for a function call. But it matches to it's own
 /// function.
-fn parse_expression(
-    lexer: &mut PeekLex,
-    precedence: Precedence,
-    match_semicolon: bool,
-) -> Result<Expr, ParseError> {
+fn parse_expression(lexer: &mut PeekLex, prec: Precedence) -> ParseResult<ExprBase> {
     use TokenKind::*;
 
     let mut left_exp = parse_left_expression(lexer)?;
 
     let mut peek_op_token = match lexer.peek().cloned() {
         Some(token) => token,
-        None => return Ok(Expr::NonTerminated(left_exp)),
+        None => return Ok(left_exp),
     };
-    while precedence < peek_op_token.kind.precedence() {
+    while prec < peek_op_token.kind.precedence() {
         left_exp = match peek_op_token.kind {
             // All binary tokens should be matched here. This includes LParen but LParen will match
             // to a different function because it is the start of a function call which needs
@@ -325,21 +277,16 @@ fn parse_expression(
         };
         peek_op_token = match lexer.peek().cloned() {
             Some(token) => token,
-            None => return Ok(Expr::NonTerminated(left_exp)),
+            None => return Ok(left_exp),
         };
     }
 
     // inner expressions should never be terminated so this check to match_semicolon checks if the
     // calling function wants the expression to have the option of being terminated or not.
-    if match_semicolon && peek_op_token.kind.token_matches(&TokenKind::Semicolon) {
-        lexer.next();
-        Ok(Expr::Terminated(left_exp))
-    } else {
-        Ok(Expr::NonTerminated(left_exp))
-    }
+    Ok(left_exp)
 }
 
-fn parse_left_expression(lexer: &mut PeekLex) -> Result<ExprBase, ParseError> {
+fn parse_left_expression(lexer: &mut PeekLex) -> ParseResult<ExprBase> {
     use TokenKind::*;
     let lhs_val_peek = lexer.peek().cloned();
     Ok(match lhs_val_peek {
@@ -386,19 +333,18 @@ fn parse_left_expression(lexer: &mut PeekLex) -> Result<ExprBase, ParseError> {
     })
 }
 
-fn parse_array_index(lexer: &mut PeekLex, left: ExprBase) -> Result<ExprBase, ParseError> {
+fn parse_array_index(lexer: &mut PeekLex, left: ExprBase) -> ParseResult<ExprBase> {
     let mut error: Option<Report<ParseError>> = None;
     let lbracket = lexer
         .next()
         .expect("The lbracket should already peeked and found");
-    let index = match parse_expression(lexer, Precedence::Lowest, false) {
+    let index = match parse_expression(lexer, Precedence::Lowest) {
         Ok(expr) => Some(expr),
         Err(e) => {
             error.extend_assign(e);
             None
         }
-    }
-    .map(|val| val.expect_non_terminated());
+    };
     let rbracket = match is_peek(lexer, TokenKind::RBracket) {
         Ok(_) => lexer.next().expect("already matched"),
         Err(e) => {
@@ -413,7 +359,7 @@ fn parse_array_index(lexer: &mut PeekLex, left: ExprBase) -> Result<ExprBase, Pa
     })
 }
 
-fn parse_array(lexer: &mut PeekLex) -> Result<ExprBase, ParseError> {
+fn parse_array(lexer: &mut PeekLex) -> ParseResult<ExprBase> {
     let lbracket = lexer.next().expect("should be lbracket");
     let mut error: Option<Report<ParseError>> = None;
     match parse_call_args(lexer, TokenKind::RBracket) {
@@ -433,15 +379,12 @@ fn parse_array(lexer: &mut PeekLex) -> Result<ExprBase, ParseError> {
     }
 }
 
-fn parse_method_expression(
-    lexer: &mut PeekLex,
-    instance: ExprBase,
-) -> Result<ExprBase, ParseError> {
+fn parse_method_expression(lexer: &mut PeekLex, instance: ExprBase) -> ParseResult<ExprBase> {
     let operator_dot = lexer
         .next()
         .expect("The operator should already peeked and found and should always be a Dot");
     let op_precedence = operator_dot.kind.precedence();
-    let method = parse_expression(lexer, op_precedence, false)?.expect_non_terminated();
+    let method = parse_expression(lexer, op_precedence)?;
     Ok(ExprBase::MethodCall {
         span: operator_dot.span + method.get_span(),
         instance: Box::new(instance),
@@ -449,7 +392,7 @@ fn parse_method_expression(
     })
 }
 
-fn parse_call_expression(lexer: &mut PeekLex, function: ExprBase) -> Result<ExprBase, ParseError> {
+fn parse_call_expression(lexer: &mut PeekLex, function: ExprBase) -> ParseResult<ExprBase> {
     let mut error: Option<Report<ParseError>> = None;
     let _lparen = lexer.next().expect("already matched");
     let args = match parse_call_args(lexer, TokenKind::RParen) {
@@ -470,7 +413,7 @@ fn parse_call_expression(lexer: &mut PeekLex, function: ExprBase) -> Result<Expr
 }
 
 // A function to parse the arguments to a function when it is being called
-fn parse_call_args(lexer: &mut PeekLex, end_token: TokenKind) -> Result<Vec<ExprBase>, ParseError> {
+fn parse_call_args(lexer: &mut PeekLex, end_token: TokenKind) -> ParseResult<Vec<ExprBase>> {
     // A enum as  a state machine to track what the previous token was. This gives better options
     // for error messages
     enum ArgState {
@@ -478,9 +421,10 @@ fn parse_call_args(lexer: &mut PeekLex, end_token: TokenKind) -> Result<Vec<Expr
         Arg,
         Comma,
     }
+    use ArgState::*;
     let mut error: Option<Report<ParseError>> = None;
     let mut arguments: Vec<ExprBase> = Vec::new();
-    let mut arg_state = ArgState::Empty;
+    let mut arg_state = Empty;
     let mut again = true;
 
     let mut peek = lexer.peek().cloned();
@@ -490,33 +434,33 @@ fn parse_call_args(lexer: &mut PeekLex, end_token: TokenKind) -> Result<Vec<Expr
                 TokenKind::Comma => {
                     lexer.next();
                     match arg_state {
-                        ArgState::Empty | ArgState::Comma => {
+                        Empty | Comma => {
                             let e = Report::new(ParseError::UnexpectedToken(lok_tok))
                                 .attach_printable("There should be an expression before the comma");
                             error.extend_assign(e);
                         }
-                        ArgState::Arg => {}
+                        Arg => {}
                     };
-                    arg_state = ArgState::Comma;
+                    arg_state = Comma;
                 }
-                token if token.token_matches(&end_token) => {
+                token if token.is(&end_token) => {
                     again = false;
                 }
                 _ => {
                     match arg_state {
-                        ArgState::Arg => {
+                        Arg => {
                             let e = Report::new(ParseError::UnexpectedToken(lok_tok))
                                 .attach_printable("expressions should be separated by commas");
                             error.extend_assign(e);
                             lexer.next();
                         }
                         _ => {
-                            arg_state = ArgState::Arg;
+                            arg_state = Arg;
                         }
                     };
-                    match parse_expression(lexer, Precedence::Lowest, false) {
+                    match parse_expression(lexer, Precedence::Lowest) {
                         Ok(arg) => {
-                            arguments.push(arg.expect_non_terminated());
+                            arguments.push(arg);
                         }
                         Err(e) => {
                             error.extend_assign(e);
@@ -540,7 +484,7 @@ fn parse_call_args(lexer: &mut PeekLex, end_token: TokenKind) -> Result<Vec<Expr
     }
 }
 
-fn parse_func_literal(lexer: &mut PeekLex) -> Result<ExprBase, ParseError> {
+fn parse_func_literal(lexer: &mut PeekLex) -> ParseResult<ExprBase> {
     let fn_tok = lexer
         .next()
         .expect("fn token should already be already matched");
@@ -584,7 +528,7 @@ fn parse_func_literal(lexer: &mut PeekLex) -> Result<ExprBase, ParseError> {
 }
 
 // A function to parse formal parameters of a function definition
-fn parse_function_parameters(lexer: &mut PeekLex) -> Result<Vec<Ident>, ParseError> {
+fn parse_function_parameters(lexer: &mut PeekLex) -> ParseResult<Vec<Ident>> {
     // A enum as  a state machine to track what the previous token was. This gives better options
     // for error messages
     enum ParamState {
@@ -599,52 +543,49 @@ fn parse_function_parameters(lexer: &mut PeekLex) -> Result<Vec<Ident>, ParseErr
 
     let mut peek = lexer.peek().cloned();
     while again {
-        match peek {
-            Some(lok_tok) => match lok_tok.kind {
-                TokenKind::Ident(_) => {
-                    lexer.next();
-                    match param_state {
-                        ParamState::Ident => {
-                            let e = Report::new(ParseError::UnexpectedToken(lok_tok))
-                                .attach_printable("Identifiers should be separated by commas");
-                            error.extend_assign(e);
-                        }
-                        _ => {
-                            param_state = ParamState::Ident;
-                            identifiers.push(Ident(lok_tok));
-                        }
+        let Some(lok_tok) = peek else {
+                return Err(Report::new(ParseError::Eof)
+                    .attach_printable("Expected function parameters or a closing parentheses"));
+        };
+        match lok_tok.kind {
+            TokenKind::Ident(_) => {
+                lexer.next();
+                match param_state {
+                    ParamState::Ident => {
+                        let e = Report::new(ParseError::UnexpectedToken(lok_tok))
+                            .attach_printable("Identifiers should be separated by commas");
+                        error.extend_assign(e);
+                    }
+                    _ => {
+                        param_state = ParamState::Ident;
+                        identifiers.push(Ident(lok_tok));
                     }
                 }
-                TokenKind::Comma => {
-                    lexer.next();
-                    match param_state {
-                        ParamState::Empty | ParamState::Comma => {
-                            let e = Report::new(ParseError::UnexpectedToken(lok_tok))
-                                .attach_printable("There should be an identifier before the comma");
-                            if let Some(error) = error.as_mut() {
-                                error.extend_one(e);
-                            } else {
-                                error = Some(e);
-                            };
-                        }
-                        ParamState::Ident => {}
-                    };
-                    param_state = ParamState::Comma;
-                }
-                TokenKind::RParen => {
-                    again = false;
-                }
-                _ => {
-                    let e = Report::new(ParseError::UnexpectedToken(lok_tok))
-                        .attach_printable("Expected an identifier or a closing parentheses");
-                    error.extend_assign(e);
-                    again = false;
-                }
-            },
-            None => {
-                let e = Report::new(ParseError::Eof)
-                    .attach_printable("Expected function parameters or a closing parentheses");
+            }
+            TokenKind::Comma => {
+                lexer.next();
+                match param_state {
+                    ParamState::Empty | ParamState::Comma => {
+                        let e = Report::new(ParseError::UnexpectedToken(lok_tok))
+                            .attach_printable("There should be an identifier before the comma");
+                        if let Some(error) = error.as_mut() {
+                            error.extend_one(e);
+                        } else {
+                            error = Some(e);
+                        };
+                    }
+                    ParamState::Ident => {}
+                };
+                param_state = ParamState::Comma;
+            }
+            TokenKind::RParen => {
+                again = false;
+            }
+            _ => {
+                let e = Report::new(ParseError::UnexpectedToken(lok_tok))
+                    .attach_printable("Expected an identifier or a closing parentheses");
                 error.extend_assign(e);
+                again = false;
             }
         }
         peek = lexer.peek().cloned();
@@ -657,19 +598,10 @@ fn parse_function_parameters(lexer: &mut PeekLex) -> Result<Vec<Ident>, ParseErr
     }
 }
 
-fn parse_grouped_expression(lexer: &mut PeekLex) -> Result<ExprBase, ParseError> {
+fn parse_grouped_expression(lexer: &mut PeekLex) -> ParseResult<ExprBase> {
     let mut error: Option<Report<ParseError>> = None;
-    let exp = match parse_expression(lexer, Precedence::Lowest, true) {
-        Ok(exp) => match exp {
-            Expr::Terminated(_) => {
-                let e = Report::new(ParseError::UnexpectedTerminatedExpr(exp)).attach(Suggestion(
-                    "Try removing the semicolon from this expression",
-                ));
-                error.extend_assign(e);
-                None
-            }
-            Expr::NonTerminated(exp) => Some(exp),
-        },
+    let exp = match parse_expression(lexer, Precedence::Lowest) {
+        Ok(exp) => Some(exp),
         Err(e) => {
             error.extend_assign(e);
             None
@@ -685,22 +617,13 @@ fn parse_grouped_expression(lexer: &mut PeekLex) -> Result<ExprBase, ParseError>
     }
 }
 
-fn parse_if_expression(lexer: &mut PeekLex) -> Result<IfExpr, ParseError> {
+fn parse_if_expression(lexer: &mut PeekLex) -> ParseResult<IfExpr> {
     let if_tok = lexer
         .next()
         .expect("the if token should already be matched");
     let mut error: Option<Report<ParseError>> = None;
-    let condition: Option<ExprBase> = match parse_expression(lexer, Precedence::Lowest, true) {
-        Ok(condition) => match condition {
-            Expr::Terminated(_) => {
-                let e = Report::new(ParseError::UnexpectedTerminatedExpr(condition)).attach(
-                    Suggestion("Try removing the semicolon from this expression"),
-                );
-                error.extend_assign(e);
-                None
-            }
-            Expr::NonTerminated(cond_base) => Some(cond_base),
-        },
+    let condition: Option<ExprBase> = match parse_expression(lexer, Precedence::Lowest) {
+        Ok(condition) => Some(condition),
         Err(e) => {
             error.extend_assign(e);
             None
@@ -758,7 +681,7 @@ fn parse_if_expression(lexer: &mut PeekLex) -> Result<IfExpr, ParseError> {
     }
 }
 
-fn parse_scope(lexer: &mut PeekLex) -> Result<Scope, ParseError> {
+fn parse_scope(lexer: &mut PeekLex) -> ParseResult<Scope> {
     let mut error: Option<Report<ParseError>> = None;
     let lbrace = match is_peek(lexer, TokenKind::LBrace) {
         Ok(_) => Some(lexer.next().expect("already matched")),
@@ -789,25 +712,13 @@ fn parse_scope(lexer: &mut PeekLex) -> Result<Scope, ParseError> {
     }
 }
 
-fn parse_prefix_expression(lexer: &mut PeekLex) -> Result<ExprBase, ParseError> {
+fn parse_prefix_expression(lexer: &mut PeekLex) -> ParseResult<ExprBase> {
     let operator = lexer
         .next()
         .expect("The operator was already peeked and found");
     let right = lexer.peek().cloned();
     let expression = match right {
-        Some(_) => {
-            let rhs = parse_expression(lexer, operator.kind.precedence(), false)?;
-            match rhs {
-                Expr::Terminated(_) => {
-                    return Err(
-                        Report::new(ParseError::UnexpectedTerminatedExpr(rhs)).attach(Suggestion(
-                            "Try removing the semicolon from this expression",
-                        )),
-                    );
-                }
-                Expr::NonTerminated(rhs) => rhs,
-            }
-        }
+        Some(_) => parse_expression(lexer, operator.kind.precedence())?,
         None => Err(Report::new(ParseError::Eof).attach_printable(format!(
             "Expected an operand after the prefix operator {:?} at {operator:?}",
             operator.kind
@@ -821,22 +732,12 @@ fn parse_prefix_expression(lexer: &mut PeekLex) -> Result<ExprBase, ParseError> 
     })
 }
 
-fn parse_binary_expression(lexer: &mut PeekLex, left: ExprBase) -> Result<ExprBase, ParseError> {
+fn parse_binary_expression(lexer: &mut PeekLex, left: ExprBase) -> ParseResult<ExprBase> {
     let operator = lexer
         .next()
         .expect("The operator was already peeked and found");
     let op_precedence = operator.kind.precedence();
-    let rhs_expr = parse_expression(lexer, op_precedence, false)?;
-    let rhs = match rhs_expr {
-        Expr::Terminated(_) => {
-            return Err(
-                Report::new(ParseError::UnexpectedTerminatedExpr(rhs_expr)).attach(Suggestion(
-                    "Try removing the semicolon from this expression",
-                )),
-            );
-        }
-        Expr::NonTerminated(rhs) => rhs,
-    };
+    let rhs = parse_expression(lexer, op_precedence)?;
     let span = left.get_span() + rhs.get_span();
     Ok(ExprBase::Binary {
         lhs: Box::new(left),
@@ -847,11 +748,11 @@ fn parse_binary_expression(lexer: &mut PeekLex, left: ExprBase) -> Result<ExprBa
 }
 
 // A function that
-fn expect_peek(lexer: &mut PeekLex, expected: TokenKind) -> error_stack::Result<(), ParseError> {
+fn expect_peek(lexer: &mut PeekLex, expected: TokenKind) -> ParseResult<()> {
     let peek = lexer.peek().cloned();
     match peek {
         Some(lok_tok) => {
-            if lok_tok.kind.token_matches(&expected) {
+            if lok_tok.kind.is(&expected) {
                 lexer.next();
                 Ok(())
             } else {
@@ -865,11 +766,11 @@ fn expect_peek(lexer: &mut PeekLex, expected: TokenKind) -> error_stack::Result<
     }
 }
 
-fn is_peek(lexer: &mut PeekLex, expected: TokenKind) -> error_stack::Result<(), ParseError> {
+fn is_peek(lexer: &mut PeekLex, expected: TokenKind) -> ParseResult<()> {
     let peek = lexer.peek().cloned();
     match peek {
         Some(lok_tok) => {
-            if lok_tok.kind.token_matches(&expected) {
+            if lok_tok.kind.is(&expected) {
                 Ok(())
             } else {
                 Err(Report::new(ParseError::UnexpectedToken(lok_tok))

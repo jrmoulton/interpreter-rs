@@ -1,33 +1,10 @@
-use evaluator::object::EmptyWrapper;
+mod structs;
+pub use structs::*;
+
 use lexer::Span;
 use parser::structs::{ElseIfExpr, ExprBase, Scope, Statement};
 
 use bytecode::OpCode;
-
-#[derive(Debug)]
-pub struct Compiler {
-    pub constants: Vec<evaluator::object::Object>,
-    pub bytecode: Vec<OpCode>,
-}
-enum OpType {
-    Binary,
-    Prefix,
-    Other,
-}
-
-impl Compiler {
-    pub fn new() -> Self {
-        Self {
-            constants: vec![EmptyWrapper::new().into()],
-            bytecode: Vec::new(),
-        }
-    }
-}
-impl Default for Compiler {
-    fn default() -> Self {
-        Self::new()
-    }
-}
 
 #[allow(dead_code, unused)]
 impl Compiler {
@@ -39,10 +16,21 @@ impl Compiler {
 
     fn compile_statement(&mut self, statement: Statement) {
         match statement {
-            Statement::Let { ident, expr, span } => todo!(),
+            Statement::Let { ident, expr, span } => {
+                self.compile_expr_base(expr);
+                self.compile_token(ident, OpType::Other);
+                self.bytecode.push(OpCode::SetGlobal);
+                self.bytecode.push(OpCode::Pop); // Pop the ident
+                self.bytecode.push(OpCode::Pop); // Pop the expr (this pop matches the semicolon)
+            }
             Statement::Assign { ident, expr, span } => todo!(),
-            Statement::Return(_) => todo!(),
-            Statement::Expression(expr) => self.compile_expression(expr),
+            Statement::Return { expr, .. } => {
+                if let Some(expr) = expr {
+                    self.compile_expr_base(expr)
+                }
+                self.bytecode.push(OpCode::Jump(9999))
+            }
+            Statement::Expression(expr) => self.compile_expr_base(expr),
         }
     }
 
@@ -124,36 +112,39 @@ impl Compiler {
         self.bytecode.push(OpCode::Jump(9999));
         let jump_pos = self.bytecode.len() - 1;
 
-        // If there is an alternative compile it
-        if let Some(alt) = alternative {
-            match alt {
-                // if expressions are recursively compiled
-                parser::structs::ElseIfExpr::ElseIf(if_expr) => {
-                    self.compile_expr_base((*if_expr).into())
-                }
-                // the else condition is handled. Here we now know how long the conditional jump
-                // needs to be. The conditional jump go to the start of the else
-                parser::structs::ElseIfExpr::Else(scope) => {
-                    let curr_len = self.bytecode.len();
-                    std::mem::replace(
-                        &mut self.bytecode[test_jump_pos],
-                        OpCode::JumpNotTruthy(curr_len),
-                    );
-                    // Start of the else statements. Else compiled
-                    self.compile(scope);
+        match alternative {
+            // If there is an alternative compile it
+            Some(alt) => {
+                match alt {
+                    // if expressions are recursively compiled
+                    parser::structs::ElseIfExpr::ElseIf(if_expr) => {
+                        self.compile_expr_base((*if_expr).into())
+                    }
+                    // the else condition is handled. Here we now know how long the conditional jump
+                    // needs to be. The conditional jump go to the start of the else
+                    parser::structs::ElseIfExpr::Else(scope) => {
+                        let curr_len = self.bytecode.len();
+                        std::mem::replace(
+                            &mut self.bytecode[test_jump_pos],
+                            OpCode::JumpNotTruthy(curr_len),
+                        );
+                        // Start of the else statements. Else compiled
+                        self.compile(scope);
+                    }
                 }
             }
             // If there is no alternate then we set the conditional jump to this spot and then add
             // an empty object (so that popping doesn't cause an underflow on the stack). This
             // makes it so that even if there is no alternate an object is created there for
             // consistency
-        } else {
-            let curr_len = self.bytecode.len();
-            std::mem::replace(
-                &mut self.bytecode[test_jump_pos],
-                OpCode::JumpNotTruthy(curr_len),
-            );
-            self.bytecode.push(OpCode::Const(0));
+            None => {
+                let curr_len = self.bytecode.len();
+                std::mem::replace(
+                    &mut self.bytecode[test_jump_pos],
+                    OpCode::JumpNotTruthy(curr_len),
+                );
+                self.bytecode.push(OpCode::Const(0));
+            }
         }
         // Finally set the final jump positon to after the end of the if statement
         let curr_len = self.bytecode.len();
@@ -183,6 +174,7 @@ impl Compiler {
     }
 
     fn compile_token(&mut self, token: lexer::Token, op_type: OpType) {
+        let len = self.constants.len();
         match token.kind {
             lexer::TokenKind::Illegal => todo!(),
             lexer::TokenKind::Eof => todo!(),
@@ -191,12 +183,12 @@ impl Compiler {
             lexer::TokenKind::Mut => todo!(),
             lexer::TokenKind::Func => todo!(),
             lexer::TokenKind::True => {
-                self.constants.push(true.into());
-                self.bytecode.push(OpCode::Const(self.constants.len() - 1))
+                let idx = self.constants.entry(true.into()).or_insert(len);
+                self.bytecode.push(OpCode::Const(*idx))
             }
             lexer::TokenKind::False => {
-                self.constants.push(false.into());
-                self.bytecode.push(OpCode::Const(self.constants.len() - 1))
+                let idx = self.constants.entry(false.into()).or_insert(len);
+                self.bytecode.push(OpCode::Const(*idx))
             }
             lexer::TokenKind::If => todo!(),
             lexer::TokenKind::Else => todo!(),
@@ -207,14 +199,17 @@ impl Compiler {
             lexer::TokenKind::Continue => todo!(),
             lexer::TokenKind::Loop => todo!(),
             lexer::TokenKind::While => todo!(),
-            lexer::TokenKind::Ident(_) => todo!(),
+            lexer::TokenKind::Ident(ident_str) => {
+                let idx = self.constants.entry(ident_str.into()).or_insert(len);
+                self.bytecode.push(OpCode::Const(*idx));
+            }
             lexer::TokenKind::Int(int_const) => {
-                self.constants.push(int_const.into());
-                self.bytecode.push(OpCode::Const(self.constants.len() - 1));
+                let idx = self.constants.entry(int_const.into()).or_insert(len);
+                self.bytecode.push(OpCode::Const(*idx))
             }
             lexer::TokenKind::String(str_constant) => {
-                self.constants.push(str_constant.into());
-                self.bytecode.push(OpCode::Const(self.constants.len() - 1));
+                let idx = self.constants.entry(str_constant.into()).or_insert(len);
+                self.bytecode.push(OpCode::Const(*idx))
             }
             lexer::TokenKind::Assign => todo!(),
             lexer::TokenKind::Plus => match op_type {

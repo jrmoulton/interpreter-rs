@@ -1,2 +1,2 @@
 Expected token ';' after expression: `true`
-╰╴ Suggestion: Add a semicolon to the end of this expression
+╰╴ Suggestion: Add a semicolon after the expression

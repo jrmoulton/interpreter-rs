@@ -1,7 +1,7 @@
 macro_rules! make_literal_types {
     ($(($name:ident, $expect_inner:ident, $type:ty, $type_string:expr) $(,)?)*) => {
         $(
-            #[derive(Clone, PartialEq, Eq)]
+            #[derive(Clone, PartialEq, Eq, Hash)]
             pub struct $name {
                 pub value: $type,
                 pub is_return: bool,
@@ -44,7 +44,7 @@ macro_rules! make_literal_types {
             }
         )*
         #[enum_dispatch]
-        #[derive(Debug, Clone, PartialEq, Eq)]
+        #[derive(Debug, Clone, PartialEq, Eq, Hash)]
         pub enum Object {
             $(
                 $name,

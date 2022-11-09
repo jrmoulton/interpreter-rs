@@ -49,10 +49,10 @@ pub fn eval(
                 env.set(ident_string, expr_obj);
                 Ok((object::Empty::new(().into()).into(), true))
             }
-            Statement::Return(expr) => {
+            Statement::Return{expr, ..} => {
                 match expr {
                     Some(expr) => {
-                        last_obj_tup = match eval_expression(expr, env) {
+                        last_obj_tup = match eval_expr_base(expr, env) {
                             Ok(mut obj) => {
                                 // This makes it so that even though the expresson is terminated it
                                 // will still be passed back out
@@ -71,7 +71,7 @@ pub fn eval(
                 }
                 break;
             }
-            Statement::Expression(expr) => eval_expression(expr, env.clone()),
+            Statement::Expression(expr) => eval_expr_base(expr, env.clone()),
             Statement::Assign {
                 ident,
                 expr,
@@ -112,16 +112,6 @@ pub fn eval(
         }
     } else {
         Ok(object::Empty::new(object::EmptyWrapper::new()).into())
-    }
-}
-
-fn eval_expression(
-    expr: Expr,
-    env: Arc<Environment>,
-) -> Result<(Object, bool), EvalError> {
-    match expr {
-        Expr::Terminated(expr_base) => Ok((eval_expr_base(expr_base, env)?, true)),
-        Expr::NonTerminated(expr_base) => Ok((eval_expr_base(expr_base, env)?, false)),
     }
 }
 

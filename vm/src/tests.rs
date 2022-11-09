@@ -11,9 +11,9 @@ fn new_vm(code: &'static str) -> VM {
     let mut ast = parse(&mut peek_lex).unwrap().into_iter();
     let mut compiler = Compiler::new();
     compiler.compile(&mut ast);
-    let bytecode = compiler.bytecode;
+    let (bytecode, constants) = compiler.get_fields();
     // bytecode.push(crate::bytecode::OpCode::Print);
-    VM::new(compiler.constants, bytecode)
+    VM::new(constants, bytecode)
 }
 
 #[test]

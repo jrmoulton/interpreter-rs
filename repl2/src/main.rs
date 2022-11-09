@@ -1,5 +1,12 @@
 use std::{error::Error, fmt::Display, fs};
 
+// #[cfg(not(target_env = "msvc"))]
+// use tikv_jemallocator::Jemalloc;
+
+// #[cfg(not(target_env = "msvc"))]
+// #[global_allocator]
+// static GLOBAL: Jemalloc = Jemalloc;
+
 use clap::Parser;
 use compiler::Compiler;
 use error_stack::{IntoReport, Result, ResultExt};
@@ -40,9 +47,9 @@ fn main() -> Result<(), Errors> {
         .into_iter();
     let mut compiler = Compiler::new();
     compiler.compile(&mut ast);
-    let mut bytecode = compiler.bytecode;
+    let (mut bytecode, constants) = compiler.get_fields();
     bytecode.push(bytecode::OpCode::Print);
-    let mut vm = VM::new(compiler.constants, bytecode);
+    let mut vm = VM::new(constants, bytecode);
     vm.run().change_context(Errors::VirtualMachine)?;
     Ok(())
 }

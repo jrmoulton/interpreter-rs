@@ -16,3 +16,6 @@ clap = {workspace = true}
 error-stack = { workspace = true }
 
 # owo-colors = { workspace = true }
+
+# [target.'cfg(not(target_env = "msvc"))'.dependencies]
+# tikv-jemallocator = "0.5"

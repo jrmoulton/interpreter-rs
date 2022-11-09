@@ -1,3 +1,3 @@
 Expected token ';' after expression: `5`
-├╴ Suggestion: Add a semicolon to the end of this expression
+├╴ Suggestion: Add a semicolon after the expression
 ╰╴ 1    | return 5

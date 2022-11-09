@@ -1,6 +1,7 @@
 use std::{
     collections::HashMap,
     fmt::{Debug, Display, Write},
+    hash::Hash,
     ops::{Deref, DerefMut},
     sync::Arc,
 };
@@ -22,6 +23,12 @@ pub struct FuncIntern {
 impl PartialEq for FuncIntern {
     fn eq(&self, other: &Self) -> bool {
         self.parameters == other.parameters && self.body == other.body
+    }
+}
+impl Hash for FuncIntern {
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        self.parameters.hash(state);
+        self.body.hash(state);
     }
 }
 impl Eq for FuncIntern {}
@@ -50,7 +57,7 @@ impl Display for FuncIntern {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct ArrayWrapper(pub Vec<Object>);
 impl Display for ArrayWrapper {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
@@ -91,7 +98,7 @@ impl Display for ClassObject {
     }
 }
 
-#[derive(Debug, Clone, Eq, PartialEq)]
+#[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub struct EmptyWrapper;
 impl Display for EmptyWrapper {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
@@ -124,7 +131,7 @@ make_literal_types!(
 );
 
 #[enum_dispatch(Object)]
-pub(crate) trait ObjectTrait: Display + Debug {
+pub(crate) trait ObjectTrait: Display + Debug + Eq + PartialEq + Hash {
     fn inner(&self) -> &dyn std::any::Any;
     fn set_return(&mut self);
     fn is_return(&self) -> bool;

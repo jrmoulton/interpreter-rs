@@ -37,7 +37,7 @@ pub enum Precedence {
     Index = 12,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum TokenKind {
     // Extra stuff
     Illegal,
@@ -150,7 +150,7 @@ impl Display for TokenKind {
 }
 impl TokenKind {
     /// Checks if the token type matches without checking the internal data
-    pub fn token_matches(&self, other: &Self) -> bool {
+    pub fn is(&self, other: &Self) -> bool {
         discriminant(self) == discriminant(other)
     }
     pub fn precedence(&self) -> Precedence {
@@ -175,9 +175,27 @@ impl TokenKind {
             _ => Lowest,
         }
     }
+
+    pub fn is_expr_start(&self) -> bool {
+        use TokenKind::*;
+        matches!(
+            self,
+            Int(_)
+                | String(_)
+                | If
+                | LParen
+                | LBrace
+                | LBracket
+                | Minus
+                | Bang
+                | True
+                | False
+                | Func
+        )
+    }
 }
 
-#[derive(Clone, Copy, PartialEq, Eq)]
+#[derive(Clone, Copy, PartialEq, Eq, Hash)]
 pub struct Span {
     start_row: usize,
     start_col: usize,
@@ -219,7 +237,7 @@ impl Span {
     }
 }
 
-#[derive(Clone, PartialEq, Eq)]
+#[derive(Clone, PartialEq, Eq, Hash)]
 pub struct Token {
     pub span: Span,
     pub kind: TokenKind,

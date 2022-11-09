@@ -75,6 +75,7 @@ impl VM {
                 }
                 Print => println!("{}", self.stack[self.sp]),
                 NoOp => {}
+                _ => todo!(),
             }
             ip += 1;
         }

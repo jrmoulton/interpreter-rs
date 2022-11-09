@@ -173,3 +173,17 @@ fn if_true_5_else_3() {
     // let expected = expect_file!["../tests/expect_test_results/if_true_five.txt"];
     // expected.assert_eq(&format!("{compiler:#?}"));
 }
+
+#[test]
+fn let_x_eq_3_semi() {
+    let code: &'static str = r#"let x = 3;"#;
+    let compiler = new_compiler(code);
+    let exp_bytecode = vec![
+        /*0*/ OpCode::Const(1),
+        /*1*/ OpCode::Const(2),
+        /*2*/ OpCode::SetGlobal,
+        /*4*/ OpCode::Pop,
+        /*5*/ OpCode::Pop,
+    ];
+    assert_eq!(exp_bytecode, compiler.bytecode);
+}

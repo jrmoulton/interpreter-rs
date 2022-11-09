@@ -1,15 +1,4 @@
 Compiler {
-    constants: [
-        Empty(
-            (),
-        ),
-        Integer(
-            5,
-        ),
-        Integer(
-            4,
-        ),
-    ],
     bytecode: [
         Const(
             1,

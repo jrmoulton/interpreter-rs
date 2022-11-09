@@ -1,10 +1,17 @@
+use lexer::PeekLex;
 use lexer::{Span, Token};
 use owo_colors::OwoColorize;
 use std::error::Error;
 use std::fmt::Display;
 use std::fmt::Write;
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+use crate::expect_peek;
+
+pub trait HasSpan {
+    fn get_span(&self) -> Span;
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum Statement {
     Let {
         ident: Token,
@@ -16,66 +23,42 @@ pub enum Statement {
         expr: ExprBase,
         span: Span,
     },
-    Return(Option<Expr>),
-    Expression(Expr),
+    Return {
+        expr: Option<ExprBase>,
+        span: Span,
+    },
+    Expression {
+        expr: ExprBase,
+        terminated: bool,
+        span: Span,
+    },
 }
 impl Display for Statement {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let temp = match self {
             Statement::Let { ident, expr, .. } => format!("let {} = {}", ident, expr),
-            Statement::Return(return_statement) => match return_statement {
+            Statement::Return { expr, .. } => match expr {
                 Some(expr) => format!("return {expr};"),
                 None => "return;".into(),
             },
-            Statement::Expression(expression_statement) => format!("{expression_statement}"),
+            Statement::Expression { expr, .. } => format!("{expr}"),
             Statement::Assign { ident, expr, .. } => format!("{} = {}", ident, expr),
         };
         f.write_str(&temp)
     }
 }
-
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub enum Expr {
-    Terminated(ExprBase),
-    NonTerminated(ExprBase),
-}
-impl Expr {
-    pub fn expect_non_terminated(self) -> ExprBase {
+impl HasSpan for Statement {
+    fn get_span(&self) -> Span {
         match self {
-            Self::Terminated(_) => {
-                panic!("Expected to be of type NonTerminated but found Terminated")
-            }
-            Self::NonTerminated(inner) => inner,
-        }
-    }
-    pub fn expect_terminated(self) -> ExprBase {
-        match self {
-            Self::NonTerminated(_) => {
-                panic!("Expected to be of type Terminated but found NonTerminated")
-            }
-            Self::Terminated(inner) => inner,
-        }
-    }
-
-    pub fn get_span(&self) -> Span {
-        match self {
-            // TODO: add one to terminated for semicolon
-            Expr::Terminated(expr_base) => expr_base.get_span(),
-            Expr::NonTerminated(expr_base) => expr_base.get_span(),
-        }
-    }
-}
-impl Display for Expr {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            Expr::Terminated(expr_base) | Expr::NonTerminated(expr_base) => {
-                f.write_fmt(format_args!("{expr_base}"))
-            }
+            Statement::Let { span, .. } => *span,
+            Statement::Assign { span, .. } => *span,
+            Statement::Return { span, .. } => *span,
+            Statement::Expression { expr, .. } => expr.get_span(),
         }
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum ExprBase {
     IntLiteral(Token),
     BoolLiteral(Token),
@@ -220,7 +203,7 @@ impl Display for ExprBase {
 
 // Sub types
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Scope {
     pub statements: Vec<Statement>,
     pub span: Span,
@@ -241,7 +224,7 @@ impl From<Scope> for ExprBase {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct IfExpr {
     pub condition: Box<ExprBase>,
     pub consequence: Scope,
@@ -260,7 +243,7 @@ impl From<IfExpr> for ExprBase {
 }
 
 /// The optional alterantive of an if expression
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum ElseIfExpr {
     ElseIf(Box<IfExpr>),
     Else(Scope),
@@ -274,7 +257,7 @@ impl ElseIfExpr {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Ident(pub Token);
 impl Display for Ident {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
@@ -287,8 +270,8 @@ impl Display for Ident {
 #[derive(Debug)]
 pub enum ParseError {
     UnexpectedToken(Token),
-    UnexpectedTerminatedExpr(Expr),
-    ExpectedTerminatedExpr(Expr),
+    UnexpectedTerminatedExpr(ExprBase),
+    ExpectedTerminatedExpr(ExprBase),
     MultipleUnterminatedExpressions,
     Eof,
 }
@@ -332,6 +315,7 @@ impl Display for Help {
         })
     }
 }
+pub const SEMI_SUGGEST: Suggestion = Suggestion("Add a semicolon after the expression");
 
 // Extras
 
@@ -339,6 +323,38 @@ pub(crate) enum TermState {
     None,
     Term,
     NonTerm,
+}
+impl TermState {
+    pub fn handle_new(
+        &mut self,
+        lexer: &mut PeekLex,
+        statement: ExprBase,
+        statements: &mut Vec<Statement>,
+        error: &mut Option<error_stack::Report<ParseError>>,
+    ) {
+        // Matching on the temination state improves error messages and hnadling
+        match self {
+            TermState::None | TermState::Term => {
+                *self = match expect_peek(lexer, lexer::TokenKind::Semicolon) {
+                    Ok(_) => TermState::Term,
+                    Err(_) => TermState::NonTerm,
+                };
+                statements.push(Statement::Expression(statement));
+            }
+            TermState::NonTerm => match expect_peek(lexer, lexer::TokenKind::Semicolon) {
+                Ok(_) => statements.push(Statement::Expression(statement)),
+                Err(_) => {
+                    let e = error_stack::Report::new(ParseError::MultipleUnterminatedExpressions)
+                        .attach(SEMI_SUGGEST)
+                        .attach_printable(crate::pretty_output(
+                            statement.get_span(),
+                            lexer.get_input(),
+                        ));
+                    error.extend_assign(e);
+                }
+            },
+        }
+    }
 }
 
 pub(crate) trait ExtendAssign {
