@@ -176,10 +176,7 @@ fn parse_return_statement(lexer: &mut PeekLex) -> ParseResult<Statement> {
         .expect("The return keyword was already peeked and matched");
     if is_peek(lexer, TokenKind::Semicolon).is_ok() {
         // A return with no expression is valid if there is a semicolon
-        return Ok(Statement::Return {
-            expr: None,
-            span: ret.span,
-        });
+        return Ok(Statement::Return { expr: None, span: ret.span });
     }
     let expr = parse_expression(lexer, Precedence::Lowest)?;
     Ok(Statement::Return {
@@ -194,10 +191,7 @@ fn parse_identifier(lexer: &mut PeekLex) -> ParseResult<Expr> {
         Some(lok_tok) => match lok_tok.kind {
             TokenKind::Ident(ident_str) => {
                 lexer.next();
-                Ok(Expr::StringLiteral {
-                    val: ident_str,
-                    span: lok_tok.span,
-                })
+                Ok(Expr::StringLiteral { val: ident_str, span: lok_tok.span })
             },
             _ => Err(Report::new(ParseError::UnexpectedToken(lok_tok))
                 .attach_printable("Expected an identifier")),
@@ -265,38 +259,23 @@ fn parse_left_expression(lexer: &mut PeekLex) -> ParseResult<Expr> {
                 // An ident can either be an expression all on its own or the start of an assign
                 // expression
                 lexer.next();
-                Expr::Identifier {
-                    ident,
-                    span: left_lok_tok.span,
-                }
+                Expr::Identifier { ident, span: left_lok_tok.span }
             },
             Int(val) => {
                 lexer.next();
-                Expr::IntLiteral {
-                    val,
-                    span: left_lok_tok.span,
-                }
+                Expr::IntLiteral { val, span: left_lok_tok.span }
             },
             True => {
                 lexer.next();
-                Expr::BoolLiteral {
-                    val: true,
-                    span: left_lok_tok.span,
-                }
+                Expr::BoolLiteral { val: true, span: left_lok_tok.span }
             },
             False => {
                 lexer.next();
-                Expr::BoolLiteral {
-                    val: false,
-                    span: left_lok_tok.span,
-                }
+                Expr::BoolLiteral { val: false, span: left_lok_tok.span }
             },
             String(val) => {
                 lexer.next();
-                Expr::StringLiteral {
-                    val,
-                    span: left_lok_tok.span,
-                }
+                Expr::StringLiteral { val, span: left_lok_tok.span }
             },
             Bang | TokenKind::Minus | Plus => {
                 // Don't skip the operator because it is needed

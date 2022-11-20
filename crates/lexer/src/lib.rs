@@ -1,8 +1,9 @@
-use error_stack::{Context, IntoReport, Report, Result, ResultExt};
 use std::{
     fmt::{Debug, Display},
     mem::discriminant,
 };
+
+use error_stack::{Context, IntoReport, Report, Result, ResultExt};
 
 mod tests;
 
@@ -264,10 +265,7 @@ impl Iterator for PeekLex {
 }
 impl PeekLex {
     pub fn new(iter: Lexer) -> Self {
-        Self {
-            iter,
-            peeked: [None, None],
-        }
+        Self { iter, peeked: [None, None] }
     }
 
     pub fn update(&mut self, input: String) {

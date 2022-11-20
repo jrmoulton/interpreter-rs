@@ -6,7 +6,6 @@ use std::{error::Error, fmt::Display, fs};
 // #[cfg(not(target_env = "msvc"))]
 // #[global_allocator]
 // static GLOBAL: Jemalloc = Jemalloc;
-
 use clap::Parser;
 use compiler::Compiler;
 use error_stack::{IntoReport, Result, ResultExt};

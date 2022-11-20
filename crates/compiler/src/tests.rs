@@ -1,7 +1,8 @@
-use super::*;
 use expect_test::expect_file;
 use lexer::{Lexer, PeekLex};
 use parser::parse;
+
+use super::*;
 
 fn new_compiler(code: &'static str) -> Compiler {
     let lexer = Lexer::new(code.into());

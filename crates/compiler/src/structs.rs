@@ -41,13 +41,6 @@ impl Compiler {
         for val in x {
             constants.push(val.0);
         }
-        // let mut globals = Vec::new();
-        // #[allow(clippy::needless_collect)]
-        // let key_clone: Vec<_> = self.symbol_table.table.keys().cloned().collect();
-        // key_clone.into_iter().for_each(|val| {
-        //     globals.push(self.symbol_table.table.remove(&val).unwrap());
-        // });
-        // globals.sort_by_key(|k| k.index);
         (self.bytecode, constants)
     }
 }

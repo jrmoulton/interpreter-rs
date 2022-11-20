@@ -1,15 +1,12 @@
 mod structs;
 mod symbol_table;
-use error_stack::Result;
-
 use std::rc::Rc;
 
-pub use structs::*;
-
+use bytecode::OpCode;
+use error_stack::Result;
 use lexer::{Span, Token};
 use parser::structs::{ElseIfExpr, Expr, Scope, Statement};
-
-use bytecode::OpCode;
+pub use structs::*;
 
 #[derive(Debug)]
 pub enum CompileError {
@@ -38,11 +35,7 @@ impl Compiler {
                 self.symbol_table.define(ident);
                 self.bytecode.push(OpCode::CreateGlobal);
             },
-            Statement::Assign {
-                ref ident,
-                expr,
-                span,
-            } => {
+            Statement::Assign { ref ident, expr, span } => {
                 self.compile_expr_base(expr);
                 let symbol = self.symbol_table.resolve(ident).unwrap();
                 self.bytecode.push(OpCode::SetGlobal(symbol.index));
@@ -55,9 +48,7 @@ impl Compiler {
                 }
                 self.bytecode.push(OpCode::Jump(9999));
             },
-            Statement::Expression {
-                expr, terminated, ..
-            } => {
+            Statement::Expression { expr, terminated, .. } => {
                 self.compile_expr_base(expr);
                 if terminated {
                     self.bytecode.push(OpCode::Pop);
@@ -97,34 +88,17 @@ impl Compiler {
                 self.bytecode.push(OpCode::GetGlobal(symbol.index));
             },
             Array { exprs, span } => todo!(),
-            FuncDef {
-                parameters,
-                body,
-                span,
-            } => todo!(),
-            FuncCall {
-                function,
-                args,
-                span,
-            } => todo!(),
+            FuncDef { parameters, body, span } => todo!(),
+            FuncCall { function, args, span } => todo!(),
             Scope { statements, span } => todo!(),
-            Prefix {
-                operator,
-                expression,
-                span,
-            } => self.compile_prefix_expr(operator, *expression, span),
-            Binary {
-                lhs,
-                operator,
-                rhs,
-                span,
-            } => self.compile_binary_expr(*lhs, operator, *rhs, span),
+            Prefix { operator, expression, span } => {
+                self.compile_prefix_expr(operator, *expression, span)
+            },
+            Binary { lhs, operator, rhs, span } => {
+                self.compile_binary_expr(*lhs, operator, *rhs, span)
+            },
             Index { array, index, span } => todo!(),
-            MethodCall {
-                instance,
-                method,
-                span,
-            } => todo!(),
+            MethodCall { instance, method, span } => todo!(),
             If {
                 condition,
                 consequence,

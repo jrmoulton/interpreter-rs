@@ -39,11 +39,7 @@ impl Debug for FuncIntern {
 }
 impl FuncIntern {
     pub fn new(parameters: Vec<Ident>, body: Scope, env: Arc<Environment>) -> Self {
-        Self {
-            parameters,
-            body,
-            env,
-        }
+        Self { parameters, body, env }
     }
 }
 impl Display for FuncIntern {

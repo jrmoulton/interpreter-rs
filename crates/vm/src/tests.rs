@@ -1,9 +1,9 @@
 use compiler::Compiler;
-
-use super::*;
 use expect_test::expect_file;
 use lexer::{Lexer, PeekLex};
 use parser::parse;
+
+use super::*;
 
 fn new_vm(code: &'static str) -> VM {
     let lexer = Lexer::new(code.into());
@@ -320,7 +320,7 @@ fn let_x_5_x() {
     match vm.run() {
         Ok(object) => {
             assert_eq!(object, 5.into());
-            let expected = expect_file!["../tests/expect_test_results/if_false_3.txt"];
+            let expected = expect_file!["../tests/expect_test_results/let_x_5_x.txt"];
             expected.assert_eq(&format!("{vm:#?}"));
         },
         Err(e) => {

@@ -1,8 +1,8 @@
 #![cfg(test)]
+use expect_test::expect_file;
 use lexer::{Lexer, PeekLex};
 
 use super::*;
-use expect_test::expect_file;
 
 mod results {
     use super::*;

@@ -2,11 +2,12 @@ pub mod object;
 pub mod structs;
 mod tests;
 
+use std::{collections::HashMap, sync::Arc};
+
 use error_stack::{Report, Result};
 use lexer::TokenKind;
 use object::EmptyWrapper;
 use parser::structs::*;
-use std::{collections::HashMap, sync::Arc};
 
 use crate::{
     object::{Array, FuncIntern, Integer, Object, ObjectTrait},
@@ -54,9 +55,7 @@ pub fn eval(statements: Vec<Statement>, env: Arc<Environment>) -> Result<Object,
                 }
                 break;
             },
-            Statement::Expression {
-                expr, terminated, ..
-            } => {
+            Statement::Expression { expr, terminated, .. } => {
                 let obj = eval_expr_base(expr, env.clone())?;
                 if obj.is_return() {
                     return Ok(obj);
@@ -79,11 +78,9 @@ fn eval_expr_base(expr_base: Expr, env: Arc<Environment>) -> Result<Object, Eval
         Expr::IntLiteral { val, .. } => Ok(val.into()),
         Expr::BoolLiteral { val, .. } => Ok(val.into()),
         Expr::StringLiteral { val, .. } => Ok(val.into()),
-        Expr::FuncDef {
-            parameters, body, ..
-        } => Ok(Object::Function(object::Function::new(FuncIntern::new(
-            parameters, body, env,
-        )))),
+        Expr::FuncDef { parameters, body, .. } => Ok(Object::Function(object::Function::new(
+            FuncIntern::new(parameters, body, env),
+        ))),
         Expr::FuncCall { function, args, .. } => {
             let function_obj = eval_expr_base(*function, env.clone())?;
             let args: Result<Vec<Object>, EvalError> = args
@@ -92,9 +89,7 @@ fn eval_expr_base(expr_base: Expr, env: Arc<Environment>) -> Result<Object, Eval
                 .collect();
             Ok(apply_function(function_obj, args?)?)
         },
-        Expr::MethodCall {
-            instance, method, ..
-        } => {
+        Expr::MethodCall { instance, method, .. } => {
             let _value = eval_expr_base(*instance, env.clone())?;
             let _value_type = _value.type_string();
             let _method_call = eval_expr_base(*method, env)?;
@@ -146,23 +141,14 @@ fn eval_expr_base(expr_base: Expr, env: Arc<Environment>) -> Result<Object, Eval
             };
             Ok(expr)
         },
-        Expr::Prefix {
-            ref operator,
-            ref expression,
-            ..
-        } => {
+        Expr::Prefix { ref operator, ref expression, .. } => {
             let right = eval_expr_base((**expression).clone(), env)?;
             if right.is_return() {
                 return Ok(right);
             }
             eval_prefix_expr(&operator.kind, right, expr_base.clone())
         },
-        Expr::Binary {
-            ref lhs,
-            ref operator,
-            ref rhs,
-            ..
-        } => {
+        Expr::Binary { ref lhs, ref operator, ref rhs, .. } => {
             let left = eval_expr_base((**lhs).clone(), env.clone())?;
             if left.is_return() {
                 return Ok(left);
@@ -179,10 +165,7 @@ fn eval_expr_base(expr_base: Expr, env: Arc<Environment>) -> Result<Object, Eval
             )?)
         },
         Expr::If {
-            condition,
-            consequence,
-            alternative,
-            ..
+            condition, consequence, alternative, ..
         } => eval_if_expr(*condition, consequence, alternative, env),
     }
 }

@@ -1,7 +1,8 @@
 #![cfg(test)]
+use std::sync::Arc;
+
 use lexer::{Lexer, PeekLex};
 use parser::parse;
-use std::sync::Arc;
 
 #[allow(unused_imports)]
 use crate::{
@@ -302,8 +303,9 @@ mod results {
 }
 
 mod errors {
-    use super::*;
     use expect_test::expect_file;
+
+    use super::*;
 
     #[test]
     fn index_out_of_bounds_string() {

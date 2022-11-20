@@ -3,11 +3,10 @@ use std::{
     fmt::{Debug, Display},
 };
 
+use bytecode::OpCode;
 use compiler::Compiler;
 use error_stack::Result;
 use evaluator::object::{EmptyWrapper, Object};
-
-use bytecode::OpCode;
 
 pub struct VM {
     constants: Vec<Object>,

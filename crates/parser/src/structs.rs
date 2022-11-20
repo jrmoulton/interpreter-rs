@@ -1,32 +1,18 @@
-use error_stack::Report;
-use lexer::{Span, Token};
-use owo_colors::OwoColorize;
 use std::{
     error::Error,
     fmt::{Display, Write},
 };
 
+use error_stack::Report;
+use lexer::{Span, Token};
+use owo_colors::OwoColorize;
+
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum Statement {
-    Let {
-        ident: String,
-        expr: Expr,
-        span: Span,
-    },
-    Assign {
-        ident: String,
-        expr: Expr,
-        span: Span,
-    },
-    Return {
-        expr: Option<Expr>,
-        span: Span,
-    },
-    Expression {
-        expr: Expr,
-        terminated: bool,
-        span: Span,
-    },
+    Let { ident: String, expr: Expr, span: Span },
+    Assign { ident: String, expr: Expr, span: Span },
+    Return { expr: Option<Expr>, span: Span },
+    Expression { expr: Expr, terminated: bool, span: Span },
 }
 impl Display for Statement {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
@@ -148,9 +134,7 @@ impl Display for Expr {
             Expr::Index { array, index, .. } => {
                 format!("{array}[{index}]")
             },
-            Expr::MethodCall {
-                instance, method, ..
-            } => {
+            Expr::MethodCall { instance, method, .. } => {
                 format!("{instance}.{method}")
             },
             Expr::FuncDef { parameters, .. } => {
@@ -177,16 +161,10 @@ impl Display for Expr {
                 ret_str.push_str(" ]");
                 ret_str
             },
-            Expr::Prefix {
-                operator,
-                expression,
-                ..
-            } => {
+            Expr::Prefix { operator, expression, .. } => {
                 format!("{operator}:{}", expression)
             },
-            Expr::Binary {
-                lhs, operator, rhs, ..
-            } => {
+            Expr::Binary { lhs, operator, rhs, .. } => {
                 format!("({} {} {})", lhs, operator, rhs)
             },
             Expr::If { condition, .. } => {
@@ -390,36 +368,36 @@ impl ESResultExt for ParseResult<Statement> {
                     };
                     *term_state = TermState::ClosedExpr;
                 },
-                Statement::Expression {
-                    ref mut terminated, ..
-                } => match crate::expect_peek(lexer, lexer::TokenKind::Semicolon) {
-                    Ok(_) => {
-                        if matches!(term_state, TermState::OpenExpr) {
-                            // if the expression statement is terminated but the prvious statement
-                            // was not
-                            error.extend_assign(
-                                Report::new(ParseError::UnexpectedStatement(statement))
-                                    .attach(PREV_SEMI_HELP),
-                            );
-                        } else {
-                            *terminated = true;
-                            statements.push(statement);
-                            *term_state = TermState::ClosedExpr;
-                        }
-                    },
-                    Err(_) => {
-                        if matches!(term_state, TermState::None | TermState::ClosedExpr) {
-                            statements.push(statement);
-                            *term_state = TermState::OpenExpr;
-                        } else {
-                            // if the expression statement is not terminated and the prvious
-                            // statement was also not
-                            error.extend_assign(
-                                Report::new(ParseError::UnexpectedStatement(statement))
-                                    .attach(PREV_SEMI_HELP),
-                            );
-                        }
-                    },
+                Statement::Expression { ref mut terminated, .. } => {
+                    match crate::expect_peek(lexer, lexer::TokenKind::Semicolon) {
+                        Ok(_) => {
+                            if matches!(term_state, TermState::OpenExpr) {
+                                // if the expression statement is terminated but the prvious
+                                // statement was not
+                                error.extend_assign(
+                                    Report::new(ParseError::UnexpectedStatement(statement))
+                                        .attach(PREV_SEMI_HELP),
+                                );
+                            } else {
+                                *terminated = true;
+                                statements.push(statement);
+                                *term_state = TermState::ClosedExpr;
+                            }
+                        },
+                        Err(_) => {
+                            if matches!(term_state, TermState::None | TermState::ClosedExpr) {
+                                statements.push(statement);
+                                *term_state = TermState::OpenExpr;
+                            } else {
+                                // if the expression statement is not terminated and the prvious
+                                // statement was also not
+                                error.extend_assign(
+                                    Report::new(ParseError::UnexpectedStatement(statement))
+                                        .attach(PREV_SEMI_HELP),
+                                );
+                            }
+                        },
+                    }
                 },
             },
             Err(e) => {

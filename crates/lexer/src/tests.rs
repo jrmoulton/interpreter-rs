@@ -1,11 +1,13 @@
 #![cfg(test)]
-use super::*;
 use expect_test::expect_file;
 use TokenKind::*;
 
+use super::*;
+
 mod results {
-    use super::*;
     use pretty_assertions::assert_eq;
+
+    use super::*;
     #[test]
     fn single_expr() {
         let code: &'static str = r#"5 + 5"#;
