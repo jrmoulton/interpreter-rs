@@ -13,9 +13,9 @@ use crate::object::Object;
 #[derive(Debug)]
 pub enum EvalError {
     NothingGiven,
-    UnsupportedOperation(ExprBase),
+    UnsupportedOperation(Expr),
     IdentifierNotFound(String),
-    InvalidIfCondition(ExprBase),
+    InvalidIfCondition(Expr),
     MismatchedNumOfFunctionParams,
     UnexpectedObject(Object),
     IndexOutOfBounds((Object, i64)),
@@ -26,16 +26,16 @@ impl Display for EvalError {
             Self::NothingGiven => "Nothing Given".into(),
             Self::IdentifierNotFound(ident_string) => {
                 format!("Identifier `{ident_string}` not found")
-            }
+            },
             Self::UnsupportedOperation(expr) => format!("Unsupported Operation: {expr}"),
             Self::InvalidIfCondition(expr) => format!("Invalid if condition: {expr}"),
             Self::MismatchedNumOfFunctionParams => {
                 "Mismatched number of function parameters".into()
-            }
+            },
             Self::UnexpectedObject(found) => format!("Unexpected object {found}"),
             Self::IndexOutOfBounds((arr_obj, index)) => {
                 format!("Index out of bounds at index:{index} on object: {arr_obj}")
-            }
+            },
         };
         f.write_str(&format)
     }
@@ -51,6 +51,7 @@ impl EnvWrapper {
 }
 impl Deref for EnvWrapper {
     type Target = HashMap<String, Object>;
+
     fn deref(&self) -> &Self::Target {
         &self.0
     }
@@ -86,12 +87,14 @@ impl Environment {
             outer: None,
         }
     }
+
     pub fn new_from_map_and_outer(map: HashMap<String, Object>, outer: Arc<Environment>) -> Self {
         Self {
             env: Mutex::new(EnvWrapper::new_from_map(map)),
             outer: Some(outer),
         }
     }
+
     pub fn find(&self, key: &String) -> Option<Object> {
         if !self.env.lock().unwrap().contains_key(key) {
             match &self.outer {
@@ -102,9 +105,11 @@ impl Environment {
             self.env.lock().unwrap().get(key).cloned()
         }
     }
+
     pub fn set(&self, key: String, value: Object) {
         self.env.lock().unwrap().insert(key, value);
     }
+
     pub fn has(&self, key: &String) -> bool {
         if !self.env.lock().unwrap().contains_key(key) {
             match &self.outer {

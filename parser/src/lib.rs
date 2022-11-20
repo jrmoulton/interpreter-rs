@@ -38,7 +38,7 @@ fn parse_statements(lexer: &mut PeekLex) -> ParseResult<Vec<Statement>> {
                     &mut error,
                     &mut term_state,
                 );
-            }
+            },
             Return => {
                 parse_return_statement(lexer).handle_statement_err(
                     lexer,
@@ -46,12 +46,10 @@ fn parse_statements(lexer: &mut PeekLex) -> ParseResult<Vec<Statement>> {
                     &mut error,
                     &mut term_state,
                 );
-            }
+            },
             Ident(_) => {
                 // Need to decide if ident is start of expression or an assign statement
-                let mut lex_clone = lexer.clone();
-                let _ident = lex_clone.next();
-                if matches!(is_peek(&mut lex_clone, TokenKind::Assign), Ok(_)) {
+                if matches!(is_peek2(lexer, TokenKind::Assign), Ok(_)) {
                     parse_assign_statement(lexer).handle_statement_err(
                         lexer,
                         &mut statements,
@@ -67,7 +65,7 @@ fn parse_statements(lexer: &mut PeekLex) -> ParseResult<Vec<Statement>> {
                         })
                         .handle_statement_err(lexer, &mut statements, &mut error, &mut term_state);
                 }
-            }
+            },
             t if is_expr_start(&t) => parse_expression(lexer, Precedence::Lowest)
                 .map(|val| Statement::Expression {
                     span: val.get_span(),
@@ -79,13 +77,13 @@ fn parse_statements(lexer: &mut PeekLex) -> ParseResult<Vec<Statement>> {
             // Skip over comments
             Comment(_) => {
                 lexer.next();
-            }
+            },
 
             // If there is a brace it is time to yeet out while keeping any errors because this
             // function is also used to parse scopes
             RBrace => {
                 break;
-            }
+            },
 
             // Handle any tokens that don't start an expression or a statement
             _ => {
@@ -93,7 +91,7 @@ fn parse_statements(lexer: &mut PeekLex) -> ParseResult<Vec<Statement>> {
                 let e = Report::new(ParseError::UnexpectedToken(lok_tok))
                     .attach_printable("Expected a statement or an expression");
                 error.extend_assign(e);
-            }
+            },
         };
         start_statement_peek = lexer.peek().cloned();
     }
@@ -110,7 +108,7 @@ fn parse_assign_statement(lexer: &mut PeekLex) -> ParseResult<Statement> {
         Err(e) => {
             error.extend_assign(e);
             None
-        }
+        },
     };
     if let Err(e) = expect_peek(lexer, TokenKind::Assign) {
         error.extend_assign(e);
@@ -120,10 +118,10 @@ fn parse_assign_statement(lexer: &mut PeekLex) -> ParseResult<Statement> {
         Err(e) => {
             error.extend_assign(e);
             None
-        }
+        },
     };
     let Some(e)  = error else {
-        let ExprBase::StringLiteral { val, span } = ident.unwrap() else {
+        let Expr::StringLiteral { val, span } = ident.unwrap() else {
             unreachable!();
         };
         let expr = expr.unwrap();
@@ -146,7 +144,7 @@ fn parse_let_statement(lexer: &mut PeekLex) -> ParseResult<Statement> {
         Err(e) => {
             error.extend_assign(e);
             None
-        }
+        },
     };
     if let Err(e) = expect_peek(lexer, TokenKind::Assign) {
         error.extend_assign(e);
@@ -156,14 +154,14 @@ fn parse_let_statement(lexer: &mut PeekLex) -> ParseResult<Statement> {
         Err(e) => {
             error.extend_assign(e);
             None
-        }
+        },
     };
     let Some(e)  = error else {
-        let ExprBase::StringLiteral { val, .. } = ident.unwrap() else {
+        let Expr::StringLiteral { val, .. } = ident.unwrap() else {
             unreachable!();
         };
         let expr = expr.unwrap();
-        return Ok(Statement::Assign {
+        return Ok(Statement::Let {
             span: let_tok.span + expr.get_span(),
             ident: val,
             expr,
@@ -190,17 +188,17 @@ fn parse_return_statement(lexer: &mut PeekLex) -> ParseResult<Statement> {
     })
 }
 
-fn parse_identifier(lexer: &mut PeekLex) -> ParseResult<ExprBase> {
+fn parse_identifier(lexer: &mut PeekLex) -> ParseResult<Expr> {
     let next = lexer.peek().cloned();
     match next {
         Some(lok_tok) => match lok_tok.kind {
             TokenKind::Ident(ident_str) => {
                 lexer.next();
-                Ok(ExprBase::StringLiteral {
+                Ok(Expr::StringLiteral {
                     val: ident_str,
                     span: lok_tok.span,
                 })
-            }
+            },
             _ => Err(Report::new(ParseError::UnexpectedToken(lok_tok))
                 .attach_printable("Expected an identifier")),
         },
@@ -208,19 +206,22 @@ fn parse_identifier(lexer: &mut PeekLex) -> ParseResult<ExprBase> {
     }
 }
 
-/// This function uses a recursive descent alrorithm to parse expressions. First the left hand side
-/// (lhs) is parsed. This may end up being the lhs in a larger expression or it could be the entire
-/// expression it self and be returned by itself at the end of the function. This lhs parsing work
-/// by matching tokens to functions that can properly parse the next token. This includes binary
-/// expressions, prefix expression and literals. The next section will see if there is an operator
-/// token and if the coming operator token has a higher precedence than the previous operator token
-/// (with the first call to this function just passing Precedence::Lowest) the lhs will get sucked
-/// into the expression with that higher precedence. If it is equal or lower precedence it will
-/// just be yeeted out as is which may be into a recursive call or out of the original function
-/// call. the This ensures proper parsing of oprator precedence. This includes the lparen token
-/// which in a way acts as a binary expression for a function call. But it matches to it's own
-/// function.
-fn parse_expression(lexer: &mut PeekLex, prec: Precedence) -> ParseResult<ExprBase> {
+/// This function uses a recursive descent alrorithm to parse expressions. First
+/// the left hand side (lhs) is parsed. This may end up being the lhs in a
+/// larger expression or it could be the entire expression it self and be
+/// returned by itself at the end of the function. This lhs parsing work
+/// by matching tokens to functions that can properly parse the next token. This
+/// includes binary expressions, prefix expression and literals. The next
+/// section will see if there is an operator token and if the coming operator
+/// token has a higher precedence than the previous operator token
+/// (with the first call to this function just passing Precedence::Lowest) the
+/// lhs will get sucked into the expression with that higher precedence. If it
+/// is equal or lower precedence it will just be yeeted out as is which may be
+/// into a recursive call or out of the original function call. the This ensures
+/// proper parsing of oprator precedence. This includes the lparen token
+/// which in a way acts as a binary expression for a function call. But it
+/// matches to it's own function.
+fn parse_expression(lexer: &mut PeekLex, prec: Precedence) -> ParseResult<Expr> {
     use TokenKind::*;
 
     let mut left_exp = parse_left_expression(lexer)?;
@@ -248,12 +249,13 @@ fn parse_expression(lexer: &mut PeekLex, prec: Precedence) -> ParseResult<ExprBa
         };
     }
 
-    // inner expressions should never be terminated so this check to match_semicolon checks if the
-    // calling function wants the expression to have the option of being terminated or not.
+    // inner expressions should never be terminated so this check to match_semicolon
+    // checks if the calling function wants the expression to have the option of
+    // being terminated or not.
     Ok(left_exp)
 }
 
-fn parse_left_expression(lexer: &mut PeekLex) -> ParseResult<ExprBase> {
+fn parse_left_expression(lexer: &mut PeekLex) -> ParseResult<Expr> {
     use TokenKind::*;
     let lhs_val_peek = lexer.peek().cloned();
     Ok(match lhs_val_peek {
@@ -263,47 +265,47 @@ fn parse_left_expression(lexer: &mut PeekLex) -> ParseResult<ExprBase> {
                 // An ident can either be an expression all on its own or the start of an assign
                 // expression
                 lexer.next();
-                ExprBase::Identifier {
+                Expr::Identifier {
                     ident,
                     span: left_lok_tok.span,
                 }
-            }
+            },
             Int(val) => {
                 lexer.next();
-                ExprBase::IntLiteral {
+                Expr::IntLiteral {
                     val,
                     span: left_lok_tok.span,
                 }
-            }
+            },
             True => {
                 lexer.next();
-                ExprBase::BoolLiteral {
+                Expr::BoolLiteral {
                     val: true,
                     span: left_lok_tok.span,
                 }
-            }
+            },
             False => {
                 lexer.next();
-                ExprBase::BoolLiteral {
+                Expr::BoolLiteral {
                     val: false,
                     span: left_lok_tok.span,
                 }
-            }
+            },
             String(val) => {
                 lexer.next();
-                ExprBase::StringLiteral {
+                Expr::StringLiteral {
                     val,
                     span: left_lok_tok.span,
                 }
-            }
+            },
             Bang | TokenKind::Minus | Plus => {
                 // Don't skip the operator because it is needed
                 parse_prefix_expression(lexer)?
-            }
+            },
             LParen => {
                 lexer.next(); // This skips the lparen
                 parse_grouped_expression(lexer)?
-            }
+            },
             If => parse_if_expression(lexer)?.into(),
             Func => parse_func_literal(lexer)?,
             TokenKind::LBrace => parse_scope(lexer)?.into(),
@@ -312,13 +314,13 @@ fn parse_left_expression(lexer: &mut PeekLex) -> ParseResult<ExprBase> {
                 lexer.next();
                 Err(Report::new(ParseError::UnexpectedToken(left_lok_tok))
                     .attach_printable("Expected an expression"))?
-            }
+            },
         },
         None => Err(Report::new(ParseError::Eof).attach_printable("Expected an expression"))?,
     })
 }
 
-fn parse_array_index(lexer: &mut PeekLex, left: ExprBase) -> ParseResult<ExprBase> {
+fn parse_array_index(lexer: &mut PeekLex, left: Expr) -> ParseResult<Expr> {
     let mut error: Option<Report<ParseError>> = None;
     let lbracket = lexer
         .next()
@@ -328,23 +330,23 @@ fn parse_array_index(lexer: &mut PeekLex, left: ExprBase) -> ParseResult<ExprBas
         Err(e) => {
             error.extend_assign(e);
             None
-        }
+        },
     };
     let rbracket = match is_peek(lexer, TokenKind::RBracket) {
         Ok(_) => lexer.next().expect("already matched"),
         Err(e) => {
             error.extend_assign(e);
             Err(error.expect("should definitely be an error"))?
-        }
+        },
     };
-    Ok(ExprBase::Index {
+    Ok(Expr::Index {
         array: Box::new(left),
         index: Box::new(index.unwrap()),
         span: lbracket.span + rbracket.span,
     })
 }
 
-fn parse_array(lexer: &mut PeekLex) -> ParseResult<ExprBase> {
+fn parse_array(lexer: &mut PeekLex) -> ParseResult<Expr> {
     let lbracket = lexer.next().expect("should be lbracket");
     let mut error: Option<Report<ParseError>> = None;
     match parse_call_args(lexer, TokenKind::RBracket) {
@@ -352,32 +354,32 @@ fn parse_array(lexer: &mut PeekLex) -> ParseResult<ExprBase> {
             let rbracket = lexer
                 .next()
                 .expect("should already be matched because this is the ok branch");
-            Ok(ExprBase::Array {
+            Ok(Expr::Array {
                 exprs,
                 span: lbracket.span + rbracket.span,
             })
-        }
+        },
         Err(e) => {
             error.extend_assign(e);
             Err(error.expect("should be some because an error was added"))
-        }
+        },
     }
 }
 
-fn parse_method_expression(lexer: &mut PeekLex, instance: ExprBase) -> ParseResult<ExprBase> {
+fn parse_method_expression(lexer: &mut PeekLex, instance: Expr) -> ParseResult<Expr> {
     let operator_dot = lexer
         .next()
         .expect("The operator should already peeked and found and should always be a Dot");
     let op_precedence = operator_dot.kind.precedence();
     let method = parse_expression(lexer, op_precedence)?;
-    Ok(ExprBase::MethodCall {
+    Ok(Expr::MethodCall {
         span: operator_dot.span + method.get_span(),
         instance: Box::new(instance),
         method: Box::new(method),
     })
 }
 
-fn parse_call_expression(lexer: &mut PeekLex, function: ExprBase) -> ParseResult<ExprBase> {
+fn parse_call_expression(lexer: &mut PeekLex, function: Expr) -> ParseResult<Expr> {
     let mut error: Option<Report<ParseError>> = None;
     let _lparen = lexer.next().expect("already matched");
     let args = match parse_call_args(lexer, TokenKind::RParen) {
@@ -385,12 +387,12 @@ fn parse_call_expression(lexer: &mut PeekLex, function: ExprBase) -> ParseResult
         Err(e) => {
             error.extend_assign(e);
             Err(error.expect("definitely an error"))?
-        }
+        },
     };
     let rparen = lexer
         .next()
         .expect("already matched and checked in parse_call_args");
-    Ok(ExprBase::Call {
+    Ok(Expr::FuncCall {
         span: function.get_span() + rparen.span,
         function: Box::new(function),
         args,
@@ -398,9 +400,10 @@ fn parse_call_expression(lexer: &mut PeekLex, function: ExprBase) -> ParseResult
 }
 
 // A function to parse the arguments to a function when it is being called
-fn parse_call_args(lexer: &mut PeekLex, end_token: TokenKind) -> ParseResult<Vec<ExprBase>> {
-    // A enum as  a state machine to track what the previous token was. This gives better options
-    // for error messages
+// TODO: Refactor this function
+fn parse_call_args(lexer: &mut PeekLex, end_token: TokenKind) -> ParseResult<Vec<Expr>> {
+    // A enum as  a state machine to track what the previous token was. This gives
+    // better options for error messages
     enum ArgState {
         Empty,
         Arg,
@@ -408,7 +411,7 @@ fn parse_call_args(lexer: &mut PeekLex, end_token: TokenKind) -> ParseResult<Vec
     }
     use ArgState::*;
     let mut error: Option<Report<ParseError>> = None;
-    let mut arguments: Vec<ExprBase> = Vec::new();
+    let mut arguments: Vec<Expr> = Vec::new();
     let mut arg_state = Empty;
     let mut again = true;
 
@@ -423,14 +426,14 @@ fn parse_call_args(lexer: &mut PeekLex, end_token: TokenKind) -> ParseResult<Vec
                             let e = Report::new(ParseError::UnexpectedToken(lok_tok))
                                 .attach_printable("There should be an expression before the comma");
                             error.extend_assign(e);
-                        }
-                        Arg => {}
+                        },
+                        Arg => {},
                     };
                     arg_state = Comma;
-                }
+                },
                 token if token.is(&end_token) => {
                     again = false;
-                }
+                },
                 _ => {
                     match arg_state {
                         Arg => {
@@ -438,26 +441,26 @@ fn parse_call_args(lexer: &mut PeekLex, end_token: TokenKind) -> ParseResult<Vec
                                 .attach_printable("expressions should be separated by commas");
                             error.extend_assign(e);
                             lexer.next();
-                        }
+                        },
                         _ => {
                             arg_state = Arg;
-                        }
+                        },
                     };
                     match parse_expression(lexer, Precedence::Lowest) {
                         Ok(arg) => {
                             arguments.push(arg);
-                        }
+                        },
                         Err(e) => {
                             error.extend_assign(e);
-                        }
+                        },
                     }
-                }
+                },
             },
             None => {
                 let e = Report::new(ParseError::Eof)
                     .attach_printable("Expected function parameters or a closing parentheses");
                 error.extend_assign(e);
-            }
+            },
         }
         peek = lexer.peek().cloned();
     }
@@ -469,41 +472,37 @@ fn parse_call_args(lexer: &mut PeekLex, end_token: TokenKind) -> ParseResult<Vec
     }
 }
 
-fn parse_func_literal(lexer: &mut PeekLex) -> ParseResult<ExprBase> {
+fn parse_func_literal(lexer: &mut PeekLex) -> ParseResult<Expr> {
     let fn_tok = lexer
         .next()
         .expect("fn token should already be already matched");
     let mut error: Option<Report<ParseError>> = None;
     if let Err(e) = expect_peek(lexer, TokenKind::LParen) {
-        if let Some(error) = error.as_mut() {
-            error.extend_one(e);
-        } else {
-            error = Some(e);
-        };
-    }
+        error.extend_assign(e);
+    };
     let identifiers = match parse_function_parameters(lexer) {
         Ok(identifiers) => {
             let _rparent = lexer.next();
             Some(identifiers)
-        }
+        },
         Err(e) => {
             let _rparent = lexer.next();
             error.extend_assign(e);
             None
-        }
+        },
     };
     let body = match parse_scope(lexer) {
         Ok(scope) => Some(scope),
         Err(e) => {
             error.extend_assign(e);
             None
-        }
+        },
     };
     if let Some(e) = error {
         Err(e)
     } else {
         let body = body.expect("If there are no errors then the function body is present");
-        Ok(ExprBase::Func {
+        Ok(Expr::FuncDef {
             parameters: identifiers
                 .expect("If there are no errors then the identifers are present"),
             span: fn_tok.span + body.span,
@@ -513,9 +512,10 @@ fn parse_func_literal(lexer: &mut PeekLex) -> ParseResult<ExprBase> {
 }
 
 // A function to parse formal parameters of a function definition
+// TODO: Refactor this function
 fn parse_function_parameters(lexer: &mut PeekLex) -> ParseResult<Vec<Ident>> {
-    // A enum as  a state machine to track what the previous token was. This gives better options
-    // for error messages
+    // A enum as  a state machine to track what the previous token was. This gives
+    // better options for error messages
     enum ParamState {
         Empty,
         Ident,
@@ -540,13 +540,13 @@ fn parse_function_parameters(lexer: &mut PeekLex) -> ParseResult<Vec<Ident>> {
                         let e = Report::new(ParseError::UnexpectedToken(lok_tok))
                             .attach_printable("Identifiers should be separated by commas");
                         error.extend_assign(e);
-                    }
+                    },
                     _ => {
                         param_state = ParamState::Ident;
                         identifiers.push(Ident(lok_tok));
-                    }
+                    },
                 }
-            }
+            },
             TokenKind::Comma => {
                 lexer.next();
                 match param_state {
@@ -558,20 +558,20 @@ fn parse_function_parameters(lexer: &mut PeekLex) -> ParseResult<Vec<Ident>> {
                         } else {
                             error = Some(e);
                         };
-                    }
-                    ParamState::Ident => {}
+                    },
+                    ParamState::Ident => {},
                 };
                 param_state = ParamState::Comma;
-            }
+            },
             TokenKind::RParen => {
                 again = false;
-            }
+            },
             _ => {
                 let e = Report::new(ParseError::UnexpectedToken(lok_tok))
                     .attach_printable("Expected an identifier or a closing parentheses");
                 error.extend_assign(e);
                 again = false;
-            }
+            },
         }
         peek = lexer.peek().cloned();
     }
@@ -583,14 +583,14 @@ fn parse_function_parameters(lexer: &mut PeekLex) -> ParseResult<Vec<Ident>> {
     }
 }
 
-fn parse_grouped_expression(lexer: &mut PeekLex) -> ParseResult<ExprBase> {
+fn parse_grouped_expression(lexer: &mut PeekLex) -> ParseResult<Expr> {
     let mut error: Option<Report<ParseError>> = None;
     let exp = match parse_expression(lexer, Precedence::Lowest) {
         Ok(exp) => Some(exp),
         Err(e) => {
             error.extend_assign(e);
             None
-        }
+        },
     };
     if let Err(e) = expect_peek(lexer, TokenKind::RParen) {
         error.extend_assign(e);
@@ -607,19 +607,19 @@ fn parse_if_expression(lexer: &mut PeekLex) -> ParseResult<IfExpr> {
         .next()
         .expect("the if token should already be matched");
     let mut error: Option<Report<ParseError>> = None;
-    let condition: Option<ExprBase> = match parse_expression(lexer, Precedence::Lowest) {
+    let condition: Option<Expr> = match parse_expression(lexer, Precedence::Lowest) {
         Ok(condition) => Some(condition),
         Err(e) => {
             error.extend_assign(e);
             None
-        }
+        },
     };
     let consequence = match parse_scope(lexer) {
         Ok(scope) => Some(scope),
         Err(e) => {
             error.extend_assign(e);
             None
-        }
+        },
     };
     let alternate_opt = expect_peek(lexer, TokenKind::Else);
     let alternative: Option<_> = match alternate_opt {
@@ -634,17 +634,17 @@ fn parse_if_expression(lexer: &mut PeekLex) -> ParseResult<IfExpr> {
                     Err(e) => {
                         error.extend_assign(e);
                         None
-                    }
+                    },
                 },
                 Ok(_) => match parse_if_expression(lexer) {
                     Ok(if_expr) => Some(ElseIfExpr::ElseIf(Box::new(if_expr))),
                     Err(e) => {
                         error.extend_assign(e);
                         None
-                    }
+                    },
                 },
             }
-        }
+        },
     };
     if let Some(e) = error {
         Err(e)
@@ -674,21 +674,21 @@ fn parse_scope(lexer: &mut PeekLex) -> ParseResult<Scope> {
             error.extend_assign(e);
             lexer.next();
             None
-        }
+        },
     };
     let statements = match parse_statements(lexer) {
         Ok(statements) => Some(statements),
         Err(e) => {
             error.extend_assign(e);
             None
-        }
+        },
     };
     let rbrace = match expect_peek(lexer, TokenKind::RBrace) {
         Ok(rbrace) => Some(rbrace),
         Err(e) => {
             error.extend_assign(e);
             None
-        }
+        },
     };
     let Some(e) = error else {
         return Ok(
@@ -701,7 +701,7 @@ fn parse_scope(lexer: &mut PeekLex) -> ParseResult<Scope> {
     Err(e)
 }
 
-fn parse_prefix_expression(lexer: &mut PeekLex) -> ParseResult<ExprBase> {
+fn parse_prefix_expression(lexer: &mut PeekLex) -> ParseResult<Expr> {
     let operator = lexer
         .next()
         .expect("The operator was already peeked and found");
@@ -714,21 +714,21 @@ fn parse_prefix_expression(lexer: &mut PeekLex) -> ParseResult<ExprBase> {
         )))?,
     };
     let span = operator.span + expression.get_span();
-    Ok(ExprBase::Prefix {
+    Ok(Expr::Prefix {
         operator,
         expression: Box::new(expression),
         span,
     })
 }
 
-fn parse_binary_expression(lexer: &mut PeekLex, left: ExprBase) -> ParseResult<ExprBase> {
+fn parse_binary_expression(lexer: &mut PeekLex, left: Expr) -> ParseResult<Expr> {
     let operator = lexer
         .next()
         .expect("The operator was already peeked and found");
     let op_precedence = operator.kind.precedence();
     let rhs = parse_expression(lexer, op_precedence)?;
     let span = left.get_span() + rhs.get_span();
-    Ok(ExprBase::Binary {
+    Ok(Expr::Binary {
         lhs: Box::new(left),
         operator,
         rhs: Box::new(rhs),
@@ -746,10 +746,10 @@ fn expect_peek(lexer: &mut PeekLex, expected: TokenKind) -> ParseResult<Token> {
                 Err(Report::new(ParseError::UnexpectedToken(lok_tok))
                     .attach_printable(format!("Expected a {expected}")))
             }
-        }
+        },
         None => {
             Err(Report::new(ParseError::Eof).attach_printable(format!("Expected a {expected}")))
-        }
+        },
     }
 }
 
@@ -763,10 +763,27 @@ pub fn is_peek(lexer: &mut PeekLex, expected: TokenKind) -> ParseResult<()> {
                 Err(Report::new(ParseError::UnexpectedToken(lok_tok))
                     .attach_printable(format!("Expected a {expected:?}")))
             }
-        }
+        },
         None => {
             Err(Report::new(ParseError::Eof).attach_printable(format!("Expected a {expected:?}")))
-        }
+        },
+    }
+}
+
+pub fn is_peek2(lexer: &mut PeekLex, expected: TokenKind) -> ParseResult<()> {
+    let peek = lexer.peek2().cloned();
+    match peek {
+        Some(lok_tok) => {
+            if lok_tok.kind.is(&expected) {
+                Ok(())
+            } else {
+                Err(Report::new(ParseError::UnexpectedToken(lok_tok))
+                    .attach_printable(format!("Expected a {expected:?}")))
+            }
+        },
+        None => {
+            Err(Report::new(ParseError::Eof).attach_printable(format!("Expected a {expected:?}")))
+        },
     }
 }
 

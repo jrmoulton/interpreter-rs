@@ -153,6 +153,7 @@ impl TokenKind {
     pub fn is(&self, other: &Self) -> bool {
         discriminant(self) == discriminant(other)
     }
+
     pub fn precedence(&self) -> Precedence {
         use Precedence::*;
         use TokenKind::*;
@@ -195,6 +196,7 @@ impl Debug for Span {
 }
 impl core::ops::Add for Span {
     type Output = Self;
+
     fn add(self, rhs: Self) -> Self::Output {
         Self {
             start_row: self.start_row,
@@ -208,12 +210,15 @@ impl Span {
     pub fn get_row_range(&self, before: usize, after: usize) -> std::ops::RangeInclusive<usize> {
         self.start_row - before..=self.end_row + after
     }
+
     pub fn get_start_row(&self) -> usize {
         self.start_row
     }
+
     pub fn get_end_row(&self) -> usize {
         self.end_row
     }
+
     pub fn get_end_col(&self) -> usize {
         self.end_col
     }
@@ -239,26 +244,30 @@ impl Display for Token {
 pub struct PeekLex {
     iter: Lexer,
     /// Remember a peeked value, even if it was None.
-    peeked: Option<Option<Token>>,
+    peeked: [Option<Option<Token>>; 2],
 }
 impl Iterator for PeekLex {
     type Item = Token;
+
     fn next(&mut self) -> Option<Token> {
-        match self.peeked.take() {
-            Some(v) => v,
+        match self.peeked[0].take() {
+            Some(p1) => {
+                self.peeked[0] = self.peeked[1].take();
+                p1
+            },
             None => match self.iter.next_token() {
                 Ok(val) => val,
-                Err(e) => {
-                    println!("{:?}", e);
-                    None
-                }
+                Err(_) => None,
             },
         }
     }
 }
 impl PeekLex {
     pub fn new(iter: Lexer) -> Self {
-        Self { iter, peeked: None }
+        Self {
+            iter,
+            peeked: [None, None],
+        }
     }
 
     pub fn update(&mut self, input: String) {
@@ -270,14 +279,41 @@ impl PeekLex {
     }
 }
 impl PeekLex
-where
-    PeekLex: Iterator,
+where PeekLex: Iterator
 {
     pub fn peek(&mut self) -> Option<&Token> {
         let iter = &mut self.iter;
-        self.peeked
-            .get_or_insert_with(|| iter.next_token().unwrap_or(None))
-            .as_ref()
+        match self.peeked.get(0).unwrap() {
+            Some(_p1) => self.peeked.get(0).unwrap().as_ref().unwrap().as_ref(),
+            None => match self.peeked.get(1).unwrap() {
+                Some(_p2) => {
+                    self.peeked[0] = self.peeked[1].take();
+                    self.peeked.get(0).unwrap().as_ref().unwrap().as_ref()
+                },
+                None => {
+                    self.peeked[0] = Some(iter.next_token().unwrap());
+                    self.peeked.get(0).unwrap().as_ref().unwrap().as_ref()
+                },
+            },
+        }
+    }
+
+    pub fn peek2(&mut self) -> Option<&Token> {
+        let iter = &mut self.iter;
+        match self.peeked.get(1).unwrap() {
+            Some(_p2) => self.peeked.get(1).unwrap().as_ref().unwrap().as_ref(),
+            None => match self.peeked.get(0).unwrap() {
+                Some(_p1) => {
+                    self.peeked[1] = Some(iter.next_token().unwrap());
+                    self.peeked.get(1).unwrap().as_ref().unwrap().as_ref()
+                },
+                None => {
+                    self.peeked[0] = Some(iter.next_token().unwrap());
+                    self.peeked[1] = Some(iter.next_token().unwrap());
+                    self.peeked.get(1).unwrap().as_ref().unwrap().as_ref()
+                },
+            },
+        }
     }
 }
 
@@ -305,13 +341,14 @@ impl Lexer {
         self.input.push(input);
     }
 
-    // if at end of line move to next, eat white space, if at end of line move to next, eat white space
+    // if at end of line move to next, eat white space, if at end of line move to
+    // next, eat white space
     fn next_token(&mut self) -> Result<Option<Token>, LexerError> {
         let mut line = match self.input.get(self.line) {
             Some(line) => line.as_bytes(),
             None => {
                 return Ok(None);
-            }
+            },
         };
         while line
             .get(self.column)
@@ -327,7 +364,7 @@ impl Lexer {
                     Some(line) => line.as_bytes(),
                     None => {
                         return Ok(None);
-                    }
+                    },
                 };
             }
             while self.column < line.len() && (line[self.column] as char).is_whitespace() {
@@ -366,7 +403,7 @@ impl Lexer {
                             )?,
                     );
                     self.column += len - 1;
-                }
+                },
                 '=' => {
                     token.kind = TokenKind::Assign;
                     if let Some(ch) = line.get(self.column + 1) {
@@ -375,37 +412,37 @@ impl Lexer {
                             self.column += 1;
                         }
                     }
-                }
+                },
                 '+' => {
                     token.kind = TokenKind::Plus;
-                }
+                },
                 '(' => {
                     token.kind = TokenKind::LParen;
-                }
+                },
                 ')' => {
                     token.kind = TokenKind::RParen;
-                }
+                },
                 '{' => {
                     token.kind = TokenKind::LBrace;
-                }
+                },
                 '}' => {
                     token.kind = TokenKind::RBrace;
-                }
+                },
                 '[' => {
                     token.kind = TokenKind::LBracket;
-                }
+                },
                 ']' => {
                     token.kind = TokenKind::RBracket;
-                }
+                },
                 ',' => {
                     token.kind = TokenKind::Comma;
-                }
+                },
                 ';' => {
                     token.kind = TokenKind::Semicolon;
-                }
+                },
                 '-' => {
                     token.kind = TokenKind::Minus;
-                }
+                },
                 '!' => {
                     token.kind = TokenKind::Bang;
                     if let Some(ch) = line.get(self.column + 1) {
@@ -414,10 +451,10 @@ impl Lexer {
                             self.column += 1;
                         }
                     }
-                }
+                },
                 '*' => {
                     token.kind = TokenKind::Asterisk;
-                }
+                },
                 '/' => {
                     if line[self.column + 1] as char == '/' {
                         let mut len = 1;
@@ -440,16 +477,16 @@ impl Lexer {
                     } else {
                         token.kind = TokenKind::Slash;
                     }
-                }
+                },
                 '<' => {
                     token.kind = TokenKind::LT;
-                }
+                },
                 '>' => {
                     token.kind = TokenKind::GT;
-                }
+                },
                 '.' => {
                     token.kind = TokenKind::Dot;
-                }
+                },
                 '&' => {
                     if line[self.column + 1] as char == '&' {
                         token.kind = TokenKind::And;
@@ -458,7 +495,7 @@ impl Lexer {
                     } else {
                         token.kind = TokenKind::BitAnd;
                     }
-                }
+                },
                 '|' => {
                     if line[self.column + 1] as char == '|' {
                         token.kind = TokenKind::Or;
@@ -467,7 +504,7 @@ impl Lexer {
                     } else {
                         token.kind = TokenKind::BitOr;
                     }
-                }
+                },
                 '"' => {
                     let mut len = 1;
                     // While in bounds
@@ -486,7 +523,7 @@ impl Lexer {
                             .into(),
                     );
                     self.column += len;
-                }
+                },
                 'A'..='Z' | 'a'..='z' => {
                     let mut len = 1;
                     while self.column + len < line.len()
@@ -498,58 +535,58 @@ impl Lexer {
                     match std::str::from_utf8(&line[self.column..self.column + len]) {
                         Ok("let") => {
                             token.kind = TokenKind::Let;
-                        }
+                        },
                         Ok("fn") => {
                             token.kind = TokenKind::Func;
-                        }
+                        },
                         Ok("true") => {
                             token.kind = TokenKind::True;
-                        }
+                        },
                         Ok("false") => {
                             token.kind = TokenKind::False;
-                        }
+                        },
                         Ok("if") => {
                             token.kind = TokenKind::If;
-                        }
+                        },
                         Ok("else") => {
                             token.kind = TokenKind::Else;
-                        }
+                        },
                         Ok("return") => {
                             token.kind = TokenKind::Return;
-                        }
+                        },
                         Ok("for") => {
                             token.kind = TokenKind::For;
-                        }
+                        },
                         Ok("in") => {
                             token.kind = TokenKind::In;
-                        }
+                        },
                         Ok("mut") => {
                             token.kind = TokenKind::Mut;
-                        }
+                        },
                         Ok("break") => {
                             token.kind = TokenKind::Break;
-                        }
+                        },
                         Ok("continue") => {
                             token.kind = TokenKind::Continue;
-                        }
+                        },
                         Ok("loop") => {
                             token.kind = TokenKind::Loop;
-                        }
+                        },
                         Ok("while") => {
                             token.kind = TokenKind::While;
-                        }
+                        },
                         Ok(ident) => {
                             token.kind = TokenKind::Ident(ident.into());
-                        }
+                        },
                         Err(e) => {
                             return Err(Report::new(e).change_context(LexerError::InvalidUtf8));
-                        }
+                        },
                     };
                     self.column += len - 1;
-                }
+                },
                 _ => {
                     token.kind = TokenKind::Illegal;
-                }
+                },
             }; // End of main match statement matching on first chars
         } else {
             return Ok(None);
@@ -560,13 +597,14 @@ impl Lexer {
 }
 impl Iterator for Lexer {
     type Item = Token;
+
     fn next(&mut self) -> Option<Self::Item> {
         match self.next_token() {
             Ok(val) => val,
             Err(e) => {
                 println!("{:?}", e);
                 None
-            }
+            },
         }
     }
 }

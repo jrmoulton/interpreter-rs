@@ -1,8 +1,9 @@
-use std::io::{BufRead, Write};
-use std::sync::Arc;
+use std::{
+    io::{BufRead, Write},
+    sync::Arc,
+};
 
-use evaluator::eval;
-use evaluator::structs::Environment;
+use evaluator::{eval, structs::Environment};
 use lexer::{Lexer, PeekLex};
 use owo_colors::OwoColorize;
 use parser::parse;
@@ -30,7 +31,7 @@ pub fn start(env: Option<(Arc<Environment>, PeekLex)>) -> ! {
             Err(errs) => {
                 println!("{errs:?}\n");
                 None
-            }
+            },
         };
         if let Some(ast) = ast {
             match eval(ast, env.clone()) {
@@ -40,7 +41,7 @@ pub fn start(env: Option<(Arc<Environment>, PeekLex)>) -> ! {
                     // } else {
                     println!("{}", obj);
                     // }
-                }
+                },
                 Err(errs) => println!("{errs:?}\n"),
             };
         }

@@ -8,11 +8,11 @@ edition = "2021"
 [dependencies]
 evaluator = { workspace = true }
 bytecode = { workspace = true }
+compiler = { workspace = true }
 
 error-stack = {workspace = true}
 
 [dev-dependencies]
-compiler = { workspace = true }
 lexer = { workspace = true }
 parser = { workspace = true }
 expect-test = {workspace = true}

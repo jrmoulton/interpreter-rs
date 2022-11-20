@@ -6,8 +6,8 @@ use std::rc::Rc;
 
 pub use structs::*;
 
-use lexer::{Span, Token};
-use parser::structs::{ElseIfExpr, Expr, Scope, Statement};
+use lexer::Span;
+use parser::structs::{ElseIfExpr, ExprBase, Scope, Statement};
 
 use bytecode::OpCode;
 
@@ -37,7 +37,7 @@ impl Compiler {
                 self.compile_expr_base(expr);
                 self.symbol_table.define(ident);
                 self.bytecode.push(OpCode::CreateGlobal);
-            },
+            }
             Statement::Assign {
                 ref ident,
                 expr,
@@ -46,15 +46,14 @@ impl Compiler {
                 self.compile_expr_base(expr);
                 let symbol = self.symbol_table.resolve(ident).unwrap();
                 self.bytecode.push(OpCode::SetGlobal(symbol.index));
-                self.bytecode.push(OpCode::Pop); // Pop the expr (this pop
-                                                 // matches the semicolon)
-            },
+                self.bytecode.push(OpCode::Pop); // Pop the expr (this pop matches the semicolon)
+            }
             Statement::Return { expr, .. } => {
                 if let Some(expr) = expr {
                     self.compile_expr_base(expr)?;
                 }
                 self.bytecode.push(OpCode::Jump(9999));
-            },
+            }
             Statement::Expression {
                 expr, terminated, ..
             } => {
@@ -62,19 +61,22 @@ impl Compiler {
                 if terminated {
                     self.bytecode.push(OpCode::Pop);
                 }
-            },
+            }
         };
         Ok(())
     }
 
-    fn compile_expr_base(&mut self, expr_base: Expr) -> Result<(), CompileError> {
-        use parser::structs::Expr::*;
+    fn compile_expr_base(
+        &mut self,
+        expr_base: parser::structs::ExprBase,
+    ) -> Result<(), CompileError> {
+        use parser::structs::ExprBase::*;
         match expr_base {
             IntLiteral { val, .. } => {
                 let len = self.constants.len();
                 let idx = self.constants.entry(val.into()).or_insert(len);
                 self.bytecode.push(OpCode::Const(*idx));
-            },
+            }
             BoolLiteral { val, .. } => {
                 let len = self.constants.len();
                 let idx = if val {
@@ -83,19 +85,19 @@ impl Compiler {
                     self.constants.entry(false.into()).or_insert(len)
                 };
                 self.bytecode.push(OpCode::Const(*idx));
-            },
+            }
             StringLiteral { val, .. } => {
                 let len = self.constants.len();
                 let idx = self.constants.entry(val.into()).or_insert(len);
                 self.bytecode.push(OpCode::Const(*idx))
-            },
+            }
             Identifier { ref ident, .. } => {
                 let symbol = self
                     .symbol_table
                     .resolve(ident)
                     .ok_or(CompileError::UnknownIdentifier)?;
                 self.bytecode.push(OpCode::GetGlobal(symbol.index));
-            },
+            }
             Array { exprs, span } => todo!(),
             FuncDef {
                 parameters,
@@ -132,13 +134,17 @@ impl Compiler {
                 span,
             } => {
                 self.compile_if_expr(*condition, consequence, alternative, span);
-            },
+            }
         };
         Ok(())
     }
 
     fn compile_if_expr(
-        &mut self, condition: Expr, consequence: Scope, alternative: Option<ElseIfExpr>, span: Span,
+        &mut self,
+        condition: ExprBase,
+        consequence: Scope,
+        alternative: Option<ElseIfExpr>,
+        span: Span,
     ) -> Result<(), CompileError> {
         self.compile_expr_base(condition);
         // Push the conditional jump and store its position so it can be modified later
@@ -157,7 +163,7 @@ impl Compiler {
                     // if expressions are recursively compiled
                     parser::structs::ElseIfExpr::ElseIf(if_expr) => {
                         self.compile_expr_base((*if_expr).into())?;
-                    },
+                    }
                     // the else condition is handled. Here we now know how long the conditional jump
                     // needs to be. The conditional jump go to the start of the else
                     parser::structs::ElseIfExpr::Else(scope) => {
@@ -168,9 +174,9 @@ impl Compiler {
                         );
                         // Start of the else statements. Else compiled
                         self.compile(scope);
-                    },
+                    }
                 };
-            },
+            }
             // If there is no alternate then we set the conditional jump to this spot and then add
             // an empty object (so that popping doesn't cause an underflow on the stack). This
             // makes it so that even if there is no alternate an object is created there for
@@ -182,7 +188,7 @@ impl Compiler {
                     OpCode::JumpNotTruthy(curr_len),
                 );
                 self.bytecode.push(OpCode::Const(0));
-            },
+            }
         }
         // Finally set the final jump positon to after the end of the if statement
         let curr_len = self.bytecode.len();
@@ -190,23 +196,34 @@ impl Compiler {
         Ok(())
     }
 
-    fn compile_prefix_expr(&mut self, operator: Token, expression: Expr, span: Span) {
+    fn compile_prefix_expr(
+        &mut self,
+        operator: lexer::Token,
+        expression: parser::structs::ExprBase,
+        span: lexer::Span,
+    ) {
         self.compile_expr_base(expression);
         self.compile_op_token(operator, OpType::Prefix);
     }
 
-    fn compile_binary_expr(&mut self, lhs: Expr, operator: Token, rhs: Expr, span: Span) {
+    fn compile_binary_expr(
+        &mut self,
+        lhs: parser::structs::ExprBase,
+        operator: lexer::Token,
+        rhs: parser::structs::ExprBase,
+        span: lexer::Span,
+    ) {
         self.compile_expr_base(lhs);
         self.compile_expr_base(rhs);
         self.compile_op_token(operator, OpType::Binary);
     }
 
-    fn compile_op_token(&mut self, token: Token, op_type: OpType) {
+    fn compile_op_token(&mut self, token: lexer::Token, op_type: OpType) {
         let len = self.constants.len();
         match token.kind {
             lexer::TokenKind::Assign => todo!(),
             lexer::TokenKind::Plus => match op_type {
-                OpType::Prefix => {},
+                OpType::Prefix => {}
                 OpType::Binary => self.bytecode.push(OpCode::Add),
                 _ => unreachable!(),
             },

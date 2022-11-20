@@ -1,6 +1,6 @@
 [
     Expression {
-        expr: Call {
+        expr: FuncCall {
             function: Identifier {
                 ident: "call_func",
                 span: (0,0)->(0,8),
@@ -14,7 +14,7 @@
                     val: 3,
                     span: (0,13)->(0,13),
                 },
-                Func {
+                FuncDef {
                     parameters: [
                         Ident(
                             Token(Ident("x"), (0,19)->(0,19)),

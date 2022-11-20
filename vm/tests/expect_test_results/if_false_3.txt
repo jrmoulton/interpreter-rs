@@ -3,32 +3,21 @@ VM {
         Empty(
             (),
         ),
-        Boolean(
-            false,
-        ),
         Integer(
-            3,
+            5,
         ),
     ],
     bytecode: [
         Const(
             1,
         ),
-        JumpNotTruthy(
-            4,
-        ),
-        Const(
-            2,
-        ),
-        Jump(
-            5,
-        ),
-        Const(
+        CreateGlobal,
+        GetGlobal(
             0,
         ),
     ],
     sp: 1,
-    top_of_stack: Empty(
-        (),
+    top_of_stack: Integer(
+        5,
     ),
 }

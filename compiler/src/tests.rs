@@ -115,13 +115,13 @@ fn if_true_five() {
     let code: &'static str = r#"if true {5}; 404"#;
     let compiler = new_compiler(code);
     let exp_bytecode = vec![
-        /*0*/ OpCode::Const(1),
-        /*1*/ OpCode::JumpNotTruthy(4),
-        /*2*/ OpCode::Const(2),
-        /*3*/ OpCode::Jump(5),
-        /*4*/ OpCode::Const(0),
-        /*5*/ OpCode::Pop,
-        /*6*/ OpCode::Const(3),
+        /* 0 */ OpCode::Const(1),
+        /* 1 */ OpCode::JumpNotTruthy(4),
+        /* 2 */ OpCode::Const(2),
+        /* 3 */ OpCode::Jump(5),
+        /* 4 */ OpCode::Const(0),
+        /* 5 */ OpCode::Pop,
+        /* 6 */ OpCode::Const(3),
     ];
     assert_eq!(exp_bytecode, compiler.bytecode);
 }
@@ -131,12 +131,12 @@ fn if_false_no_alt_semi() {
     let code: &'static str = r#"if false {5};"#;
     let compiler = new_compiler(code);
     let exp_bytecode = vec![
-        /*0*/ OpCode::Const(1),
-        /*1*/ OpCode::JumpNotTruthy(4),
-        /*2*/ OpCode::Const(2),
-        /*3*/ OpCode::Jump(5),
-        /*4*/ OpCode::Const(0),
-        /*5*/ OpCode::Pop,
+        /* 0 */ OpCode::Const(1),
+        /* 1 */ OpCode::JumpNotTruthy(4),
+        /* 2 */ OpCode::Const(2),
+        /* 3 */ OpCode::Jump(5),
+        /* 4 */ OpCode::Const(0),
+        /* 5 */ OpCode::Pop,
     ];
     assert_eq!(exp_bytecode, compiler.bytecode);
 }
@@ -146,16 +146,17 @@ fn if_false_5_else_3() {
     let code: &'static str = r#"if false {5} else {3}; 404"#;
     let compiler = new_compiler(code);
     let exp_bytecode = vec![
-        /*0*/ OpCode::Const(1), // false
-        /*1*/ OpCode::JumpNotTruthy(4), // if false go to 4
-        /*2*/ OpCode::Const(2), // true: 5
-        /*3*/ OpCode::Jump(5), // after const(5) jump to 5
-        /*4*/ OpCode::Const(3), // false: 3
-        /*5*/ OpCode::Pop, // semicolon
-        /*6*/ OpCode::Const(4), // 404
+        /* 0 */ OpCode::Const(1), // false
+        /* 1 */ OpCode::JumpNotTruthy(4), // if false go to 4
+        /* 2 */ OpCode::Const(2), // true: 5
+        /* 3 */ OpCode::Jump(5), // after const(5) jump to 5
+        /* 4 */ OpCode::Const(3), // false: 3
+        /* 5 */ OpCode::Pop, // semicolon
+        /* 6 */ OpCode::Const(4), // 404
     ];
     assert_eq!(exp_bytecode, compiler.bytecode);
-    // let expected = expect_file!["../tests/expect_test_results/if_true_five.txt"];
+    // let expected =
+    // expect_file!["../tests/expect_test_results/if_true_five.txt"];
     // expected.assert_eq(&format!("{compiler:#?}"));
 }
 #[test]
@@ -163,14 +164,15 @@ fn if_true_5_else_3() {
     let code: &'static str = r#"if true {5} else {3}"#;
     let compiler = new_compiler(code);
     let exp_bytecode = vec![
-        /*0*/ OpCode::Const(1),
-        /*1*/ OpCode::JumpNotTruthy(4),
-        /*2*/ OpCode::Const(2),
-        /*3*/ OpCode::Jump(5),
-        /*4*/ OpCode::Const(3),
+        /* 0 */ OpCode::Const(1),
+        /* 1 */ OpCode::JumpNotTruthy(4),
+        /* 2 */ OpCode::Const(2),
+        /* 3 */ OpCode::Jump(5),
+        /* 4 */ OpCode::Const(3),
     ];
     assert_eq!(exp_bytecode, compiler.bytecode);
-    // let expected = expect_file!["../tests/expect_test_results/if_true_five.txt"];
+    // let expected =
+    // expect_file!["../tests/expect_test_results/if_true_five.txt"];
     // expected.assert_eq(&format!("{compiler:#?}"));
 }
 
@@ -179,11 +181,8 @@ fn let_x_eq_3_semi() {
     let code: &'static str = r#"let x = 3;"#;
     let compiler = new_compiler(code);
     let exp_bytecode = vec![
-        /*0*/ OpCode::Const(1),
-        /*1*/ OpCode::Const(2),
-        /*2*/ OpCode::SetGlobal,
-        /*4*/ OpCode::Pop,
-        /*5*/ OpCode::Pop,
+        /* 0 */ OpCode::Const(1),
+        /* 2 */ OpCode::CreateGlobal,
     ];
     assert_eq!(exp_bytecode, compiler.bytecode);
 }

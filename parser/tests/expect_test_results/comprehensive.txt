@@ -1,5 +1,5 @@
 [
-    Assign {
+    Let {
         ident: "x",
         expr: IntLiteral {
             val: 5,
@@ -15,7 +15,7 @@
         terminated: true,
         span: (2,4)->(2,9),
     },
-    Assign {
+    Let {
         ident: "y",
         expr: Binary {
             lhs: Binary {
@@ -104,9 +104,9 @@
         terminated: true,
         span: (4,4)->(10,4),
     },
-    Assign {
+    Let {
         ident: "multiply",
-        expr: Func {
+        expr: FuncDef {
             parameters: [
                 Ident(
                     Token(Ident("x"), (11,22)->(11,22)),

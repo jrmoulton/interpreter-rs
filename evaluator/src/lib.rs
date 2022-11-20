@@ -31,7 +31,7 @@ pub fn eval(statements: Vec<Statement>, env: Arc<Environment>) -> Result<Object,
         context.push_body(suggestion.to_string())
     });
     Report::install_debug_hook::<Help>(|help, context| context.push_body(help.to_string()));
-    Report::install_debug_hook::<ExprBase>(|value, context| context.push_body(format!("{value}")));
+    Report::install_debug_hook::<Expr>(|value, context| context.push_body(format!("{value}")));
     if cfg!(any(not(debug_assertions), test)) {
         use std::panic::Location;
         Report::install_debug_hook::<Location>(|_value, _context| {});
@@ -45,7 +45,7 @@ pub fn eval(statements: Vec<Statement>, env: Arc<Environment>) -> Result<Object,
                     return Ok(obj);
                 }
                 env.set(ident, obj);
-            }
+            },
             Statement::Return { expr, .. } => {
                 if let Some(expr) = expr {
                     let mut temp = eval_expr_base(expr, env)?;
@@ -53,7 +53,7 @@ pub fn eval(statements: Vec<Statement>, env: Arc<Environment>) -> Result<Object,
                     last_obj = Some(temp);
                 }
                 break;
-            }
+            },
             Statement::Expression {
                 expr, terminated, ..
             } => {
@@ -64,7 +64,7 @@ pub fn eval(statements: Vec<Statement>, env: Arc<Environment>) -> Result<Object,
                 if !terminated {
                     last_obj = Some(obj);
                 }
-            }
+            },
         };
     }
     if let Some(obj) = last_obj {
@@ -74,25 +74,25 @@ pub fn eval(statements: Vec<Statement>, env: Arc<Environment>) -> Result<Object,
     }
 }
 
-fn eval_expr_base(expr_base: ExprBase, env: Arc<Environment>) -> Result<Object, EvalError> {
+fn eval_expr_base(expr_base: Expr, env: Arc<Environment>) -> Result<Object, EvalError> {
     match expr_base {
-        ExprBase::IntLiteral { val, .. } => Ok(val.into()),
-        ExprBase::BoolLiteral { val, .. } => Ok(val.into()),
-        ExprBase::StringLiteral { val, .. } => Ok(val.into()),
-        ExprBase::Func {
+        Expr::IntLiteral { val, .. } => Ok(val.into()),
+        Expr::BoolLiteral { val, .. } => Ok(val.into()),
+        Expr::StringLiteral { val, .. } => Ok(val.into()),
+        Expr::FuncDef {
             parameters, body, ..
         } => Ok(Object::Function(object::Function::new(FuncIntern::new(
             parameters, body, env,
         )))),
-        ExprBase::Call { function, args, .. } => {
+        Expr::FuncCall { function, args, .. } => {
             let function_obj = eval_expr_base(*function, env.clone())?;
             let args: Result<Vec<Object>, EvalError> = args
                 .iter()
                 .map(|arg| eval_expr_base(arg.clone(), env.clone()))
                 .collect();
             Ok(apply_function(function_obj, args?)?)
-        }
-        ExprBase::MethodCall {
+        },
+        Expr::MethodCall {
             instance, method, ..
         } => {
             let _value = eval_expr_base(*instance, env.clone())?;
@@ -100,15 +100,15 @@ fn eval_expr_base(expr_base: ExprBase, env: Arc<Environment>) -> Result<Object, 
             let _method_call = eval_expr_base(*method, env)?;
             // let env.find(&value_type).expect("Exists");
             unimplemented!()
-        }
-        ExprBase::Array { exprs, .. } => {
+        },
+        Expr::Array { exprs, .. } => {
             let items: Result<Vec<Object>, EvalError> = exprs
                 .iter()
                 .map(|item| eval_expr_base(item.clone(), env.clone()))
                 .collect();
             Ok(Object::Array(object::Array::new(items?.into())))
-        }
-        ExprBase::Index { array, index, .. } => {
+        },
+        Expr::Index { array, index, .. } => {
             let array_obj = eval_expr_base(*array, env.clone())?;
             let index = eval_expr_base(*index, env)?;
             let index = match index {
@@ -127,26 +127,26 @@ fn eval_expr_base(expr_base: ExprBase, env: Arc<Environment>) -> Result<Object, 
                         )))),
                         None => Err(Report::new(EvalError::IndexOutOfBounds((array_obj, index))))?,
                     }
-                }
+                },
                 _ => Err(Report::new(EvalError::UnexpectedObject(array_obj)))?,
             }
-        }
-        ExprBase::Identifier { ref ident, .. } => match env.find(ident) {
-            Some(obj) => Ok(obj),
-            None => Err(Report::new(EvalError::IdentifierNotFound(ident.clone()))
-                .attach(Help(
-                    "Variables need to be instantiated with the `let` keyword",
-                ))
-                .attach(expr_base))?,
         },
-        ExprBase::Scope { statements, .. } => {
+        Expr::Identifier { ref ident, .. } => match env.find(ident) {
+            Some(obj) => Ok(obj),
+            None => Err(
+                Report::new(EvalError::IdentifierNotFound(ident.clone())).attach(Help(
+                    "Variables need to be instantiated with the `let` keyword",
+                )),
+            )?,
+        },
+        Expr::Scope { statements, .. } => {
             let expr = eval(statements, env)?;
             if expr.is_return() {
                 return Ok(expr);
             };
             Ok(expr)
-        }
-        ExprBase::Prefix {
+        },
+        Expr::Prefix {
             ref operator,
             ref expression,
             ..
@@ -156,8 +156,8 @@ fn eval_expr_base(expr_base: ExprBase, env: Arc<Environment>) -> Result<Object, 
                 return Ok(right);
             }
             eval_prefix_expr(&operator.kind, right, expr_base.clone())
-        }
-        ExprBase::Binary {
+        },
+        Expr::Binary {
             ref lhs,
             ref operator,
             ref rhs,
@@ -177,8 +177,8 @@ fn eval_expr_base(expr_base: ExprBase, env: Arc<Environment>) -> Result<Object, 
                 right,
                 expr_base.clone(),
             )?)
-        }
-        ExprBase::If {
+        },
+        Expr::If {
             condition,
             consequence,
             alternative,
@@ -210,16 +210,13 @@ fn apply_function(function_obj: Object, args: Vec<Object>) -> Result<Object, Eva
                 fn_literal.body.statements,
                 Arc::new(Environment::new_from_map_and_outer(new_env, fn_literal.env)),
             )
-        }
+        },
         _ => unreachable!("No other objects match to calling this function {function_obj}"),
     }
 }
 
 fn eval_if_expr(
-    condition: ExprBase,
-    consequence: Scope,
-    alternative: Option<ElseIfExpr>,
-    env: Arc<Environment>,
+    condition: Expr, consequence: Scope, alternative: Option<ElseIfExpr>, env: Arc<Environment>,
 ) -> Result<Object, EvalError> {
     let cond_bool = eval_expr_base(condition.clone(), env.clone())?;
     match cond_bool {
@@ -239,17 +236,14 @@ fn eval_if_expr(
             } else {
                 Ok(object::Empty::new(().into()).into())
             }
-        }
+        },
         _ => Err(Report::new(EvalError::InvalidIfCondition(condition)))?,
     }
 }
 
 #[allow(unreachable_patterns)]
 fn eval_binary_expr(
-    operator: &TokenKind,
-    left: Object,
-    right: Object,
-    expr_base: ExprBase,
+    operator: &TokenKind, left: Object, right: Object, expr_base: Expr,
 ) -> Result<Object, EvalError> {
     match left {
         Object::Integer(_) => eval_int_binary_expr(operator, left, right, expr_base),
@@ -260,10 +254,7 @@ fn eval_binary_expr(
 }
 
 fn eval_string_binary_expr(
-    operator: &TokenKind,
-    left: Object,
-    right: Object,
-    expr_base: ExprBase,
+    operator: &TokenKind, left: Object, right: Object, expr_base: Expr,
 ) -> Result<Object, EvalError> {
     let left = match left {
         Object::String(object::String { value, .. }) => value,
@@ -282,10 +273,7 @@ fn eval_string_binary_expr(
 }
 
 fn eval_bool_binary_expr(
-    operator: &TokenKind,
-    left: Object,
-    right: Object,
-    expr_base: ExprBase,
+    operator: &TokenKind, left: Object, right: Object, expr_base: Expr,
 ) -> Result<Object, EvalError> {
     let left = match left {
         Object::Boolean(object::Boolean { value, .. }) => value,
@@ -305,10 +293,7 @@ fn eval_bool_binary_expr(
 }
 
 fn eval_int_binary_expr(
-    operator: &TokenKind,
-    left: Object,
-    right: Object,
-    expr_base: ExprBase,
+    operator: &TokenKind, left: Object, right: Object, expr_base: Expr,
 ) -> Result<Object, EvalError> {
     let left = match left {
         Object::Integer(object::Integer { value, .. }) => value,
@@ -332,9 +317,7 @@ fn eval_int_binary_expr(
 }
 
 fn eval_prefix_expr(
-    operator: &TokenKind,
-    right: Object,
-    expr_base: ExprBase,
+    operator: &TokenKind, right: Object, expr_base: Expr,
 ) -> Result<Object, EvalError> {
     match operator {
         TokenKind::Minus => eval_minux_prefix_op(right, expr_base),
@@ -343,14 +326,14 @@ fn eval_prefix_expr(
     }
 }
 
-fn eval_minux_prefix_op(right: Object, expr_base: ExprBase) -> Result<Object, EvalError> {
+fn eval_minux_prefix_op(right: Object, expr_base: Expr) -> Result<Object, EvalError> {
     match right {
         Object::Integer(object::Integer { value, .. }) => Ok(object::Integer::new(-value).into()),
         _ => Err(Report::new(EvalError::UnsupportedOperation(expr_base))),
     }
 }
 
-fn eval_bang_prefix_op(right: Object, expr_base: ExprBase) -> Result<Object, EvalError> {
+fn eval_bang_prefix_op(right: Object, expr_base: Expr) -> Result<Object, EvalError> {
     match right {
         Object::Integer(object::Integer { value, .. }) => Ok(object::Integer::new(!value).into()),
         Object::Boolean(object::Boolean { value, .. }) => Ok(object::Boolean::new(!value).into()),

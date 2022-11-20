@@ -34,7 +34,7 @@ fn main() -> Result<(), Box<dyn Error>> {
             Err(errs) => {
                 println!("{errs:?}");
                 None
-            }
+            },
         };
         if let Some(ast) = ast {
             match eval(ast, env.clone()) {
@@ -42,7 +42,7 @@ fn main() -> Result<(), Box<dyn Error>> {
                     if !args.interactive {
                         println!("{}", obj);
                     }
-                }
+                },
                 Err(errs) => println!("{}", errs),
             };
         }

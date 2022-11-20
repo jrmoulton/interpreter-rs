@@ -1,6 +1,5 @@
 #![cfg(test)]
-use lexer::Lexer;
-use lexer::PeekLex;
+use lexer::{Lexer, PeekLex};
 use parser::parse;
 use std::sync::Arc;
 
@@ -316,13 +315,13 @@ mod errors {
         match eval(statements, env.clone()) {
             Ok(object) => {
                 assert!(false, "Expected an error, found object{object:#?}");
-            }
+            },
             Err(errs) => {
                 let err_string = format!("{errs}");
                 let expected =
                     expect_file!["./../tests/expect_test_results/index_out_of_bounds_string.txt"];
                 expected.assert_eq(&err_string);
-            }
+            },
         }
     }
 }

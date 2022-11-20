@@ -11,9 +11,7 @@ fn new_vm(code: &'static str) -> VM {
     let mut ast = parse(&mut peek_lex).unwrap().into_iter();
     let mut compiler = Compiler::new();
     compiler.compile(&mut ast);
-    let (bytecode, constants) = compiler.get_fields();
-    // bytecode.push(crate::bytecode::OpCode::Print);
-    VM::new(constants, bytecode)
+    VM::new(compiler)
 }
 
 #[test]
@@ -25,11 +23,11 @@ fn single_int() {
             assert_eq!(object, 57.into());
             let expected = expect_file!["../tests/expect_test_results/single_int.txt"];
             expected.assert_eq(&format!("{vm:#?}"));
-        }
+        },
         Err(e) => {
             eprintln!("{e}");
             assert!(false);
-        }
+        },
     }
 }
 
@@ -42,11 +40,11 @@ fn single_bool() {
             assert_eq!(object, false.into());
             let expected = expect_file!["../tests/expect_test_results/single_bool.txt"];
             expected.assert_eq(&format!("{vm:#?}"));
-        }
+        },
         Err(e) => {
             eprintln!("{e}");
             assert!(false);
-        }
+        },
     }
 }
 
@@ -59,11 +57,11 @@ fn bang_false() {
             assert_eq!(object, true.into());
             let expected = expect_file!["../tests/expect_test_results/bang_false.txt"];
             expected.assert_eq(&format!("{vm:#?}"));
-        }
+        },
         Err(e) => {
             eprintln!("{e}");
             assert!(false);
-        }
+        },
     }
 }
 
@@ -74,11 +72,11 @@ fn greater_than() {
     match vm.run() {
         Ok(object) => {
             assert_eq!(object, false.into());
-        }
+        },
         Err(e) => {
             eprintln!("{e}");
             assert!(false);
-        }
+        },
     }
 }
 
@@ -89,11 +87,11 @@ fn less_than() {
     match vm.run() {
         Ok(object) => {
             assert_eq!(object, true.into());
-        }
+        },
         Err(e) => {
             eprintln!("{e}");
             assert!(false);
-        }
+        },
     }
 }
 
@@ -104,11 +102,11 @@ fn equal() {
     match vm.run() {
         Ok(object) => {
             assert_eq!(object, true.into());
-        }
+        },
         Err(e) => {
             eprintln!("{e}");
             assert!(false);
-        }
+        },
     }
 }
 
@@ -119,11 +117,11 @@ fn not_equal() {
     match vm.run() {
         Ok(object) => {
             assert_eq!(object, false.into());
-        }
+        },
         Err(e) => {
             eprintln!("{e}");
             assert!(false);
-        }
+        },
     }
 }
 
@@ -136,11 +134,11 @@ fn prefix_expr() {
             assert_eq!(object, (-57).into());
             let expected = expect_file!["../tests/expect_test_results/prefix_expr.txt"];
             expected.assert_eq(&format!("{vm:#?}"));
-        }
+        },
         Err(e) => {
             eprintln!("{e}");
             assert!(false);
-        }
+        },
     }
 }
 
@@ -153,11 +151,11 @@ fn string_add() {
             assert_eq!(object, "55".to_string().into());
             let expected = expect_file!["../tests/expect_test_results/string_add.txt"];
             expected.assert_eq(&format!("{vm:#?}"));
-        }
+        },
         Err(e) => {
             eprintln!("{e}");
             assert!(false);
-        }
+        },
     }
 }
 
@@ -170,11 +168,11 @@ fn binary_divide() {
             assert_eq!(object, (2).into());
             let expected = expect_file!["../tests/expect_test_results/binary_divide.txt"];
             expected.assert_eq(&format!("{vm:#?}"));
-        }
+        },
         Err(e) => {
             eprintln!("{e}");
             assert!(false);
-        }
+        },
     }
 }
 
@@ -187,11 +185,11 @@ fn binary_multiply() {
             assert_eq!(object, (50).into());
             let expected = expect_file!["../tests/expect_test_results/binary_multiply.txt"];
             expected.assert_eq(&format!("{vm:#?}"));
-        }
+        },
         Err(e) => {
             eprintln!("{e}");
             assert!(false);
-        }
+        },
     }
 }
 
@@ -204,11 +202,11 @@ fn if_true_five() {
             assert_eq!(object, 404.into());
             let expected = expect_file!["../tests/expect_test_results/if_true_five.txt"];
             expected.assert_eq(&format!("{vm:#?}"));
-        }
+        },
         Err(e) => {
             eprintln!("{e}");
             assert!(false);
-        }
+        },
     }
 }
 
@@ -221,11 +219,11 @@ fn if_false_5_else_3_final() {
             assert_eq!(object, 404.into());
             let expected = expect_file!["../tests/expect_test_results/if_false_5_else_3_final.txt"];
             expected.assert_eq(&format!("{vm:#?}"));
-        }
+        },
         Err(e) => {
             eprintln!("{e}");
             assert!(false);
-        }
+        },
     }
 }
 
@@ -238,11 +236,11 @@ fn if_false_5_else_3() {
             assert_eq!(object, 3.into());
             let expected = expect_file!["../tests/expect_test_results/if_false_5_else_3.txt"];
             expected.assert_eq(&format!("{vm:#?}"));
-        }
+        },
         Err(e) => {
             eprintln!("{e}");
             assert!(false);
-        }
+        },
     }
 }
 
@@ -255,11 +253,11 @@ fn if_true_5_else_3() {
             assert_eq!(object, 5.into());
             let expected = expect_file!["../tests/expect_test_results/if_true_5_else_3.txt"];
             expected.assert_eq(&format!("{vm:#?}"));
-        }
+        },
         Err(e) => {
             eprintln!("{e}");
             assert!(false);
-        }
+        },
     }
 }
 
@@ -272,11 +270,11 @@ fn if_arue_5_else_3_semi() {
             assert_eq!(object, evaluator::object::EmptyWrapper.into());
             let expected = expect_file!["../tests/expect_test_results/if_true_5_else_3_semi.txt"];
             expected.assert_eq(&format!("{vm:#?}"));
-        }
+        },
         Err(e) => {
             eprintln!("{e}");
             assert!(false);
-        }
+        },
     }
 }
 
@@ -290,11 +288,11 @@ fn if_false_no_alternative_semi() {
             let expected =
                 expect_file!["../tests/expect_test_results/if_false_no_alternative_semi.txt"];
             expected.assert_eq(&format!("{vm:#?}"));
-        }
+        },
         Err(e) => {
             eprintln!("{e}");
             assert!(false);
-        }
+        },
     }
 }
 
@@ -307,10 +305,27 @@ fn if_false_3() {
             assert_eq!(object, evaluator::object::EmptyWrapper.into());
             let expected = expect_file!["../tests/expect_test_results/if_false_3.txt"];
             expected.assert_eq(&format!("{vm:#?}"));
-        }
+        },
         Err(e) => {
             eprintln!("{e}");
             assert!(false);
-        }
+        },
+    }
+}
+
+#[test]
+fn let_x_5_x() {
+    let code: &'static str = r#"let x = 5; x"#;
+    let mut vm = new_vm(code);
+    match vm.run() {
+        Ok(object) => {
+            assert_eq!(object, 5.into());
+            let expected = expect_file!["../tests/expect_test_results/if_false_3.txt"];
+            expected.assert_eq(&format!("{vm:#?}"));
+        },
+        Err(e) => {
+            eprintln!("{e}");
+            assert!(false);
+        },
     }
 }

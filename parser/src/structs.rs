@@ -1,28 +1,29 @@
 use error_stack::Report;
 use lexer::{Span, Token};
 use owo_colors::OwoColorize;
-use std::error::Error;
-use std::fmt::Display;
-use std::fmt::Write;
+use std::{
+    error::Error,
+    fmt::{Display, Write},
+};
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum Statement {
     Let {
         ident: String,
-        expr: ExprBase,
+        expr: Expr,
         span: Span,
     },
     Assign {
         ident: String,
-        expr: ExprBase,
+        expr: Expr,
         span: Span,
     },
     Return {
-        expr: Option<ExprBase>,
+        expr: Option<Expr>,
         span: Span,
     },
     Expression {
-        expr: ExprBase,
+        expr: Expr,
         terminated: bool,
         span: Span,
     },
@@ -43,7 +44,7 @@ impl Display for Statement {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub enum ExprBase {
+pub enum Expr {
     IntLiteral {
         val: i64,
         span: Span,
@@ -61,17 +62,17 @@ pub enum ExprBase {
         span: Span,
     },
     Array {
-        exprs: Vec<ExprBase>,
+        exprs: Vec<Expr>,
         span: Span,
     },
-    Func {
+    FuncDef {
         parameters: Vec<Ident>,
         body: Scope,
         span: Span,
     },
-    Call {
-        function: Box<ExprBase>,
-        args: Vec<ExprBase>,
+    FuncCall {
+        function: Box<Expr>,
+        args: Vec<Expr>,
         span: Span,
     },
     Scope {
@@ -80,45 +81,45 @@ pub enum ExprBase {
     },
     Prefix {
         operator: Token,
-        expression: Box<ExprBase>,
+        expression: Box<Expr>,
         span: Span,
     },
     Binary {
-        lhs: Box<ExprBase>,
+        lhs: Box<Expr>,
         operator: Token,
-        rhs: Box<ExprBase>,
+        rhs: Box<Expr>,
         span: Span,
     },
     Index {
-        array: Box<ExprBase>,
-        index: Box<ExprBase>,
+        array: Box<Expr>,
+        index: Box<Expr>,
         span: Span,
     },
     MethodCall {
         /// An expression that can resolve to a value
-        instance: Box<ExprBase>,
+        instance: Box<Expr>,
         /// an call expression that with the method ident comes afer the Dot
-        method: Box<ExprBase>,
+        method: Box<Expr>,
         span: Span,
     },
     If {
-        condition: Box<ExprBase>,
+        condition: Box<Expr>,
         consequence: Scope,
         alternative: Option<ElseIfExpr>,
         span: Span,
     },
 }
-impl ExprBase {
+impl Expr {
     pub fn get_span(&self) -> Span {
-        use ExprBase::*;
+        use Expr::*;
         match self {
             IntLiteral { span, .. }
             | BoolLiteral { span, .. }
             | StringLiteral { span, .. }
             | Identifier { span, .. }
-            | Func { span, .. }
+            | FuncDef { span, .. }
             | Array { span, .. }
-            | Call { span, .. }
+            | FuncCall { span, .. }
             | Scope { span, .. }
             | Prefix { span, .. }
             | Binary { span, .. }
@@ -129,68 +130,68 @@ impl ExprBase {
     }
 }
 
-impl Display for ExprBase {
+impl Display for Expr {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let ret_str = match self {
-            ExprBase::IntLiteral { val, .. } => format!("{val}"),
-            ExprBase::BoolLiteral { val, .. } => format!("{val}"),
-            ExprBase::StringLiteral { val, .. } => format!("\"{val}\""),
-            ExprBase::Identifier { ident, .. } => ident.clone(),
-            ExprBase::Array { exprs, .. } => {
+            Expr::IntLiteral { val, .. } => format!("{val}"),
+            Expr::BoolLiteral { val, .. } => format!("{val}"),
+            Expr::StringLiteral { val, .. } => format!("\"{val}\""),
+            Expr::Identifier { ident, .. } => ident.clone(),
+            Expr::Array { exprs, .. } => {
                 let mut ret_str = String::from("[ ");
                 for item in exprs.iter() {
                     write!(ret_str, "{item}, ")?;
                 }
                 ret_str.push_str(" ]");
                 ret_str
-            }
-            ExprBase::Index { array, index, .. } => {
+            },
+            Expr::Index { array, index, .. } => {
                 format!("{array}[{index}]")
-            }
-            ExprBase::MethodCall {
+            },
+            Expr::MethodCall {
                 instance, method, ..
             } => {
                 format!("{instance}.{method}")
-            }
-            ExprBase::Func { parameters, .. } => {
+            },
+            Expr::FuncDef { parameters, .. } => {
                 let mut ret_str = String::from("(");
                 for param in parameters.iter() {
                     write!(ret_str, "{param}, ")?;
                 }
                 ret_str.push(')');
                 format!("fn{ret_str}{{...}}")
-            }
-            ExprBase::Call { function, args, .. } => {
+            },
+            Expr::FuncCall { function, args, .. } => {
                 let mut ret_str = String::from("[ ");
                 for arg in args.iter() {
                     write!(ret_str, "{arg}, ")?;
                 }
                 ret_str.push_str(" ]");
                 format!("Call: func{{{function}}}, args{{{ret_str}}}")
-            }
-            ExprBase::Scope { statements, .. } => {
+            },
+            Expr::Scope { statements, .. } => {
                 let mut ret_str = String::from("[ ");
                 for statement in statements.iter() {
                     write!(ret_str, "{statement}, ")?;
                 }
                 ret_str.push_str(" ]");
                 ret_str
-            }
-            ExprBase::Prefix {
+            },
+            Expr::Prefix {
                 operator,
                 expression,
                 ..
             } => {
                 format!("{operator}:{}", expression)
-            }
-            ExprBase::Binary {
+            },
+            Expr::Binary {
                 lhs, operator, rhs, ..
             } => {
                 format!("({} {} {})", lhs, operator, rhs)
-            }
-            ExprBase::If { condition, .. } => {
+            },
+            Expr::If { condition, .. } => {
                 format!("{condition}")
-            }
+            },
         };
         f.write_str(&ret_str)
     }
@@ -204,15 +205,16 @@ pub struct Scope {
     pub span: Span,
 }
 impl IntoIterator for Scope {
-    type Item = Statement;
     type IntoIter = std::vec::IntoIter<Statement>;
+    type Item = Statement;
+
     fn into_iter(self) -> Self::IntoIter {
         self.statements.into_iter()
     }
 }
-impl From<Scope> for ExprBase {
+impl From<Scope> for Expr {
     fn from(scope: Scope) -> Self {
-        ExprBase::Scope {
+        Expr::Scope {
             statements: scope.statements,
             span: scope.span,
         }
@@ -221,14 +223,14 @@ impl From<Scope> for ExprBase {
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct IfExpr {
-    pub condition: Box<ExprBase>,
+    pub condition: Box<Expr>,
     pub consequence: Scope,
     pub alternative: Option<ElseIfExpr>,
     pub span: Span,
 }
-impl From<IfExpr> for ExprBase {
+impl From<IfExpr> for Expr {
     fn from(if_expr: IfExpr) -> Self {
-        ExprBase::If {
+        Expr::If {
             condition: if_expr.condition,
             consequence: if_expr.consequence,
             alternative: if_expr.alternative,
@@ -265,7 +267,7 @@ impl Display for Ident {
 #[derive(Debug)]
 pub enum ParseError {
     UnexpectedToken(Token),
-    UnexpectedTerminatedExpr(ExprBase),
+    UnexpectedTerminatedExpr(Expr),
     ExpectedTerminatedStatement(Statement),
     UnexpectedStatement(Statement),
     Eof,
@@ -276,13 +278,13 @@ impl Display for ParseError {
             ParseError::UnexpectedToken(lok_tok) => format!("Unexpected Token: {}", lok_tok.kind),
             ParseError::UnexpectedTerminatedExpr(expr) => {
                 format!("Error: Unexpected token `;` after expression: {expr}")
-            }
+            },
             ParseError::ExpectedTerminatedStatement(statement) => {
                 format!("Error: Expected token ';' after statement: {statement}")
-            }
+            },
             ParseError::UnexpectedStatement(statement) => {
                 format!("Error: Unexpected statement: {statement}")
-            }
+            },
             ParseError::Eof => "Error: Unexpected end of input".into(),
         };
         f.write_str(&temp)
@@ -338,21 +340,15 @@ pub type ParseResult<T> = error_stack::Result<T, ParseError>;
 
 pub(crate) trait ESResultExt {
     fn handle_statement_err(
-        self,
-        lexer: &mut lexer::PeekLex,
-        statements: &mut Vec<Statement>,
-        error: &mut Option<Report<ParseError>>,
-        term_state: &mut TermState,
+        self, lexer: &mut lexer::PeekLex, statements: &mut Vec<Statement>,
+        error: &mut Option<Report<ParseError>>, term_state: &mut TermState,
     );
 }
 
 impl ESResultExt for ParseResult<Statement> {
     fn handle_statement_err(
-        self,
-        lexer: &mut lexer::PeekLex,
-        statements: &mut Vec<Statement>,
-        error: &mut Option<Report<ParseError>>,
-        term_state: &mut TermState,
+        self, lexer: &mut lexer::PeekLex, statements: &mut Vec<Statement>,
+        error: &mut Option<Report<ParseError>>, term_state: &mut TermState,
     ) {
         // if statements have an error still check for if it's terminated
         match self {
@@ -370,16 +366,18 @@ impl ESResultExt for ParseResult<Statement> {
                                 // if the statement is terminated and the prvious statement was also
                                 statements.push(statement);
                             }
-                        }
+                        },
                         Err(_) => {
                             if matches!(term_state, TermState::OpenExpr) {
-                                // if the statement is not terminated and the prvious statement was also not terminated
+                                // if the statement is not terminated and the prvious statement was
+                                // also not terminated
                                 error.extend_assign(
                                     Report::new(ParseError::UnexpectedStatement(statement))
                                         .attach(PREV_SEMI_HELP),
                                 );
                             } else {
-                                // if the statement is not terminated and the prvious statement was terminated
+                                // if the statement is not terminated and the prvious statement was
+                                // terminated
                                 error.extend_assign(
                                     Report::new(ParseError::ExpectedTerminatedStatement(statement))
                                         .attach(Help(
@@ -388,16 +386,17 @@ impl ESResultExt for ParseResult<Statement> {
                                         .attach(SEMI_SUGGEST),
                                 );
                             }
-                        }
+                        },
                     };
                     *term_state = TermState::ClosedExpr;
-                }
+                },
                 Statement::Expression {
                     ref mut terminated, ..
                 } => match crate::expect_peek(lexer, lexer::TokenKind::Semicolon) {
                     Ok(_) => {
                         if matches!(term_state, TermState::OpenExpr) {
-                            // if the expression statement is terminated but the prvious statement was not
+                            // if the expression statement is terminated but the prvious statement
+                            // was not
                             error.extend_assign(
                                 Report::new(ParseError::UnexpectedStatement(statement))
                                     .attach(PREV_SEMI_HELP),
@@ -407,24 +406,25 @@ impl ESResultExt for ParseResult<Statement> {
                             statements.push(statement);
                             *term_state = TermState::ClosedExpr;
                         }
-                    }
+                    },
                     Err(_) => {
                         if matches!(term_state, TermState::None | TermState::ClosedExpr) {
                             statements.push(statement);
                             *term_state = TermState::OpenExpr;
                         } else {
-                            // if the expression statement is not terminated and the prvious statement was also not
+                            // if the expression statement is not terminated and the prvious
+                            // statement was also not
                             error.extend_assign(
                                 Report::new(ParseError::UnexpectedStatement(statement))
                                     .attach(PREV_SEMI_HELP),
                             );
                         }
-                    }
+                    },
                 },
             },
             Err(e) => {
                 error.extend_assign(e);
-            }
+            },
         };
     }
 }

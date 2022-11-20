@@ -1,6 +1,6 @@
 [
     Expression {
-        expr: Call {
+        expr: FuncCall {
             function: Identifier {
                 ident: "add",
                 span: (0,0)->(0,2),

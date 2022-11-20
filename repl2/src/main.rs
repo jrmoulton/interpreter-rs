@@ -47,9 +47,7 @@ fn main() -> Result<(), Errors> {
         .into_iter();
     let mut compiler = Compiler::new();
     compiler.compile(&mut ast);
-    let (mut bytecode, constants) = compiler.get_fields();
-    bytecode.push(bytecode::OpCode::Print);
-    let mut vm = VM::new(constants, bytecode);
+    let mut vm = VM::new(compiler);
     vm.run().change_context(Errors::VirtualMachine)?;
     Ok(())
 }

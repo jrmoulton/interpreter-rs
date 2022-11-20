@@ -1,6 +1,5 @@
 #![cfg(test)]
-use lexer::Lexer;
-use lexer::PeekLex;
+use lexer::{Lexer, PeekLex};
 
 use super::*;
 use expect_test::expect_file;
@@ -19,11 +18,11 @@ mod results {
                     "./../tests/expect_test_results/simple_prefix_op_expression_statement.txt"
                 ];
                 expected.assert_eq(&format!("{statements:#?}"));
-            }
+            },
             Err(e) => {
                 eprintln!("{e}");
                 assert!(false);
-            }
+            },
         }
     }
 
@@ -36,11 +35,11 @@ mod results {
             Ok(statements) => {
                 let expected = expect_file!["./../tests/expect_test_results/single_let.txt"];
                 expected.assert_eq(&format!("{statements:#?}"));
-            }
+            },
             Err(e) => {
                 eprintln!("{e}");
                 assert!(false);
-            }
+            },
         }
     }
 
@@ -53,11 +52,11 @@ mod results {
             Ok(statements) => {
                 let expected = expect_file!["./../tests/expect_test_results/assign_statement.txt"];
                 expected.assert_eq(&format!("{statements:#?}"));
-            }
+            },
             Err(e) => {
                 eprintln!("{e}");
                 assert!(false);
-            }
+            },
         }
     }
 
@@ -71,11 +70,11 @@ mod results {
                 let expected =
                     expect_file!["./../tests/expect_test_results/single_let_with_bool.txt"];
                 expected.assert_eq(&format!("{statements:#?}"));
-            }
+            },
             Err(e) => {
                 eprintln!("{e}");
                 assert!(false);
-            }
+            },
         }
     }
 
@@ -89,11 +88,11 @@ mod results {
                 let expected =
                     expect_file!["./../tests/expect_test_results/single_let_with_add.txt"];
                 expected.assert_eq(&format!("{statements:#?}"));
-            }
+            },
             Err(e) => {
                 eprintln!("{e}");
                 assert!(false);
-            }
+            },
         }
     }
 
@@ -105,14 +104,14 @@ mod results {
         match parse(&mut peek_lex) {
             Ok(statements) => {
                 let expected = expect_file![
-                "./../tests/expect_test_results/single_operator_precedence_expression_statement.txt"
-            ];
+                    "./../tests/expect_test_results/single_operator_precedence_expression_statement.txt"
+                ];
                 expected.assert_eq(&format!("{statements:#?}"));
-            }
+            },
             Err(e) => {
                 eprintln!("{e}");
                 assert!(false);
-            }
+            },
         }
     }
     #[test]
@@ -123,14 +122,14 @@ mod results {
         match parse(&mut peek_lex) {
             Ok(statements) => {
                 let expected = expect_file![
-                "./../tests/expect_test_results/operator_precedence_with_grouped_expressions.txt"
-            ];
+                    "./../tests/expect_test_results/operator_precedence_with_grouped_expressions.txt"
+                ];
                 expected.assert_eq(&format!("{statements:#?}"));
-            }
+            },
             Err(e) => {
                 eprintln!("{e}");
                 assert!(false);
-            }
+            },
         }
     }
 
@@ -144,11 +143,11 @@ mod results {
                 let expected =
                     expect_file!["./../tests/expect_test_results/single_int_expression.txt"];
                 expected.assert_eq(&format!("{statements:#?}"));
-            }
+            },
             Err(e) => {
                 eprintln!("{e}");
                 assert!(false);
-            }
+            },
         }
     }
 
@@ -161,11 +160,11 @@ mod results {
             Ok(statements) => {
                 let expected = expect_file!["./../tests/expect_test_results/basic_return.txt"];
                 expected.assert_eq(&format!("{statements:#?}"));
-            }
+            },
             Err(e) => {
                 eprintln!("{e}");
                 assert!(false);
-            }
+            },
         }
     }
 
@@ -179,11 +178,11 @@ mod results {
                 let expected =
                     expect_file!["./../tests/expect_test_results/return_no_expression.txt"];
                 expected.assert_eq(&format!("{statements:#?}"));
-            }
+            },
             Err(e) => {
                 eprintln!("{e}");
                 assert!(false);
-            }
+            },
         }
     }
 
@@ -197,11 +196,11 @@ mod results {
                 let expected =
                     expect_file!["./../tests/expect_test_results/identifier_expression.txt"];
                 expected.assert_eq(&format!("{statements:#?}"));
-            }
+            },
             Err(e) => {
                 eprintln!("{e}");
                 assert!(false);
-            }
+            },
         }
     }
 
@@ -215,11 +214,11 @@ mod results {
             Ok(statements) => {
                 let expected = expect_file!["./../tests/expect_test_results/double_let.txt"];
                 expected.assert_eq(&format!("{statements:#?}"));
-            }
+            },
             Err(e) => {
                 eprintln!("{e}");
                 assert!(false);
-            }
+            },
         }
     }
 
@@ -239,11 +238,11 @@ mod results {
             Ok(statements) => {
                 let expected = expect_file!["./../tests/expect_test_results/if_elseif_else.txt"];
                 expected.assert_eq(&format!("{statements:#?}"));
-            }
+            },
             Err(e) => {
                 eprintln!("{e}");
                 assert!(false);
-            }
+            },
         }
     }
 
@@ -265,11 +264,11 @@ mod results {
                 let expected =
                     expect_file!["./../tests/expect_test_results/if_elseif_else_again.txt"];
                 expected.assert_eq(&format!("{statements:#?}"));
-            }
+            },
             Err(e) => {
                 eprintln!("{e}");
                 assert!(false);
-            }
+            },
         }
     }
 
@@ -287,11 +286,11 @@ mod results {
             Ok(statements) => {
                 let expected = expect_file!["./../tests/expect_test_results/if_with_bool_expr.txt"];
                 expected.assert_eq(&format!("{statements:#?}"));
-            }
+            },
             Err(e) => {
                 eprintln!("{e}");
                 assert!(false);
-            }
+            },
         }
     }
 
@@ -307,11 +306,11 @@ mod results {
             Ok(statements) => {
                 let expected = expect_file!["./../tests/expect_test_results/new_scope.txt"];
                 expected.assert_eq(&format!("{statements:#?}"));
-            }
+            },
             Err(e) => {
                 eprintln!("{e:?}");
                 assert!(false);
-            }
+            },
         }
     }
 
@@ -329,11 +328,11 @@ mod results {
             Ok(statements) => {
                 let expected = expect_file!["./../tests/expect_test_results/nested_scope.txt"];
                 expected.assert_eq(&format!("{statements:#?}"));
-            }
+            },
             Err(e) => {
                 eprintln!("{e}");
                 assert!(false);
-            }
+            },
         }
     }
 
@@ -348,11 +347,11 @@ mod results {
             Ok(statements) => {
                 let expected = expect_file!["./../tests/expect_test_results/function_literal.txt"];
                 expected.assert_eq(&format!("{statements:#?}"));
-            }
+            },
             Err(e) => {
                 eprintln!("{e}");
                 assert!(false);
-            }
+            },
         }
     }
 
@@ -365,11 +364,11 @@ mod results {
             Ok(statements) => {
                 let expected = expect_file!["./../tests/expect_test_results/let_ident_string.txt"];
                 expected.assert_eq(&format!("{statements:#?}"));
-            }
+            },
             Err(e) => {
                 eprintln!("{e}");
                 assert!(false);
-            }
+            },
         }
     }
 
@@ -382,11 +381,11 @@ mod results {
             Ok(statements) => {
                 let expected = expect_file!["./../tests/expect_test_results/nested_if.txt"];
                 expected.assert_eq(&format!("{statements:#?}"));
-            }
+            },
             Err(e) => {
                 eprintln!("{e}");
                 assert!(false);
-            }
+            },
         }
     }
 
@@ -412,11 +411,11 @@ mod results {
             Ok(statements) => {
                 let expected = expect_file!["./../tests/expect_test_results/comprehensive.txt"];
                 expected.assert_eq(&format!("{statements:#?}"));
-            }
+            },
             Err(e) => {
                 eprintln!("{e:?}");
                 assert!(false);
-            }
+            },
         }
     }
 
@@ -429,11 +428,11 @@ mod results {
             Ok(statements) => {
                 let expected = expect_file!["./../tests/expect_test_results/call_expression.txt"];
                 expected.assert_eq(&format!("{statements:#?}"));
-            }
+            },
             Err(e) => {
                 eprintln!("{e}");
                 assert!(false);
-            }
+            },
         }
     }
 
@@ -447,11 +446,11 @@ mod results {
                 let expected =
                     expect_file!["./../tests/expect_test_results/call_expression_no_args.txt"];
                 expected.assert_eq(&format!("{statements:#?}"));
-            }
+            },
             Err(e) => {
                 eprintln!("{e}");
                 assert!(false);
-            }
+            },
         }
     }
 
@@ -466,11 +465,11 @@ mod results {
                     "./../tests/expect_test_results/call_expression_with_expression_args.txt"
                 ];
                 expected.assert_eq(&format!("{statements:#?}"));
-            }
+            },
             Err(e) => {
                 eprintln!("{e}");
                 assert!(false);
-            }
+            },
         }
     }
     #[test]
@@ -482,11 +481,11 @@ mod results {
             Ok(statements) => {
                 let expected = expect_file!["./../tests/expect_test_results/bool_and.txt"];
                 expected.assert_eq(&format!("{statements:#?}"));
-            }
+            },
             Err(e) => {
                 eprintln!("{e}");
                 assert!(false);
-            }
+            },
         }
     }
 
@@ -499,11 +498,11 @@ mod results {
             Ok(statements) => {
                 let expected = expect_file!["./../tests/expect_test_results/bool_or.txt"];
                 expected.assert_eq(&format!("{statements:#?}"));
-            }
+            },
             Err(e) => {
                 eprintln!("{e}");
                 assert!(false);
-            }
+            },
         }
     }
 
@@ -516,11 +515,11 @@ mod results {
             Ok(statements) => {
                 let expected = expect_file!["./../tests/expect_test_results/bit_and.txt"];
                 expected.assert_eq(&format!("{statements:#?}"));
-            }
+            },
             Err(e) => {
                 eprintln!("{e}");
                 assert!(false);
-            }
+            },
         }
     }
 
@@ -533,11 +532,11 @@ mod results {
             Ok(statements) => {
                 let expected = expect_file!["./../tests/expect_test_results/bit_or.txt"];
                 expected.assert_eq(&format!("{statements:#?}"));
-            }
+            },
             Err(e) => {
                 eprintln!("{e}");
                 assert!(false);
-            }
+            },
         }
     }
 
@@ -551,11 +550,11 @@ mod results {
                 let expected =
                     expect_file!["./../tests/expect_test_results/string_method_call.txt"];
                 expected.assert_eq(&format!("{statements:#?}"));
-            }
+            },
             Err(e) => {
                 eprintln!("{e}");
                 assert!(false);
-            }
+            },
         }
     }
 
@@ -568,11 +567,11 @@ mod results {
             Ok(statements) => {
                 let expected = expect_file!["./../tests/expect_test_results/int_method_call.txt"];
                 expected.assert_eq(&format!("{statements:#?}"));
-            }
+            },
             Err(e) => {
                 eprintln!("{e}");
                 assert!(false);
-            }
+            },
         }
     }
 
@@ -585,11 +584,11 @@ mod results {
             Ok(statements) => {
                 let expected = expect_file!["./../tests/expect_test_results/int_array.txt"];
                 expected.assert_eq(&format!("{statements:#?}"));
-            }
+            },
             Err(e) => {
                 eprintln!("{e}");
                 assert!(false);
-            }
+            },
         }
     }
 
@@ -602,11 +601,11 @@ mod results {
             Ok(statements) => {
                 let expected = expect_file!["./../tests/expect_test_results/empty_array.txt"];
                 expected.assert_eq(&format!("{statements:#?}"));
-            }
+            },
             Err(e) => {
                 eprintln!("{e}");
                 assert!(false);
-            }
+            },
         }
     }
 
@@ -619,11 +618,11 @@ mod results {
             Ok(statements) => {
                 let expected = expect_file!["./../tests/expect_test_results/int_array_index.txt"];
                 expected.assert_eq(&format!("{statements:#?}"));
-            }
+            },
             Err(e) => {
                 eprintln!("{e}");
                 assert!(false);
-            }
+            },
         }
     }
 
@@ -642,11 +641,11 @@ mod results {
                 }
                 ret_str.push_str(" ]");
                 expected.assert_eq(&ret_str);
-            }
+            },
             Err(e) => {
                 eprintln!("{e}");
                 assert!(false);
-            }
+            },
         }
     }
 }
@@ -661,12 +660,12 @@ mod errors {
         match parse(&mut peek_lex) {
             Ok(statements) => {
                 assert!(false, "Expected an error, found {statements:#?}");
-            }
+            },
             Err(e) => {
                 let err_string = format!("{e:#?}");
                 let expected = expect_file!["./../tests/expect_test_results/func_no_body.txt"];
                 expected.assert_eq(&err_string);
-            }
+            },
         }
     }
 
@@ -678,12 +677,12 @@ mod errors {
         match parse(&mut peek_lex) {
             Ok(statements) => {
                 assert!(false, "Expected an error, found {statements:#?}");
-            }
+            },
             Err(e) => {
                 let err_string = format!("{e:#?}");
                 let expected = expect_file!["./../tests/expect_test_results/two_expressions.txt"];
                 expected.assert_eq(&err_string);
-            }
+            },
         }
     }
 
@@ -695,14 +694,14 @@ mod errors {
         match parse(&mut peek_lex) {
             Ok(statements) => {
                 assert!(false, "Expected an error, found {statements:#?}");
-            }
+            },
             Err(e) => {
                 let err_string = format!("{e:#?}");
                 let expected = expect_file![
                     "./../tests/expect_test_results/call_expression_bad_semicolon.txt"
                 ];
                 expected.assert_eq(&err_string);
-            }
+            },
         }
     }
 
@@ -714,14 +713,14 @@ mod errors {
         match parse(&mut peek_lex) {
             Ok(statements) => {
                 assert!(false, "Expected an error, found {statements:#?}");
-            }
+            },
             Err(e) => {
                 let err_string = format!("{e:#?}");
                 let expected = expect_file![
                     "./../tests/expect_test_results/multiple_non_terminated_exprs.txt"
                 ];
                 expected.assert_eq(&err_string);
-            }
+            },
         }
     }
 
@@ -736,13 +735,13 @@ mod errors {
         match parse(&mut peek_lex) {
             Ok(statements) => {
                 assert!(false, "Expected an error, found {statements:#?}");
-            }
+            },
             Err(e) => {
                 let err_string = format!("{e:#?}");
                 let expected =
                     expect_file!["./../tests/expect_test_results/new_scope_bad_semicolon.txt"];
                 expected.assert_eq(&err_string);
-            }
+            },
         }
     }
 
@@ -754,14 +753,14 @@ mod errors {
         match parse(&mut peek_lex) {
             Ok(statements) => {
                 assert!(false, "Expected an error, found {statements:#?}");
-            }
+            },
             Err(e) => {
                 let err_string = format!("{e:#?}");
                 let expected = expect_file![
                     "./../tests/expect_test_results/assign_statement_no_semicolon.txt"
                 ];
                 expected.assert_eq(&err_string);
-            }
+            },
         }
     }
 
@@ -773,13 +772,13 @@ mod errors {
         match parse(&mut peek_lex) {
             Ok(statements) => {
                 assert!(false, "Expected an error, found {statements:#?}");
-            }
+            },
             Err(e) => {
                 let err_string = format!("{e:#?}");
                 let expected =
                     expect_file!["./../tests/expect_test_results/let_statement_no_semicolon.txt"];
                 expected.assert_eq(&err_string);
-            }
+            },
         }
     }
 
@@ -791,13 +790,13 @@ mod errors {
         match parse(&mut peek_lex) {
             Ok(statements) => {
                 assert!(false, "Expected an error, found {statements:#?}");
-            }
+            },
             Err(e) => {
                 let err_string = format!("{e:#?}");
                 let expected =
                     expect_file!["./../tests/expect_test_results/return_no_semicolon.txt"];
                 expected.assert_eq(&err_string);
-            }
+            },
         }
     }
 
@@ -809,13 +808,13 @@ mod errors {
         match parse(&mut peek_lex) {
             Ok(statements) => {
                 assert!(false, "Expected an error, found {statements:#?}");
-            }
+            },
             Err(e) => {
                 let err_string = format!("{e:#?}");
                 let expected =
                     expect_file!["./../tests/expect_test_results/return_no_expr_no_semicolon.txt"];
                 expected.assert_eq(&err_string);
-            }
+            },
         }
     }
 }

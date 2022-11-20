@@ -3,9 +3,13 @@ use std::{collections::HashMap, fmt::Debug};
 use bytecode::OpCode;
 use evaluator::object::{EmptyWrapper, Object};
 
+pub use crate::symbol_table::Symbol;
+use crate::symbol_table::SymbolTable;
+
 pub struct Compiler {
     pub constants: HashMap<evaluator::object::Object, usize>,
     pub bytecode: Vec<OpCode>,
+    pub(crate) symbol_table: SymbolTable,
 }
 impl Debug for Compiler {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
@@ -17,7 +21,6 @@ impl Debug for Compiler {
 pub enum OpType {
     Binary,
     Prefix,
-    Other,
 }
 
 impl Compiler {
@@ -27,17 +30,25 @@ impl Compiler {
         Self {
             constants,
             bytecode: Vec::new(),
+            symbol_table: SymbolTable::default(),
         }
     }
 
-    pub fn get_fields(self) -> (Vec<OpCode>, Vec<evaluator::object::Object>) {
-        let mut x = self.constants.into_iter().collect::<Vec<(Object, usize)>>();
+    pub fn get_fields(self) -> (Vec<OpCode>, Vec<Object>) {
+        let mut x: Vec<(Object, usize)> = self.constants.into_iter().collect();
         x.sort_by_key(|k| k.1);
-        let mut new_vec = Vec::new();
+        let mut constants = Vec::new();
         for val in x {
-            new_vec.push(val.0);
+            constants.push(val.0);
         }
-        (self.bytecode, new_vec)
+        // let mut globals = Vec::new();
+        // #[allow(clippy::needless_collect)]
+        // let key_clone: Vec<_> = self.symbol_table.table.keys().cloned().collect();
+        // key_clone.into_iter().for_each(|val| {
+        //     globals.push(self.symbol_table.table.remove(&val).unwrap());
+        // });
+        // globals.sort_by_key(|k| k.index);
+        (self.bytecode, constants)
     }
 }
 impl Default for Compiler {

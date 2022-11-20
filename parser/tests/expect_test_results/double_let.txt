@@ -1,5 +1,5 @@
 [
-    Assign {
+    Let {
         ident: "x",
         expr: IntLiteral {
             val: 5,
@@ -7,7 +7,7 @@
         },
         span: (0,0)->(0,8),
     },
-    Assign {
+    Let {
         ident: "y",
         expr: IntLiteral {
             val: 3,
