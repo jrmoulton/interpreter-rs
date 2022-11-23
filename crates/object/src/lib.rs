@@ -8,7 +8,6 @@ use std::{
 use enum_dispatch::enum_dispatch;
 use parser::structs::{Ident, Scope};
 
-
 #[macro_use]
 mod literal_types_macro;
 
