@@ -58,8 +58,7 @@ impl VM {
             use OpCode::*;
             match op {
                 Const(idx) => {
-                    self.sp += 1;
-                    self.stack[self.sp] = self.constants[idx].clone();
+                    self.push(self.constants[idx].clone());
                 },
                 CreateGlobal => {
                     let obj = self.pop();
@@ -69,9 +68,7 @@ impl VM {
                     self.globals[idx] = self.pop();
                 },
                 GetGlobal(idx) => {
-                    self.sp += 1;
-                    self.stack[self.sp] =
-                        std::mem::replace(&mut self.globals[idx], EmptyWrapper::new().into());
+                    self.push(self.globals[idx].clone());
                 },
                 Add | Sub | Mul | Div | Equal | NotEqual | GreaterThan | LessThan => {
                     self.execute_binary_expression(op)
@@ -85,6 +82,39 @@ impl VM {
                     if !(self.pop().expect_bool().ok_or(VMError::UnexpectedType)?) {
                         self.ip = idx - 1;
                     }
+                },
+                Array(size) => {
+                    let mut ret_vec = Vec::new();
+                    for idx in self.sp - size + 1..self.sp + 1 {
+                        ret_vec.push({
+                            let temp =
+                                std::mem::replace(&mut self.stack[idx], EmptyWrapper::new().into());
+                            self.sp -= 1;
+                            temp
+                        });
+                    }
+                    self.push(evaluator::object::ArrayWrapper::from(ret_vec));
+                },
+                Index => {
+                    use evaluator::object::*;
+                    let index = self.pop().expect_int().unwrap();
+                    match self.pop() {
+                        Object::Array(Array { ref value, .. }) => match value.get(index as usize) {
+                            Some(val) => self.push(val.clone()),
+                            _ => unimplemented!(),
+                        },
+                        Object::String(String { ref value, .. }) => {
+                            match value.as_bytes().get(index as usize) {
+                                Some(val) => {
+                                    self.push(Object::String(String::new(
+                                        std::string::String::from(*val as char),
+                                    )));
+                                },
+                                _ => unreachable!(),
+                            }
+                        },
+                        _ => unreachable!(),
+                    };
                 },
                 Print => println!("{}", self.stack[self.sp]),
                 NoOp => {}, // _ => todo!(),
@@ -144,6 +174,11 @@ impl VM {
         let temp = std::mem::replace(&mut self.stack[self.sp], EmptyWrapper::new().into());
         self.sp -= 1;
         temp
+    }
+
+    fn push(&mut self, obj: impl Into<Object>) {
+        self.sp += 1;
+        self.stack[self.sp] = obj.into();
     }
 }
 

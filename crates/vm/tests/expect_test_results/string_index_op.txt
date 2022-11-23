@@ -1,0 +1,26 @@
+VM {
+    constants: [
+        Empty(
+            (),
+        ),
+        String(
+            this,
+        ),
+        Integer(
+            1,
+        ),
+    ],
+    bytecode: [
+        Const(
+            1,
+        ),
+        Const(
+            2,
+        ),
+        Index,
+    ],
+    sp: 1,
+    top_of_stack: String(
+        h,
+    ),
+}

@@ -187,3 +187,53 @@ fn let_x_eq_3_semi() {
     ];
     assert_eq!(exp_bytecode, compiler.bytecode);
 }
+
+#[test]
+fn string_literal() {
+    let code: &'static str = r#" "this is a string" "#;
+    let compiler = new_compiler(code);
+    let exp_bytecode = vec![/* 0 */ OpCode::Const(1)];
+    assert_eq!(exp_bytecode, compiler.bytecode);
+}
+
+#[test]
+fn string_concat() {
+    let code: &'static str = r#" "this is a string" + " and rope" "#;
+    let compiler = new_compiler(code);
+    let exp_bytecode = vec![/* 0 */ OpCode::Const(1), OpCode::Const(2), OpCode::Add];
+    assert_eq!(exp_bytecode, compiler.bytecode);
+}
+
+#[test]
+fn array_literal() {
+    let code: &'static str = r#" [1 + 1, 2 + 3, 5 + 7] "#;
+    let compiler = new_compiler(code);
+    let exp_bytecode = vec![
+        OpCode::Const(1),
+        OpCode::Const(1),
+        OpCode::Add,
+        OpCode::Const(2),
+        OpCode::Const(3),
+        OpCode::Add,
+        OpCode::Const(4),
+        OpCode::Const(5),
+        OpCode::Add,
+        OpCode::Array(3),
+    ];
+    assert_eq!(exp_bytecode, compiler.bytecode);
+}
+
+#[test]
+fn array_index_op() {
+    let code: &'static str = r#" [1, 2, 3][1] "#;
+    let compiler = new_compiler(code);
+    let exp_bytecode = vec![
+        OpCode::Const(1),
+        OpCode::Const(2),
+        OpCode::Const(3),
+        OpCode::Array(3),
+        OpCode::Const(1),
+        OpCode::Index,
+    ];
+    assert_eq!(exp_bytecode, compiler.bytecode);
+}

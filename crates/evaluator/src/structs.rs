@@ -8,7 +8,7 @@ use std::{
 use error_stack::Context;
 use parser::structs::*;
 
-use crate::object::Object;
+use object::Object;
 
 #[derive(Debug)]
 pub enum EvalError {

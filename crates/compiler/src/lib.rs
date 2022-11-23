@@ -87,7 +87,13 @@ impl Compiler {
                     .ok_or(CompileError::UnknownIdentifier)?;
                 self.bytecode.push(OpCode::GetGlobal(symbol.index));
             },
-            Array { exprs, span } => todo!(),
+            Array { exprs, span } => {
+                let expr_len = exprs.len();
+                for expr in exprs {
+                    self.compile_expr_base(expr)?;
+                }
+                self.bytecode.push(OpCode::Array(expr_len));
+            },
             FuncDef { parameters, body, span } => todo!(),
             FuncCall { function, args, span } => todo!(),
             Scope { statements, span } => todo!(),
@@ -97,7 +103,11 @@ impl Compiler {
             Binary { lhs, operator, rhs, span } => {
                 self.compile_binary_expr(*lhs, operator, *rhs, span)
             },
-            Index { array, index, span } => todo!(),
+            Index { array, index, span } => {
+                self.compile_expr_base(*array);
+                self.compile_expr_base(*index);
+                self.bytecode.push(OpCode::Index);
+            },
             MethodCall { instance, method, span } => todo!(),
             If {
                 condition,
