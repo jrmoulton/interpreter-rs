@@ -8,7 +8,6 @@ edition = "2021"
 [dependencies]
 parser = { workspace = true }
 lexer = { workspace = true }
-object.workspace = true
 
 error-stack = { workspace = true }
 owo-colors = { workspace = true }

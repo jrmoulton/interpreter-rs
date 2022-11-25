@@ -17,8 +17,6 @@ pub enum OpCode {
     GreaterThan,
     LessThan,
     Bang,
-    Array(usize),
-    Index,
     Pop,
     Print,
     NoOp,

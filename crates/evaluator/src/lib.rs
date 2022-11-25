@@ -1,3 +1,4 @@
+pub mod object;
 pub mod structs;
 mod tests;
 

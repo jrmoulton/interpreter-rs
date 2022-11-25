@@ -10,7 +10,6 @@ compiler = {path = "./crates/compiler/"}
 vm = {path = "./crates/vm/"}
 bytecode = {path = "./crates/bytecode/"}
 repl2 = {path = "./crates/repl2/"}
-object = {path = "./crates/object/"}
 
 error-stack = {path = "/Users/jaredmoulton/Developer/hash/main/packages/libs/error-stack/"}
 owo-colors = {version = "3.5.0", features = ["supports-colors"]}

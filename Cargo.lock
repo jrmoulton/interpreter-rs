@@ -138,7 +138,6 @@ dependencies = [
  "error-stack",
  "expect-test",
  "lexer",
- "object",
  "owo-colors",
  "parser",
 ]
@@ -204,14 +203,6 @@ name = "libc"
 version = "0.2.137"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "fc7fcc620a3bff7cdd7a365be3376c97191aeaccc2a603e600951e452615bf89"
-
-[[package]]
-name = "object"
-version = "0.1.0"
-dependencies = [
- "enum_dispatch",
- "parser",
-]
 
 [[package]]
 name = "once_cell"
