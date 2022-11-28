@@ -2,4 +2,6 @@
 .idea/
 .DS_store/
 flamegraph.svg
+*.svg
+test.*
 test.py
