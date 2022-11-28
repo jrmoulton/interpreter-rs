@@ -3,16 +3,18 @@ use std::{
     fmt::{Debug, Display},
 };
 
+type CompObj = Object<()>;
+
 use bytecode::OpCode;
 use compiler::Compiler;
 use error_stack::Result;
-use evaluator::object::{EmptyWrapper, Object};
+use object::Object;
 
 pub struct VM {
-    constants: Vec<Object>,
-    globals: Vec<Object>,
+    constants: Vec<CompObj>,
+    globals: Vec<CompObj>,
     bytecode: Vec<OpCode>,
-    stack: Vec<Object>,
+    stack: Vec<CompObj>,
     ip: usize,
     sp: usize,
 }
@@ -45,13 +47,13 @@ impl VM {
             constants,
             bytecode,
             globals: Vec::new(),
-            stack: vec![evaluator::object::EmptyWrapper::new().into(); 100],
+            stack: vec![().into(); 100],
             sp: 0,
             ip: 0,
         }
     }
 
-    pub fn run(&mut self) -> Result<Object, VMError> {
+    pub fn run(&mut self) -> Result<CompObj, VMError> {
         let instruction_len = self.bytecode.len();
         while self.ip < instruction_len {
             let op = self.bytecode[self.ip];
@@ -70,8 +72,7 @@ impl VM {
                 },
                 GetGlobal(idx) => {
                     self.sp += 1;
-                    self.stack[self.sp] =
-                        std::mem::replace(&mut self.globals[idx], EmptyWrapper::new().into());
+                    self.stack[self.sp] = std::mem::replace(&mut self.globals[idx], ().into());
                 },
                 Add | Sub | Mul | Div | Equal | NotEqual | GreaterThan | LessThan => {
                     self.execute_binary_expression(op)
@@ -98,14 +99,14 @@ impl VM {
         let left = self.pop();
         self.sp += 1;
         self.stack[self.sp] = match left {
-            Object::Integer(int) => match op {
-                OpCode::Neg => (-int.get_value()).into(),
+            CompObj::Integer(int) => match op {
+                OpCode::Neg => (-int).into(),
                 OpCode::Positive => unreachable!("Not actually ever going to get this instruction"),
-                OpCode::Bang => (!int.get_value()).into(),
+                OpCode::Bang => (!int).into(),
                 _ => unreachable!(),
             },
-            Object::Boolean(bool) => match op {
-                OpCode::Bang => (!bool.get_value()).into(),
+            CompObj::Boolean(bool) => match op {
+                OpCode::Bang => (!bool).into(),
                 _ => unreachable!(),
             },
             _ => unimplemented!(),
@@ -117,21 +118,21 @@ impl VM {
         let left = self.pop();
         self.sp += 1;
         self.stack[self.sp] = match (left, right) {
-            (Object::Integer(left_int), Object::Integer(right_int)) => match op {
-                OpCode::Add => (left_int.get_value() + right_int.get_value()).into(),
-                OpCode::Sub => (left_int.get_value() - right_int.get_value()).into(),
-                OpCode::Mul => (left_int.get_value() * right_int.get_value()).into(),
-                OpCode::Div => (left_int.get_value() / right_int.get_value()).into(),
-                OpCode::Equal => (left_int.get_value() == right_int.get_value()).into(),
-                OpCode::NotEqual => (left_int.get_value() != right_int.get_value()).into(),
-                OpCode::GreaterThan => (left_int.get_value() > right_int.get_value()).into(),
-                OpCode::LessThan => (left_int.get_value() < right_int.get_value()).into(),
+            (CompObj::Integer(left_int), CompObj::Integer(right_int)) => match op {
+                OpCode::Add => (left_int + right_int).into(),
+                OpCode::Sub => (left_int - right_int).into(),
+                OpCode::Mul => (left_int * right_int).into(),
+                OpCode::Div => (left_int / right_int).into(),
+                OpCode::Equal => (left_int == right_int).into(),
+                OpCode::NotEqual => (left_int != right_int).into(),
+                OpCode::GreaterThan => (left_int > right_int).into(),
+                OpCode::LessThan => (left_int < right_int).into(),
                 _ => unreachable!(),
             },
-            (Object::String(left_str), Object::String(right_str)) => match op {
-                OpCode::Add => (left_str.get_value().to_owned() + right_str.get_value()).into(),
-                OpCode::Equal => (left_str.get_value() == right_str.get_value()).into(),
-                OpCode::NotEqual => (left_str.get_value() != right_str.get_value()).into(),
+            (CompObj::String(left_str), CompObj::String(right_str)) => match op {
+                OpCode::Add => (left_str + &right_str).into(),
+                OpCode::Equal => (left_str == right_str).into(),
+                OpCode::NotEqual => (left_str != right_str).into(),
                 _ => unimplemented!("Bad operator for string"),
             },
             _ => {
@@ -140,8 +141,8 @@ impl VM {
         }
     }
 
-    fn pop(&mut self) -> Object {
-        let temp = std::mem::replace(&mut self.stack[self.sp], EmptyWrapper::new().into());
+    fn pop(&mut self) -> CompObj {
+        let temp = std::mem::replace(&mut self.stack[self.sp], ().into());
         self.sp -= 1;
         temp
     }

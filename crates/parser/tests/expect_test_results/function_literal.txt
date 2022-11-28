@@ -2,12 +2,14 @@
     Expression {
         expr: FuncDef {
             parameters: [
-                Ident(
-                    Token(Ident("x"), (0,3)->(0,3)),
-                ),
-                Ident(
-                    Token(Ident("y"), (0,6)->(0,6)),
-                ),
+                Ident {
+                    ident: "x",
+                    span: (0,3)->(0,3),
+                },
+                Ident {
+                    ident: "y",
+                    span: (0,6)->(0,6),
+                },
             ],
             body: Scope {
                 statements: [

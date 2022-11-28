@@ -5,16 +5,15 @@ use lexer::{Lexer, PeekLex};
 use parser::parse;
 
 #[allow(unused_imports)]
-use crate::{
-    object::{self, ObjectTrait},
-    {eval, Environment},
-};
+use crate::{eval, Environment};
 
 mod results {
 
+    use crate::EvalObj;
+
     use super::*;
 
-    fn get_inner_helper(code: &'static str) -> object::Object {
+    fn get_inner_helper(code: &'static str) -> EvalObj {
         let lexer = Lexer::new(code.into());
         let mut peek_lex = PeekLex::new(lexer);
         let env = Arc::new(Environment::default());

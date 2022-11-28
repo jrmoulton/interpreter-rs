@@ -16,12 +16,14 @@
                 },
                 FuncDef {
                     parameters: [
-                        Ident(
-                            Token(Ident("x"), (0,19)->(0,19)),
-                        ),
-                        Ident(
-                            Token(Ident("y"), (0,21)->(0,21)),
-                        ),
+                        Ident {
+                            ident: "x",
+                            span: (0,19)->(0,19),
+                        },
+                        Ident {
+                            ident: "y",
+                            span: (0,21)->(0,21),
+                        },
                     ],
                     body: Scope {
                         statements: [

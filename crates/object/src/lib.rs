@@ -1,0 +1,59 @@
+use std::fmt::Display;
+
+use parser::structs::{Ident, Scope};
+
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub enum Object<T> {
+    Integer(i64),
+    Boolean(bool),
+    String(std::string::String),
+    Array(Vec<Object<T>>),
+    EvalFunc { parameters: Vec<Ident>, body: Scope, env: T },
+    CompFunc,
+    Empty,
+}
+impl<T> Object<T> {
+    pub fn expect_bool(self) -> Option<bool> {
+        if let Self::Boolean(val) = self {
+            Some(val)
+        } else {
+            None
+        }
+    }
+}
+impl<T: std::fmt::Debug> Display for Object<T> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_fmt(format_args!("{self:?}"))
+    }
+}
+impl<T> Default for Object<T> {
+    fn default() -> Self {
+        Self::Empty
+    }
+}
+
+impl<T> From<i64> for Object<T> {
+    fn from(val: i64) -> Self {
+        Self::Integer(val)
+    }
+}
+impl<T> From<bool> for Object<T> {
+    fn from(val: bool) -> Self {
+        Self::Boolean(val)
+    }
+}
+impl<T> From<std::string::String> for Object<T> {
+    fn from(val: std::string::String) -> Self {
+        Self::String(val)
+    }
+}
+impl<T> From<()> for Object<T> {
+    fn from(_: ()) -> Self {
+        Self::Empty
+    }
+}
+impl<T> From<Vec<Object<T>>> for Object<T> {
+    fn from(val: Vec<Object<T>>) -> Self {
+        Object::Array(val)
+    }
+}

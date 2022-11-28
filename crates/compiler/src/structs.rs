@@ -1,13 +1,13 @@
 use std::{collections::HashMap, fmt::Debug};
 
 use bytecode::OpCode;
-use evaluator::object::{EmptyWrapper, Object};
+use object::Object;
 
 pub use crate::symbol_table::Symbol;
 use crate::symbol_table::SymbolTable;
 
 pub struct Compiler {
-    pub constants: HashMap<evaluator::object::Object, usize>,
+    pub constants: HashMap<Object<()>, usize>,
     pub bytecode: Vec<OpCode>,
     pub(crate) symbol_table: SymbolTable,
 }
@@ -26,7 +26,7 @@ pub enum OpType {
 impl Compiler {
     pub fn new() -> Self {
         let mut constants = HashMap::new();
-        constants.insert(EmptyWrapper::new().into(), 0);
+        constants.insert(().into(), 0);
         Self {
             constants,
             bytecode: Vec::new(),
@@ -34,8 +34,8 @@ impl Compiler {
         }
     }
 
-    pub fn get_fields(self) -> (Vec<OpCode>, Vec<Object>) {
-        let mut x: Vec<(Object, usize)> = self.constants.into_iter().collect();
+    pub fn get_fields(self) -> (Vec<OpCode>, Vec<Object<()>>) {
+        let mut x: Vec<(Object<()>, usize)> = self.constants.into_iter().collect();
         x.sort_by_key(|k| k.1);
         let mut constants = Vec::new();
         for val in x {

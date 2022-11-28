@@ -233,10 +233,13 @@ impl ElseIfExpr {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub struct Ident(pub Token);
+pub struct Ident {
+    pub ident: String,
+    pub span: Span,
+}
 impl Display for Ident {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.write_fmt(format_args!("{}", self.0))
+        f.write_fmt(format_args!("{}", self.ident))
     }
 }
 
@@ -293,8 +296,8 @@ impl Display for Help {
 pub const SEMI_SUGGEST: Suggestion = Suggestion("Add a semicolon after the expression");
 pub const PREV_SEMI_HELP: Help =
     Help("The statement before this one does not have a semicolon. Did you mean to add one?");
-// Extras
 
+// Extras
 pub(crate) enum TermState {
     None,
     ClosedExpr,

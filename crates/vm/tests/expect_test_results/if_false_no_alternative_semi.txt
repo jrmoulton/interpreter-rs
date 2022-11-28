@@ -1,8 +1,6 @@
 VM {
     constants: [
-        Empty(
-            (),
-        ),
+        Empty,
         Boolean(
             false,
         ),
@@ -29,7 +27,5 @@ VM {
         Pop,
     ],
     sp: 0,
-    top_of_stack: Empty(
-        (),
-    ),
+    top_of_stack: Empty,
 }

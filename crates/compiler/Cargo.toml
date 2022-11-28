@@ -13,6 +13,7 @@ parser = { workspace = true }
 lexer = { workspace = true }
 evaluator = { workspace = true }
 bytecode = { workspace = true }
+object.workspace = true
 
 [dev-dependencies]
 expect-test = { workspace = true }

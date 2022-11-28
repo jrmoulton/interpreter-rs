@@ -120,7 +120,7 @@ fn parse_assign_statement(lexer: &mut PeekLex) -> ParseResult<Statement> {
             None
         },
     };
-    let Some(e)  = error else {
+    let Some(e) = error else {
         let Expr::StringLiteral { val, span } = ident.unwrap() else {
             unreachable!();
         };
@@ -512,19 +512,16 @@ fn parse_function_parameters(lexer: &mut PeekLex) -> ParseResult<Vec<Ident>> {
                     .attach_printable("Expected function parameters or a closing parentheses"));
         };
         match lok_tok.kind {
+            TokenKind::Ident(ident) if !matches!(param_state, ParamState::Ident) => {
+                lexer.next();
+                param_state = ParamState::Ident;
+                identifiers.push(Ident { ident, span: lok_tok.span });
+            },
             TokenKind::Ident(_) => {
                 lexer.next();
-                match param_state {
-                    ParamState::Ident => {
-                        let e = Report::new(ParseError::UnexpectedToken(lok_tok))
-                            .attach_printable("Identifiers should be separated by commas");
-                        error.extend_assign(e);
-                    },
-                    _ => {
-                        param_state = ParamState::Ident;
-                        identifiers.push(Ident(lok_tok));
-                    },
-                }
+                let e = Report::new(ParseError::UnexpectedToken(lok_tok))
+                    .attach_printable("Identifiers should be separated by commas");
+                error.extend_assign(e);
             },
             TokenKind::Comma => {
                 lexer.next();

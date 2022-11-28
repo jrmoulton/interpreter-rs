@@ -8,7 +8,7 @@ use std::{
 use error_stack::Context;
 use parser::structs::*;
 
-use crate::object::Object;
+use crate::EvalObj;
 
 #[derive(Debug)]
 pub enum EvalError {
@@ -17,8 +17,8 @@ pub enum EvalError {
     IdentifierNotFound(String),
     InvalidIfCondition(Expr),
     MismatchedNumOfFunctionParams,
-    UnexpectedObject(Object),
-    IndexOutOfBounds((Object, i64)),
+    UnexpectedObject(EvalObj),
+    IndexOutOfBounds((EvalObj, i64)),
 }
 impl Display for EvalError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
@@ -43,14 +43,14 @@ impl Display for EvalError {
 impl Context for EvalError {}
 
 #[derive(Debug, Default)]
-pub struct EnvWrapper(pub HashMap<String, Object>);
+pub struct EnvWrapper(pub HashMap<String, EvalObj>);
 impl EnvWrapper {
-    pub fn new_from_map(map: HashMap<String, Object>) -> Self {
+    pub fn new_from_map(map: HashMap<String, EvalObj>) -> Self {
         Self(map)
     }
 }
 impl Deref for EnvWrapper {
-    type Target = HashMap<String, Object>;
+    type Target = HashMap<String, EvalObj>;
 
     fn deref(&self) -> &Self::Target {
         &self.0
@@ -81,21 +81,21 @@ impl Default for Environment {
     }
 }
 impl Environment {
-    pub fn new_from_map(map: HashMap<String, Object>) -> Self {
+    pub fn new_from_map(map: HashMap<String, EvalObj>) -> Self {
         Self {
             env: Mutex::new(EnvWrapper::new_from_map(map)),
             outer: None,
         }
     }
 
-    pub fn new_from_map_and_outer(map: HashMap<String, Object>, outer: Arc<Environment>) -> Self {
+    pub fn new_from_map_and_outer(map: HashMap<String, EvalObj>, outer: Arc<Environment>) -> Self {
         Self {
             env: Mutex::new(EnvWrapper::new_from_map(map)),
             outer: Some(outer),
         }
     }
 
-    pub fn find(&self, key: &String) -> Option<Object> {
+    pub fn find(&self, key: &String) -> Option<EvalObj> {
         if !self.env.lock().unwrap().contains_key(key) {
             match &self.outer {
                 Some(outer) => outer.find(key),
@@ -106,7 +106,7 @@ impl Environment {
         }
     }
 
-    pub fn set(&self, key: String, value: Object) {
+    pub fn set(&self, key: String, value: EvalObj) {
         self.env.lock().unwrap().insert(key, value);
     }
 

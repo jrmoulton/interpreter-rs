@@ -267,7 +267,7 @@ fn if_arue_5_else_3_semi() {
     let mut vm = new_vm(code);
     match vm.run() {
         Ok(object) => {
-            assert_eq!(object, evaluator::object::EmptyWrapper.into());
+            assert_eq!(object, ().into());
             let expected = expect_file!["../tests/expect_test_results/if_true_5_else_3_semi.txt"];
             expected.assert_eq(&format!("{vm:#?}"));
         },
@@ -284,7 +284,7 @@ fn if_false_no_alternative_semi() {
     let mut vm = new_vm(code);
     match vm.run() {
         Ok(object) => {
-            assert_eq!(object, evaluator::object::EmptyWrapper.into());
+            assert_eq!(object, ().into());
             let expected =
                 expect_file!["../tests/expect_test_results/if_false_no_alternative_semi.txt"];
             expected.assert_eq(&format!("{vm:#?}"));
@@ -302,7 +302,7 @@ fn if_false_3() {
     let mut vm = new_vm(code);
     match vm.run() {
         Ok(object) => {
-            assert_eq!(object, evaluator::object::EmptyWrapper.into());
+            assert_eq!(object, ().into());
             let expected = expect_file!["../tests/expect_test_results/if_false_3.txt"];
             expected.assert_eq(&format!("{vm:#?}"));
         },

@@ -108,12 +108,14 @@
         ident: "multiply",
         expr: FuncDef {
             parameters: [
-                Ident(
-                    Token(Ident("x"), (11,22)->(11,22)),
-                ),
-                Ident(
-                    Token(Ident("y"), (11,25)->(11,25)),
-                ),
+                Ident {
+                    ident: "x",
+                    span: (11,22)->(11,22),
+                },
+                Ident {
+                    ident: "y",
+                    span: (11,25)->(11,25),
+                },
             ],
             body: Scope {
                 statements: [
