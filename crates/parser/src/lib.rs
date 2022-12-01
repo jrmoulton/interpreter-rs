@@ -66,6 +66,7 @@ fn parse_statements(lexer: &mut PeekLex) -> ParseResult<Vec<Statement>> {
                         .handle_statement_err(lexer, &mut statements, &mut error, &mut term_state);
                 }
             },
+            // Handle all other expressions that don't start with an identifier
             t if is_expr_start(&t) => parse_expression(lexer, Precedence::Lowest)
                 .map(|val| Statement::Expression {
                     span: val.get_span(),

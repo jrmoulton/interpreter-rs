@@ -1,1 +1,1 @@
-Index out of bounds at index:3 on object: String("foo")
+Index out of bounds at index:3 on object: foo

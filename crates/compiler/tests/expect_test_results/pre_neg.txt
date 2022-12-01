@@ -1,8 +1,6 @@
-Compiler {
-    bytecode: [
-        Const(
-            1,
-        ),
-        Neg,
-    ],
-}
+[
+    Const(
+        1,
+    ),
+    Neg,
+]

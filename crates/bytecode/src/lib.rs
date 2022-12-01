@@ -1,4 +1,4 @@
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum OpCode {
     Const(usize),
     JumpNotTruthy(usize),
@@ -6,6 +6,7 @@ pub enum OpCode {
     CreateGlobal,
     SetGlobal(usize),
     GetGlobal(usize),
+    Call,
     Add,
     Sub,
     Mul,

@@ -1,11 +1,9 @@
-Compiler {
-    bytecode: [
-        Const(
-            1,
-        ),
-        Const(
-            2,
-        ),
-        Sub,
-    ],
-}
+[
+    Const(
+        1,
+    ),
+    Const(
+        2,
+    ),
+    Sub,
+]

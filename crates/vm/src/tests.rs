@@ -10,8 +10,9 @@ fn new_vm(code: &'static str) -> VM {
     let mut peek_lex = PeekLex::new(lexer);
     let mut ast = parse(&mut peek_lex).unwrap().into_iter();
     let mut compiler = Compiler::new();
-    compiler.compile(&mut ast);
-    VM::new(compiler)
+    let bytecode = compiler.compile(&mut ast);
+    let constants = compiler.const_vec;
+    VM::new(bytecode, constants)
 }
 
 #[test]

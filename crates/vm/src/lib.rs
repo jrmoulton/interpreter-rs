@@ -6,7 +6,6 @@ use std::{
 type CompObj = Object<()>;
 
 use bytecode::OpCode;
-use compiler::Compiler;
 use error_stack::Result;
 use object::Object;
 
@@ -41,8 +40,7 @@ impl Display for VMError {
 impl Error for VMError {}
 
 impl VM {
-    pub fn new(compiler: Compiler) -> Self {
-        let (bytecode, constants) = compiler.get_fields();
+    pub fn new(bytecode: Vec<OpCode>, constants: Vec<Object<()>>) -> Self {
         Self {
             constants,
             bytecode,
@@ -79,6 +77,7 @@ impl VM {
                 },
                 Neg | Bang => self.execute_prefix_expression(op),
                 Positive => unreachable!("This opcode wont actually be generated"),
+                Call => todo!(),
                 Pop => self.sp -= 1,
                 Jump(idx) => self.ip = idx - 1,
                 JumpNotTruthy(idx) => {

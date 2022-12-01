@@ -47,7 +47,7 @@ impl EvalObj {
             Object::String(val) => val,
             Object::Array(val) => val,
             Object::EvalFunc { .. } => &None::<()>,
-            Object::CompFunc => &None::<()>,
+            Object::CompFunc(_) => &None::<()>,
             Object::Empty => &(),
         }
     }

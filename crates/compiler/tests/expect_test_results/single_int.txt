@@ -1,7 +1,5 @@
-Compiler {
-    bytecode: [
-        Const(
-            1,
-        ),
-    ],
-}
+[
+    Const(
+        1,
+    ),
+]

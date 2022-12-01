@@ -22,6 +22,10 @@ impl IntoIterator for SymbolTable {
     }
 }
 impl SymbolTable {
+    pub(crate) fn new() -> Self {
+        Self::default()
+    }
+
     pub(crate) fn define(&mut self, name: Rc<str>) {
         let curr_idx = self.table.len();
         let symbol = Symbol {
