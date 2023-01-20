@@ -11,25 +11,6 @@ VM {
             3,
         ),
     ],
-    bytecode: [
-        Const(
-            1,
-        ),
-        JumpNotTruthy(
-            4,
-        ),
-        Const(
-            2,
-        ),
-        Jump(
-            5,
-        ),
-        Const(
-            3,
-        ),
-    ],
     sp: 1,
-    top_of_stack: Integer(
-        3,
-    ),
+    top_of_stack: Empty,
 }

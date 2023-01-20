@@ -20,7 +20,7 @@ mod results {
                 expected.assert_eq(&format!("{statements:#?}"));
             },
             Err(e) => {
-                eprintln!("{e}");
+                eprintln!("{e:?}");
                 assert!(false);
             },
         }
@@ -37,7 +37,7 @@ mod results {
                 expected.assert_eq(&format!("{statements:#?}"));
             },
             Err(e) => {
-                eprintln!("{e}");
+                eprintln!("{e:?}");
                 assert!(false);
             },
         }
@@ -54,7 +54,7 @@ mod results {
                 expected.assert_eq(&format!("{statements:#?}"));
             },
             Err(e) => {
-                eprintln!("{e}");
+                eprintln!("{e:?}");
                 assert!(false);
             },
         }
@@ -72,7 +72,7 @@ mod results {
                 expected.assert_eq(&format!("{statements:#?}"));
             },
             Err(e) => {
-                eprintln!("{e}");
+                eprintln!("{e:?}");
                 assert!(false);
             },
         }
@@ -90,7 +90,7 @@ mod results {
                 expected.assert_eq(&format!("{statements:#?}"));
             },
             Err(e) => {
-                eprintln!("{e}");
+                eprintln!("{e:?}");
                 assert!(false);
             },
         }
@@ -109,7 +109,7 @@ mod results {
                 expected.assert_eq(&format!("{statements:#?}"));
             },
             Err(e) => {
-                eprintln!("{e}");
+                eprintln!("{e:?}");
                 assert!(false);
             },
         }
@@ -127,7 +127,7 @@ mod results {
                 expected.assert_eq(&format!("{statements:#?}"));
             },
             Err(e) => {
-                eprintln!("{e}");
+                eprintln!("{e:?}");
                 assert!(false);
             },
         }
@@ -145,7 +145,7 @@ mod results {
                 expected.assert_eq(&format!("{statements:#?}"));
             },
             Err(e) => {
-                eprintln!("{e}");
+                eprintln!("{e:?}");
                 assert!(false);
             },
         }
@@ -162,7 +162,7 @@ mod results {
                 expected.assert_eq(&format!("{statements:#?}"));
             },
             Err(e) => {
-                eprintln!("{e}");
+                eprintln!("{e:?}");
                 assert!(false);
             },
         }
@@ -180,7 +180,7 @@ mod results {
                 expected.assert_eq(&format!("{statements:#?}"));
             },
             Err(e) => {
-                eprintln!("{e}");
+                eprintln!("{e:?}");
                 assert!(false);
             },
         }
@@ -198,7 +198,7 @@ mod results {
                 expected.assert_eq(&format!("{statements:#?}"));
             },
             Err(e) => {
-                eprintln!("{e}");
+                eprintln!("{e:?}");
                 assert!(false);
             },
         }
@@ -216,7 +216,7 @@ mod results {
                 expected.assert_eq(&format!("{statements:#?}"));
             },
             Err(e) => {
-                eprintln!("{e}");
+                eprintln!("{e:?}");
                 assert!(false);
             },
         }
@@ -240,7 +240,7 @@ mod results {
                 expected.assert_eq(&format!("{statements:#?}"));
             },
             Err(e) => {
-                eprintln!("{e}");
+                eprintln!("{e:?}");
                 assert!(false);
             },
         }
@@ -266,7 +266,7 @@ mod results {
                 expected.assert_eq(&format!("{statements:#?}"));
             },
             Err(e) => {
-                eprintln!("{e}");
+                eprintln!("{e:?}");
                 assert!(false);
             },
         }
@@ -288,7 +288,7 @@ mod results {
                 expected.assert_eq(&format!("{statements:#?}"));
             },
             Err(e) => {
-                eprintln!("{e}");
+                eprintln!("{e:?}");
                 assert!(false);
             },
         }
@@ -330,7 +330,7 @@ mod results {
                 expected.assert_eq(&format!("{statements:#?}"));
             },
             Err(e) => {
-                eprintln!("{e}");
+                eprintln!("{e:?}");
                 assert!(false);
             },
         }
@@ -349,7 +349,7 @@ mod results {
                 expected.assert_eq(&format!("{statements:#?}"));
             },
             Err(e) => {
-                eprintln!("{e}");
+                eprintln!("{e:?}");
                 assert!(false);
             },
         }
@@ -366,7 +366,7 @@ mod results {
                 expected.assert_eq(&format!("{statements:#?}"));
             },
             Err(e) => {
-                eprintln!("{e}");
+                eprintln!("{e:?}");
                 assert!(false);
             },
         }
@@ -383,7 +383,7 @@ mod results {
                 expected.assert_eq(&format!("{statements:#?}"));
             },
             Err(e) => {
-                eprintln!("{e}");
+                eprintln!("{e:?}");
                 assert!(false);
             },
         }
@@ -430,7 +430,7 @@ mod results {
                 expected.assert_eq(&format!("{statements:#?}"));
             },
             Err(e) => {
-                eprintln!("{e}");
+                eprintln!("{e:?}");
                 assert!(false);
             },
         }
@@ -448,7 +448,7 @@ mod results {
                 expected.assert_eq(&format!("{statements:#?}"));
             },
             Err(e) => {
-                eprintln!("{e}");
+                eprintln!("{e:?}");
                 assert!(false);
             },
         }
@@ -467,7 +467,7 @@ mod results {
                 expected.assert_eq(&format!("{statements:#?}"));
             },
             Err(e) => {
-                eprintln!("{e}");
+                eprintln!("{e:?}");
                 assert!(false);
             },
         }
@@ -483,7 +483,7 @@ mod results {
                 expected.assert_eq(&format!("{statements:#?}"));
             },
             Err(e) => {
-                eprintln!("{e}");
+                eprintln!("{e:?}");
                 assert!(false);
             },
         }
@@ -500,7 +500,7 @@ mod results {
                 expected.assert_eq(&format!("{statements:#?}"));
             },
             Err(e) => {
-                eprintln!("{e}");
+                eprintln!("{e:?}");
                 assert!(false);
             },
         }
@@ -517,7 +517,7 @@ mod results {
                 expected.assert_eq(&format!("{statements:#?}"));
             },
             Err(e) => {
-                eprintln!("{e}");
+                eprintln!("{e:?}");
                 assert!(false);
             },
         }
@@ -534,7 +534,7 @@ mod results {
                 expected.assert_eq(&format!("{statements:#?}"));
             },
             Err(e) => {
-                eprintln!("{e}");
+                eprintln!("{e:?}");
                 assert!(false);
             },
         }
@@ -552,7 +552,7 @@ mod results {
                 expected.assert_eq(&format!("{statements:#?}"));
             },
             Err(e) => {
-                eprintln!("{e}");
+                eprintln!("{e:?}");
                 assert!(false);
             },
         }
@@ -569,7 +569,7 @@ mod results {
                 expected.assert_eq(&format!("{statements:#?}"));
             },
             Err(e) => {
-                eprintln!("{e}");
+                eprintln!("{e:?}");
                 assert!(false);
             },
         }
@@ -586,7 +586,7 @@ mod results {
                 expected.assert_eq(&format!("{statements:#?}"));
             },
             Err(e) => {
-                eprintln!("{e}");
+                eprintln!("{e:?}");
                 assert!(false);
             },
         }
@@ -603,7 +603,7 @@ mod results {
                 expected.assert_eq(&format!("{statements:#?}"));
             },
             Err(e) => {
-                eprintln!("{e}");
+                eprintln!("{e:?}");
                 assert!(false);
             },
         }
@@ -620,7 +620,7 @@ mod results {
                 expected.assert_eq(&format!("{statements:#?}"));
             },
             Err(e) => {
-                eprintln!("{e}");
+                eprintln!("{e:?}");
                 assert!(false);
             },
         }
@@ -643,7 +643,7 @@ mod results {
                 expected.assert_eq(&ret_str);
             },
             Err(e) => {
-                eprintln!("{e}");
+                eprintln!("{e:?}");
                 assert!(false);
             },
         }

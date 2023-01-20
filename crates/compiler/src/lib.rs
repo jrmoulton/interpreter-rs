@@ -108,7 +108,8 @@ impl Compiler {
             },
             FuncCall { function, args, span } => {
                 // self.bytecode.push(OpCode::Const(*idx));
-                todo!()
+                self.compile_expr_base(*function, bytecode, symbol_table);
+                bytecode.push(OpCode::Call);
             },
             Scope { statements, span } => todo!(),
             Prefix { operator, expression, span } => {

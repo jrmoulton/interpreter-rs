@@ -4,7 +4,7 @@ use std::{
 };
 
 use error_stack::Report;
-use lexer::{Span, Token};
+use lexer::{PeekLex, Span, Token};
 use owo_colors::OwoColorize;
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
@@ -112,6 +112,31 @@ impl Expr {
             | Index { span, .. }
             | If { span, .. }
             | MethodCall { span, .. } => *span,
+        }
+    }
+    pub fn into_statement(
+        self, lexer: &mut PeekLex, error: &mut Option<Report<ParseError>>,
+    ) -> Statement {
+        let terminated = match crate::expect_peek(lexer, lexer::TokenKind::Semicolon) {
+            Ok(_) => true,
+            Err(_) => {
+                match lexer.peek().cloned() {
+                    Some(tok) if !matches!(tok.kind, lexer::TokenKind::RBrace) => {
+                        error.extend_assign(
+                            Report::new(ParseError::UnexpectedToken(tok))
+                                .attach(EXPR_STATEMENT)
+                                .attach(SEMI_SUGGEST),
+                        );
+                    },
+                    _ => {},
+                };
+                false
+            },
+        };
+        Statement::Expression {
+            span: self.get_span(),
+            expr: self,
+            terminated,
         }
     }
 }
@@ -296,12 +321,14 @@ impl Display for Help {
 pub const SEMI_SUGGEST: Suggestion = Suggestion("Add a semicolon after the expression");
 pub const PREV_SEMI_HELP: Help =
     Help("The statement before this one does not have a semicolon. Did you mean to add one?");
+pub const EXPR_STATEMENT: Help =
+    Help("If expressions are not the end of the input they should be terminated with semicolons");
 
 // Extras
-pub(crate) enum TermState {
-    None,
-    ClosedExpr,
-    OpenExpr,
+
+pub(crate) enum AssignLet {
+    Assign,
+    Let(Token),
 }
 
 pub(crate) trait ExtendAssign {
@@ -319,93 +346,15 @@ impl ExtendAssign for Option<error_stack::Report<ParseError>> {
 
 pub type ParseResult<T> = error_stack::Result<T, ParseError>;
 
-pub(crate) trait ESResultExt {
-    fn handle_statement_err(
-        self, lexer: &mut lexer::PeekLex, statements: &mut Vec<Statement>,
-        error: &mut Option<Report<ParseError>>, term_state: &mut TermState,
-    );
+pub(crate) trait PushExtend {
+    fn push_extend(self, statements: &mut Vec<Statement>, error: &mut Option<Report<ParseError>>);
 }
 
-impl ESResultExt for ParseResult<Statement> {
-    fn handle_statement_err(
-        self, lexer: &mut lexer::PeekLex, statements: &mut Vec<Statement>,
-        error: &mut Option<Report<ParseError>>, term_state: &mut TermState,
-    ) {
-        // if statements have an error still check for if it's terminated
+impl PushExtend for ParseResult<Statement> {
+    fn push_extend(self, statements: &mut Vec<Statement>, error: &mut Option<Report<ParseError>>) {
         match self {
-            Ok(mut statement) => match statement {
-                Statement::Let { .. } | Statement::Assign { .. } | Statement::Return { .. } => {
-                    match crate::expect_peek(lexer, lexer::TokenKind::Semicolon) {
-                        Ok(_) => {
-                            if matches!(term_state, TermState::OpenExpr) {
-                                // if the statement is terminated and the prvious statement was not
-                                error.extend_assign(
-                                    Report::new(ParseError::UnexpectedStatement(statement))
-                                        .attach(PREV_SEMI_HELP),
-                                );
-                            } else {
-                                // if the statement is terminated and the prvious statement was also
-                                statements.push(statement);
-                            }
-                        },
-                        Err(_) => {
-                            if matches!(term_state, TermState::OpenExpr) {
-                                // if the statement is not terminated and the prvious statement was
-                                // also not terminated
-                                error.extend_assign(
-                                    Report::new(ParseError::UnexpectedStatement(statement))
-                                        .attach(PREV_SEMI_HELP),
-                                );
-                            } else {
-                                // if the statement is not terminated and the prvious statement was
-                                // terminated
-                                error.extend_assign(
-                                    Report::new(ParseError::ExpectedTerminatedStatement(statement))
-                                        .attach(Help(
-                                            "Statements should be terminated with semicolons",
-                                        ))
-                                        .attach(SEMI_SUGGEST),
-                                );
-                            }
-                        },
-                    };
-                    *term_state = TermState::ClosedExpr;
-                },
-                Statement::Expression { ref mut terminated, .. } => {
-                    match crate::expect_peek(lexer, lexer::TokenKind::Semicolon) {
-                        Ok(_) => {
-                            if matches!(term_state, TermState::OpenExpr) {
-                                // if the expression statement is terminated but the prvious
-                                // statement was not
-                                error.extend_assign(
-                                    Report::new(ParseError::UnexpectedStatement(statement))
-                                        .attach(PREV_SEMI_HELP),
-                                );
-                            } else {
-                                *terminated = true;
-                                statements.push(statement);
-                                *term_state = TermState::ClosedExpr;
-                            }
-                        },
-                        Err(_) => {
-                            if matches!(term_state, TermState::None | TermState::ClosedExpr) {
-                                statements.push(statement);
-                                *term_state = TermState::OpenExpr;
-                            } else {
-                                // if the expression statement is not terminated and the prvious
-                                // statement was also not
-                                error.extend_assign(
-                                    Report::new(ParseError::UnexpectedStatement(statement))
-                                        .attach(PREV_SEMI_HELP),
-                                );
-                            }
-                        },
-                    }
-                },
-            },
-            Err(e) => {
-                error.extend_assign(e);
-            },
-        };
+            Ok(statement) => statements.push(statement),
+            Err(e) => error.extend_assign(e),
+        }
     }
 }

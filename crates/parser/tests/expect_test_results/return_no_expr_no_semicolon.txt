@@ -1,2 +1,7 @@
 Error: Unexpected end of input
 ╰╴ Expected an expression
+
+Error: Unexpected end of input
+├╴ Expected a `;`
+├╴ Help: Return statements should be terminated with semicolons
+╰╴ Suggestion: Add a semicolon after the expression

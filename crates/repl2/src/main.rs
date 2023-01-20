@@ -47,7 +47,10 @@ fn main() -> Result<(), Errors> {
     let mut compiler = Compiler::new();
     let bytecode = compiler.compile(&mut ast);
     let constants = compiler.const_vec;
-    let mut vm = VM::new(bytecode, constants);
-    vm.run().change_context(Errors::VirtualMachine)?;
+    let mut vm = VM::new(constants);
+    println!(
+        "{}",
+        vm.run(bytecode).change_context(Errors::VirtualMachine)?
+    );
     Ok(())
 }

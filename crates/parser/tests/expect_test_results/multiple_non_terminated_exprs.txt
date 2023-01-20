@@ -1,2 +1,3 @@
-Error: Unexpected statement: x
-╰╴ Help: The statement before this one does not have a semicolon. Did you mean to add one?
+Unexpected Token: `x`
+├╴ Help: If expressions are not the end of the input they should be terminated with semicolons
+╰╴ Suggestion: Add a semicolon after the expression

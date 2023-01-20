@@ -1,3 +1,4 @@
-Error: Expected token ';' after statement: return 5;
-├╴ Help: Statements should be terminated with semicolons
+Error: Unexpected end of input
+├╴ Expected a `;`
+├╴ Help: Return statements should be terminated with semicolons
 ╰╴ Suggestion: Add a semicolon after the expression

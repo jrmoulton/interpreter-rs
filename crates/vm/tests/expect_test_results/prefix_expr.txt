@@ -5,14 +5,6 @@ VM {
             57,
         ),
     ],
-    bytecode: [
-        Const(
-            1,
-        ),
-        Neg,
-    ],
     sp: 1,
-    top_of_stack: Integer(
-        -57,
-    ),
+    top_of_stack: Empty,
 }

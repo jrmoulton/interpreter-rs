@@ -12,7 +12,6 @@ use object::Object;
 pub struct VM {
     constants: Vec<CompObj>,
     globals: Vec<CompObj>,
-    bytecode: Vec<OpCode>,
     stack: Vec<CompObj>,
     ip: usize,
     sp: usize,
@@ -21,7 +20,6 @@ impl Debug for VM {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("VM")
             .field("constants", &self.constants)
-            .field("bytecode", &self.bytecode)
             .field("sp", &self.sp)
             .field("top_of_stack", &self.stack[self.sp])
             .finish()
@@ -40,26 +38,25 @@ impl Display for VMError {
 impl Error for VMError {}
 
 impl VM {
-    pub fn new(bytecode: Vec<OpCode>, constants: Vec<Object<()>>) -> Self {
+    pub fn new(constants: Vec<Object<()>>) -> Self {
         Self {
             constants,
-            bytecode,
             globals: Vec::new(),
             stack: vec![().into(); 100],
-            sp: 0,
+            sp: 1,
             ip: 0,
         }
     }
 
-    pub fn run(&mut self) -> Result<CompObj, VMError> {
-        let instruction_len = self.bytecode.len();
+    pub fn run(&mut self, bytecode: Vec<OpCode>) -> Result<CompObj, VMError> {
+        let instruction_len = bytecode.len();
         while self.ip < instruction_len {
-            let op = self.bytecode[self.ip];
+            let op = bytecode[self.ip];
             use OpCode::*;
             match op {
                 Const(idx) => {
-                    self.sp += 1;
                     self.stack[self.sp] = self.constants[idx].clone();
+                    self.sp += 1;
                 },
                 CreateGlobal => {
                     let obj = self.pop();
@@ -69,15 +66,28 @@ impl VM {
                     self.globals[idx] = self.pop();
                 },
                 GetGlobal(idx) => {
-                    self.sp += 1;
                     self.stack[self.sp] = std::mem::replace(&mut self.globals[idx], ().into());
+                    self.sp += 1;
                 },
                 Add | Sub | Mul | Div | Equal | NotEqual | GreaterThan | LessThan => {
                     self.execute_binary_expression(op)
                 },
                 Neg | Bang => self.execute_prefix_expression(op),
                 Positive => unreachable!("This opcode wont actually be generated"),
-                Call => todo!(),
+                Call => {
+                    let func = self.pop();
+                    match func {
+                        Object::CompFunc(bytecode) => {
+                            let temp_ip = self.ip;
+                            self.ip = 0;
+                            let temp = self.run(bytecode)?;
+                            self.ip = temp_ip;
+                            self.stack[self.sp] = temp;
+                            self.sp += 1;
+                        },
+                        _ => unimplemented!(),
+                    }
+                },
                 Pop => self.sp -= 1,
                 Jump(idx) => self.ip = idx - 1,
                 JumpNotTruthy(idx) => {
@@ -91,12 +101,11 @@ impl VM {
             }
             self.ip += 1;
         }
-        Ok(self.stack[self.sp].clone())
+        Ok(self.pop())
     }
 
     fn execute_prefix_expression(&mut self, op: OpCode) {
         let left = self.pop();
-        self.sp += 1;
         self.stack[self.sp] = match left {
             CompObj::Integer(int) => match op {
                 OpCode::Neg => (-int).into(),
@@ -110,12 +119,12 @@ impl VM {
             },
             _ => unimplemented!(),
         };
+        self.sp += 1;
     }
 
     fn execute_binary_expression(&mut self, op: OpCode) {
         let right = self.pop();
         let left = self.pop();
-        self.sp += 1;
         self.stack[self.sp] = match (left, right) {
             (CompObj::Integer(left_int), CompObj::Integer(right_int)) => match op {
                 OpCode::Add => (left_int + right_int).into(),
@@ -137,13 +146,13 @@ impl VM {
             _ => {
                 unimplemented!("Add error here");
             },
-        }
+        };
+        self.sp += 1;
     }
 
     fn pop(&mut self) -> CompObj {
-        let temp = std::mem::replace(&mut self.stack[self.sp], ().into());
         self.sp -= 1;
-        temp
+        std::mem::replace(&mut self.stack[self.sp], ().into())
     }
 }
 

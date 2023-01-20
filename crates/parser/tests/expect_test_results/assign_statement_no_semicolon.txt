@@ -1,3 +1,4 @@
-Error: Expected token ';' after statement: x = true
+Error: Unexpected end of input
+├╴ Expected a `;`
 ├╴ Help: Statements should be terminated with semicolons
 ╰╴ Suggestion: Add a semicolon after the expression

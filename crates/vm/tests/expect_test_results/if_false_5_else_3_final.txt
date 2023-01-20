@@ -14,29 +14,6 @@ VM {
             404,
         ),
     ],
-    bytecode: [
-        Const(
-            1,
-        ),
-        JumpNotTruthy(
-            4,
-        ),
-        Const(
-            2,
-        ),
-        Jump(
-            5,
-        ),
-        Const(
-            3,
-        ),
-        Pop,
-        Const(
-            4,
-        ),
-    ],
     sp: 1,
-    top_of_stack: Integer(
-        404,
-    ),
+    top_of_stack: Empty,
 }

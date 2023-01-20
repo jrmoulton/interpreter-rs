@@ -5,17 +5,6 @@ VM {
             "5",
         ),
     ],
-    bytecode: [
-        Const(
-            1,
-        ),
-        Const(
-            1,
-        ),
-        Add,
-    ],
     sp: 1,
-    top_of_stack: String(
-        "55",
-    ),
+    top_of_stack: Empty,
 }

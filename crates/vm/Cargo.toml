@@ -17,4 +17,5 @@ error-stack = {workspace = true}
 lexer = { workspace = true }
 parser = { workspace = true }
 expect-test = {workspace = true}
+pretty_assertions = "1.3.0"
 

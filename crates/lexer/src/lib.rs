@@ -21,21 +21,22 @@ impl Display for LexerError {
 impl Context for LexerError {}
 
 #[derive(PartialEq, Eq, PartialOrd)]
+#[repr(u8)]
 pub enum Precedence {
-    Lowest = 0,
-    LogicOr = 1,
-    LogicAnd = 2,
-    BitOr = 3,
-    BitAnd = 4,
-    Equals = 5,
-    LessGreat = 6,
-    Sum = 7,
-    Product = 8,
-    Prefix = 9,
+    Lowest,
+    LogicOr,
+    LogicAnd,
+    BitOr,
+    BitAnd,
+    Equals,
+    LessGreat,
+    Sum,
+    Product,
+    Prefix,
     // This matches the Dot and it needs to be less than call
-    Method = 10,
-    Call = 11,
-    Index = 12,
+    Method,
+    Call,
+    Index,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
@@ -77,7 +78,6 @@ pub enum TokenKind {
     Bang,
     BitAnd,
     BitOr,
-
     Or,
     And,
 
@@ -277,7 +277,8 @@ impl PeekLex {
     }
 }
 impl PeekLex
-where PeekLex: Iterator
+where
+    PeekLex: Iterator,
 {
     pub fn peek(&mut self) -> Option<&Token> {
         let iter = &mut self.iter;
@@ -329,14 +330,15 @@ impl Lexer {
             Report::install_debug_hook::<Location>(|_value, _context| {});
         }
         Self {
-            input: input.split('\n').map(String::from).collect::<Vec<String>>(),
+            input: input.split('\n').map(String::from).collect(),
             line: 0,
             column: 0,
         }
     }
 
     fn update(&mut self, input: String) {
-        self.input.push(input);
+        self.input
+            .extend(input.split('\n').map(String::from).collect::<Vec<_>>());
     }
 
     // if at end of line move to next, eat white space, if at end of line move to
