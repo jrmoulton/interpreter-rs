@@ -1,5 +1,11 @@
 Unexpected Token: `;`
 ╰╴ expressions should be separated by commas
 
+Unexpected Token: `;`
+╰╴ Expected an expression
+
+Unexpected Token: `y`
+╰╴ expressions should be separated by commas
+
 Unexpected Token: `)`
 ╰╴ Expected a statement or an expression

@@ -37,7 +37,7 @@ fn parse_statements(lexer: &mut PeekLex) -> ParseResult<Vec<Statement>> {
             Let => parse_let_statement(lexer).push_extend(&mut statements, &mut error),
             Return => parse_return_statement(lexer).push_extend(&mut statements, &mut error),
             Ident(_) => {
-                // Need to decide if ident is start of expression or an assign statement
+                // if ident is start of expression or an assign statement
                 if matches!(is_peek2(lexer, TokenKind::Assign), Ok(_)) {
                     parse_assign_statement(lexer).push_extend(&mut statements, &mut error);
                 } else {
@@ -174,11 +174,10 @@ fn parse_return_statement(lexer: &mut PeekLex) -> ParseResult<Statement> {
 }
 
 fn parse_identifier(lexer: &mut PeekLex) -> ParseResult<Expr> {
-    let next = lexer.peek().cloned();
+    let next = lexer.next();
     match next {
         Some(lok_tok) => match lok_tok.kind {
             TokenKind::Ident(ident_str) => {
-                lexer.next();
                 Ok(Expr::StringLiteral { val: ident_str, span: lok_tok.span })
             },
             _ => Err(Report::new(ParseError::UnexpectedToken(lok_tok))
@@ -237,6 +236,7 @@ fn parse_expression(lexer: &mut PeekLex, prec: Precedence) -> ParseResult<Expr> 
     Ok(left_exp)
 }
 
+#[inline]
 fn parse_left_expression(lexer: &mut PeekLex) -> ParseResult<Expr> {
     use TokenKind::*;
     let lhs_val_peek = lexer.peek().cloned();
@@ -311,7 +311,6 @@ fn parse_array_index(lexer: &mut PeekLex, left: Expr) -> ParseResult<Expr> {
         })   
     };
     Err(e)
-    
 }
 
 fn parse_array(lexer: &mut PeekLex) -> ParseResult<Expr> {
@@ -368,69 +367,43 @@ fn parse_call_expression(lexer: &mut PeekLex, function: Expr) -> ParseResult<Exp
 }
 
 // A function to parse the arguments to a function when it is being called
-// TODO: Refactor this function
 fn parse_call_args(lexer: &mut PeekLex, end_token: TokenKind) -> ParseResult<Vec<Expr>> {
-    // A enum as  a state machine to track what the previous token was. This gives
-    // better options for error messages
-    enum ArgState {
-        Empty,
-        Arg,
-        Comma,
-    }
-    use ArgState::*;
-    let mut error: Option<Report<ParseError>> = None;
     let mut arguments: Vec<Expr> = Vec::new();
-    let mut arg_state = Empty;
-    let mut again = true;
+    let mut error: Option<Report<ParseError>> = None;
+    let mut arg_state = ArgState::Empty;
 
-    let mut peek = lexer.peek().cloned();
-    while again {
-        match peek {
-            Some(lok_tok) => match lok_tok.kind {
-                TokenKind::Comma => {
-                    lexer.next();
-                    match arg_state {
-                        Empty | Comma => {
-                            let e = Report::new(ParseError::UnexpectedToken(lok_tok))
-                                .attach_printable("There should be an expression before the comma");
-                            error.extend_assign(e);
-                        },
-                        Arg => {},
-                    };
-                    arg_state = Comma;
-                },
-                token if token.is(&end_token) => {
-                    again = false;
-                },
-                _ => {
-                    match arg_state {
-                        Arg => {
-                            let e = Report::new(ParseError::UnexpectedToken(lok_tok))
-                                .attach_printable("expressions should be separated by commas");
-                            error.extend_assign(e);
-                            lexer.next();
-                        },
-                        _ => {
-                            arg_state = Arg;
-                        },
-                    };
-                    match parse_expression(lexer, Precedence::Lowest) {
-                        Ok(arg) => {
-                            arguments.push(arg);
-                        },
-                        Err(e) => {
-                            error.extend_assign(e);
-                        },
-                    }
-                },
+    while let Some(lok_tok) = lexer.peek() {
+        match &lok_tok.kind {
+            TokenKind::Comma => {
+                // Check if the previous token was an expression or a comma
+                if arg_state == ArgState::Empty || arg_state == ArgState::Comma {
+                    let e = Report::new(ParseError::UnexpectedToken(lok_tok.clone()))
+                        .attach_printable("There should be an expression before the comma");
+                    error.extend_assign(e);
+                }
+                arg_state = ArgState::Comma;
+                lexer.next();
             },
-            None => {
-                let e = Report::new(ParseError::Eof)
-                    .attach_printable("Expected function parameters or a closing parentheses");
-                error.extend_assign(e);
-            },
+            // Exit the loop if we find the end token
+            token if token.is(&end_token) => break,
+            _ => {
+                // Check if the previous token was an expression
+                if arg_state == ArgState::Arg {
+                    let e = Report::new(ParseError::UnexpectedToken(lok_tok.clone()))
+                        .attach_printable("expressions should be separated by commas");
+                    error.extend_assign(e);
+                }
+                arg_state = ArgState::Arg;
+                match parse_expression(lexer, Precedence::Lowest) {
+                    Ok(arg) => {
+                        arguments.push(arg);
+                    },
+                    Err(e) => {
+                        error.extend_assign(e);
+                    },
+                }
+            }
         }
-        peek = lexer.peek().cloned();
     }
 
     if let Some(e) = error {
@@ -480,65 +453,42 @@ fn parse_func_literal(lexer: &mut PeekLex) -> ParseResult<Expr> {
 }
 
 // A function to parse formal parameters of a function definition
-// TODO: Refactor this function
 fn parse_function_parameters(lexer: &mut PeekLex) -> ParseResult<Vec<Ident>> {
-    // A enum as  a state machine to track what the previous token was. This gives
-    // better options for error messages
-    enum ParamState {
-        Empty,
-        Ident,
-        Comma,
-    }
-    let mut error: Option<Report<ParseError>> = None;
     let mut identifiers = Vec::new();
+    let mut error: Option<Report<ParseError>> = None;
     let mut param_state = ParamState::Empty;
-    let mut again = true;
 
-    let mut peek = lexer.peek().cloned();
-    while again {
-        let Some(lok_tok) = peek else {
-                return Err(Report::new(ParseError::Eof)
-                    .attach_printable("Expected function parameters or a closing parentheses"));
-        };
-        match lok_tok.kind {
-            TokenKind::Ident(ident) if !matches!(param_state, ParamState::Ident) => {
-                lexer.next();
+    while let Some(lok_tok) = lexer.peek() {
+        match &lok_tok.kind {
+            TokenKind::Ident(ident) => {
+                // Check if the previous token was an identifier or a comma
+                if param_state == ParamState::Ident {
+                    let e = Report::new(ParseError::UnexpectedToken(lok_tok.clone()))
+                        .attach_printable("Identifiers should be separated by commas");
+                    error.extend_assign(e);
+                }
                 param_state = ParamState::Ident;
-                identifiers.push(Ident { ident, span: lok_tok.span });
-            },
-            TokenKind::Ident(_) => {
-                lexer.next();
-                let e = Report::new(ParseError::UnexpectedToken(lok_tok))
-                    .attach_printable("Identifiers should be separated by commas");
-                error.extend_assign(e);
+                identifiers.push(Ident { ident: ident.clone(), span: lok_tok.span });
             },
             TokenKind::Comma => {
-                lexer.next();
-                match param_state {
-                    ParamState::Empty | ParamState::Comma => {
-                        let e = Report::new(ParseError::UnexpectedToken(lok_tok))
-                            .attach_printable("There should be an identifier before the comma");
-                        if let Some(error) = error.as_mut() {
-                            error.extend_one(e);
-                        } else {
-                            error = Some(e);
-                        };
-                    },
-                    ParamState::Ident => {},
-                };
+                // Check if the previous token was an identifier or a comma
+                if param_state == ParamState::Empty || param_state == ParamState::Comma {
+                    let e = Report::new(ParseError::UnexpectedToken(lok_tok.clone()))
+                        .attach_printable("There should be an identifier before the comma");
+                    error.extend_assign(e);
+                }
                 param_state = ParamState::Comma;
             },
-            TokenKind::RParen => {
-                again = false;
-            },
+            // Exit the loop if we find the closing parentheses
+            TokenKind::RParen => break,
             _ => {
-                let e = Report::new(ParseError::UnexpectedToken(lok_tok))
+                let e = Report::new(ParseError::UnexpectedToken(lok_tok.clone()))
                     .attach_printable("Expected an identifier or a closing parentheses");
                 error.extend_assign(e);
-                again = false;
-            },
+                break;
+            }
         }
-        peek = lexer.peek().cloned();
+        lexer.next();
     }
 
     if let Some(e) = error {
@@ -547,6 +497,7 @@ fn parse_function_parameters(lexer: &mut PeekLex) -> ParseResult<Vec<Ident>> {
         Ok(identifiers)
     }
 }
+
 
 fn parse_grouped_expression(lexer: &mut PeekLex) -> ParseResult<Expr> {
     let mut error: Option<Report<ParseError>> = None;

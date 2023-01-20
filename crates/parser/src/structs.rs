@@ -331,6 +331,19 @@ pub(crate) enum AssignLet {
     Let(Token),
 }
 
+#[derive(PartialEq)]
+pub(crate) enum ArgState {
+    Empty,
+    Arg,
+    Comma,
+}
+#[derive(PartialEq)]
+pub(crate) enum ParamState {
+    Empty,
+    Ident,
+    Comma,
+}
+
 pub(crate) trait ExtendAssign {
     fn extend_assign(&mut self, e: error_stack::Report<ParseError>);
 }
