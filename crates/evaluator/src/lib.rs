@@ -37,9 +37,11 @@ impl EvalObj {
     fn is_return(&self) -> bool {
         self.is_return
     }
+
     fn set_return(&mut self) {
         self.is_return = true;
     }
+
     pub fn inner(&self) -> &dyn Any {
         match &self.obj {
             Object::Integer(val) => val,

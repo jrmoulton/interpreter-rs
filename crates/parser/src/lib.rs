@@ -19,7 +19,8 @@ pub fn parse(lexer: &mut PeekLex) -> ParseResult<Vec<Statement>> {
     }
     let statements = parse_statements(lexer);
 
-    // After matching everything make sure that the last token is popped off if it was only peeked before`
+    // After matching everything make sure that the last token is popped off if it
+    // was only peeked before`
     lexer.next();
 
     statements
@@ -301,7 +302,10 @@ fn parse_array_index(lexer: &mut PeekLex, left: Expr) -> ParseResult<Expr> {
     };
     let rbracket = match expect_peek(lexer, TokenKind::RBracket) {
         Ok(tok) => Some(tok),
-        Err(e) => {error.extend_assign(e); None},
+        Err(e) => {
+            error.extend_assign(e);
+            None
+        },
     };
     let Some(e) = error else {
      return Ok(Expr::Index {
@@ -402,7 +406,7 @@ fn parse_call_args(lexer: &mut PeekLex, end_token: TokenKind) -> ParseResult<Vec
                         error.extend_assign(e);
                     },
                 }
-            }
+            },
         }
     }
 
@@ -468,7 +472,10 @@ fn parse_function_parameters(lexer: &mut PeekLex) -> ParseResult<Vec<Ident>> {
                     error.extend_assign(e);
                 }
                 param_state = ParamState::Ident;
-                identifiers.push(Ident { ident: ident.clone(), span: lok_tok.span });
+                identifiers.push(Ident {
+                    ident: ident.clone(),
+                    span: lok_tok.span,
+                });
             },
             TokenKind::Comma => {
                 // Check if the previous token was an identifier or a comma
@@ -486,7 +493,7 @@ fn parse_function_parameters(lexer: &mut PeekLex) -> ParseResult<Vec<Ident>> {
                     .attach_printable("Expected an identifier or a closing parentheses");
                 error.extend_assign(e);
                 break;
-            }
+            },
         }
         lexer.next();
     }
@@ -497,7 +504,6 @@ fn parse_function_parameters(lexer: &mut PeekLex) -> ParseResult<Vec<Ident>> {
         Ok(identifiers)
     }
 }
-
 
 fn parse_grouped_expression(lexer: &mut PeekLex) -> ParseResult<Expr> {
     let mut error: Option<Report<ParseError>> = None;

@@ -12,6 +12,7 @@ pub enum LexerError {
     InvalidUtf8,
     UnknownChar,
     IntegerOverflow,
+    UnterminatedString,
 }
 impl Display for LexerError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
@@ -240,6 +241,19 @@ impl Display for Token {
         f.write_fmt(format_args!("{}", self.kind))
     }
 }
+impl Token {
+    fn default_from_row_col(row: usize, col: usize) -> Self {
+        Self {
+            span: Span {
+                start_row: row,
+                start_col: col,
+                end_row: row,
+                end_col: col,
+            },
+            kind: TokenKind::Illegal,
+        }
+    }
+}
 
 #[derive(Debug, Clone)]
 pub struct PeekLex {
@@ -344,55 +358,38 @@ impl Lexer {
     // if at end of line move to next, eat white space, if at end of line move to
     // next, eat white space
     fn next_token(&mut self) -> Result<Option<Token>, LexerError> {
-        let mut line = match self.input.get(self.line) {
-            Some(line) => line.as_bytes(),
-            None => {
-                return Ok(None);
-            },
+        let cur_line = loop {
+            match self.input.get(self.line) {
+                Some(line_str) => {
+                    let line = line_str.as_bytes();
+                    while self.column < line.len() && (line[self.column] as char).is_whitespace() {
+                        self.column += 1;
+                    }
+                    if self.column < line.len() {
+                        break line;
+                    } else {
+                        self.line += 1;
+                        self.column = 0;
+                    }
+                },
+                None => return Ok(None),
+            }
         };
-        while line
-            .get(self.column)
-            .map(|val| *val as char)
-            .unwrap_or(' ')
-            .is_whitespace()
-            || self.column >= line.len()
-        {
-            if self.column >= line.len() {
-                self.line += 1;
-                self.column = 0;
-                line = match self.input.get(self.line) {
-                    Some(line) => line.as_bytes(),
-                    None => {
-                        return Ok(None);
-                    },
-                };
-            }
-            while self.column < line.len() && (line[self.column] as char).is_whitespace() {
-                self.column += 1;
-            }
-        }
 
-        let mut token = Token {
-            span: Span {
-                start_row: self.line,
-                start_col: self.column,
-                end_row: self.line,
-                end_col: self.column,
-            },
-            kind: TokenKind::Illegal,
-        };
-        if let Some(ch) = line.get(self.column) {
+        let mut token = Token::default_from_row_col(self.line, self.column);
+
+        if let Some(ch) = cur_line.get(self.column) {
             match *ch as char {
                 '0'..='9' => {
                     let mut len = 1;
-                    while self.column + len < line.len()
-                        && matches!(line[self.column + len] as char, '0'..='9')
+                    while self.column + len < cur_line.len()
+                        && matches!(cur_line[self.column + len] as char, '0'..='9')
                     {
                         len += 1;
                     }
                     token.span.end_col += len - 1;
                     token.kind = TokenKind::Int(
-                        std::str::from_utf8(&line[self.column..self.column + len])
+                        std::str::from_utf8(&cur_line[self.column..self.column + len])
                             .into_report()
                             .change_context(LexerError::InvalidUtf8)?
                             .parse::<i64>()
@@ -403,15 +400,6 @@ impl Lexer {
                             )?,
                     );
                     self.column += len - 1;
-                },
-                '=' => {
-                    token.kind = TokenKind::Assign;
-                    if let Some(ch) = line.get(self.column + 1) {
-                        if *ch as char == '=' {
-                            token.kind = TokenKind::Eq;
-                            self.column += 1;
-                        }
-                    }
                 },
                 '+' => {
                     token.kind = TokenKind::Plus;
@@ -443,40 +431,8 @@ impl Lexer {
                 '-' => {
                     token.kind = TokenKind::Minus;
                 },
-                '!' => {
-                    token.kind = TokenKind::Bang;
-                    if let Some(ch) = line.get(self.column + 1) {
-                        if *ch as char == '=' {
-                            token.kind = TokenKind::Ne;
-                            self.column += 1;
-                        }
-                    }
-                },
                 '*' => {
                     token.kind = TokenKind::Asterisk;
-                },
-                '/' => {
-                    if line[self.column + 1] as char == '/' {
-                        let mut len = 1;
-                        // While in bounds
-                        while self.column + len < line.len()
-                        // and char is not ending quote or new line
-                        && line[self.column + len] as char != '\n'
-                        {
-                            len += 1;
-                        }
-                        token.span.end_col += len;
-                        token.kind = TokenKind::Comment(
-                            std::str::from_utf8(&line[self.column + 2..self.column + len])
-                                .map_err(|e| {
-                                    Report::new(e).change_context(LexerError::InvalidUtf8)
-                                })?
-                                .into(),
-                        );
-                        self.column += len;
-                    } else {
-                        token.kind = TokenKind::Slash;
-                    }
                 },
                 '<' => {
                     token.kind = TokenKind::LT;
@@ -487,38 +443,76 @@ impl Lexer {
                 '.' => {
                     token.kind = TokenKind::Dot;
                 },
-                '&' => {
-                    if line[self.column + 1] as char == '&' {
+                '=' => match cur_line.get(self.column + 1) {
+                    Some(c) if *c as char == '=' => {
+                        token.kind = TokenKind::Eq;
+                        self.column += 1;
+                    },
+                    _ => token.kind = TokenKind::Assign,
+                },
+                '!' => match cur_line.get(self.column + 1) {
+                    Some(c) if *c as char == '=' => {
+                        token.kind = TokenKind::Ne;
+                        self.column += 1;
+                    },
+                    _ => token.kind = TokenKind::Bang,
+                },
+                '&' => match cur_line.get(self.column + 1) {
+                    Some(c) if *c as char == '&' => {
                         token.kind = TokenKind::And;
                         token.span.end_col += 1;
                         self.column += 1;
-                    } else {
-                        token.kind = TokenKind::BitAnd;
-                    }
+                    },
+                    _ => token.kind = TokenKind::BitAnd,
                 },
-                '|' => {
-                    if line[self.column + 1] as char == '|' {
+                '|' => match cur_line.get(self.column + 1) {
+                    Some(c) if *c as char == '|' => {
                         token.kind = TokenKind::Or;
                         token.span.end_col += 1;
                         self.column += 1;
-                    } else {
-                        token.kind = TokenKind::BitOr;
-                    }
+                    },
+                    _ => token.kind = TokenKind::BitOr,
+                },
+                '/' => match cur_line.get(self.column + 1) {
+                    Some(c) if *c as char == '/' => {
+                        let end_index = self.column
+                            + 2
+                            + cur_line[self.column + 2..]
+                                .iter()
+                                .take_while(|c| **c as char != '\n')
+                                .count();
+                        token.span.end_col += end_index - self.column;
+                        token.kind = TokenKind::Comment(
+                            std::str::from_utf8(&cur_line[self.column + 2..end_index])
+                                .map_err(|e| {
+                                    Report::new(e).change_context(LexerError::InvalidUtf8)
+                                })?
+                                .into(),
+                        );
+                        self.column = end_index;
+                    },
+                    _ => token.kind = TokenKind::Slash,
                 },
                 '"' => {
                     let mut len = 1;
-                    // While in bounds
-                    while self.column + len < line.len()
-                        // and char is not ending quote or new line
-                        && !matches!(line[self.column + len] as char, '"' | '\n')
-                        // and if there is a ending quote a new line make sure it's not escaped
-                        || (matches!(line[self.column + len] as char, '"' | '\n') && line[self.column + len - 1] as char == '\\')
-                    {
+                    while self.column + len < cur_line.len() {
+                        let current_char = cur_line[self.column + len] as char;
+                        let prev_char = cur_line.get(self.column + len - 1).map(|c| *c as char);
+                        if current_char == '"' && prev_char != Some('\\') {
+                            break;
+                        } else if current_char == '\n' {
+                            return Err(Report::new(LexerError::UnterminatedString).attach(Span {
+                                start_row: self.line,
+                                start_col: self.column,
+                                end_row: self.line,
+                                end_col: self.column + len,
+                            }));
+                        }
                         len += 1;
                     }
                     token.span.end_col += len;
                     token.kind = TokenKind::String(
-                        std::str::from_utf8(&line[self.column + 1..self.column + len])
+                        std::str::from_utf8(&cur_line[self.column + 1..self.column + len])
                             .map_err(|e| Report::new(e).change_context(LexerError::InvalidUtf8))?
                             .into(),
                     );
@@ -526,60 +520,59 @@ impl Lexer {
                 },
                 'A'..='Z' | 'a'..='z' => {
                     let mut len = 1;
-                    while self.column + len < line.len()
-                        && matches!(line[self.column+len] as char, 'A'..='Z' | 'a'..='z' | '0'..='9' | '_')
+                    while self.column + len < cur_line.len()
+                        && matches!(cur_line[self.column+len] as char, 'A'..='Z' | 'a'..='z' | '0'..='9' | '_')
                     {
                         len += 1;
                     }
                     token.span.end_col += len - 1;
-                    match std::str::from_utf8(&line[self.column..self.column + len]) {
-                        Ok("let") => {
+                    match std::str::from_utf8(&cur_line[self.column..self.column + len])
+                        .map_err(|e| Report::new(e).change_context(LexerError::InvalidUtf8))?
+                    {
+                        "let" => {
                             token.kind = TokenKind::Let;
                         },
-                        Ok("fn") => {
+                        "fn" => {
                             token.kind = TokenKind::Func;
                         },
-                        Ok("true") => {
+                        "true" => {
                             token.kind = TokenKind::True;
                         },
-                        Ok("false") => {
+                        "false" => {
                             token.kind = TokenKind::False;
                         },
-                        Ok("if") => {
+                        "if" => {
                             token.kind = TokenKind::If;
                         },
-                        Ok("else") => {
+                        "else" => {
                             token.kind = TokenKind::Else;
                         },
-                        Ok("return") => {
+                        "return" => {
                             token.kind = TokenKind::Return;
                         },
-                        Ok("for") => {
+                        "for" => {
                             token.kind = TokenKind::For;
                         },
-                        Ok("in") => {
+                        "in" => {
                             token.kind = TokenKind::In;
                         },
-                        Ok("mut") => {
+                        "mut" => {
                             token.kind = TokenKind::Mut;
                         },
-                        Ok("break") => {
+                        "break" => {
                             token.kind = TokenKind::Break;
                         },
-                        Ok("continue") => {
+                        "continue" => {
                             token.kind = TokenKind::Continue;
                         },
-                        Ok("loop") => {
+                        "loop" => {
                             token.kind = TokenKind::Loop;
                         },
-                        Ok("while") => {
+                        "while" => {
                             token.kind = TokenKind::While;
                         },
-                        Ok(ident) => {
+                        ident => {
                             token.kind = TokenKind::Ident(ident.into());
-                        },
-                        Err(e) => {
-                            return Err(Report::new(e).change_context(LexerError::InvalidUtf8));
                         },
                     };
                     self.column += len - 1;

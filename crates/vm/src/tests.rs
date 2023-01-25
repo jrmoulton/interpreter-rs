@@ -2,9 +2,9 @@ use compiler::Compiler;
 use expect_test::expect_file;
 use lexer::{Lexer, PeekLex};
 use parser::parse;
+use pretty_assertions::assert_eq;
 
 use super::*;
-use pretty_assertions::assert_eq;
 
 fn new_vm(code: &'static str) -> (VM, Vec<OpCode>) {
     let lexer = Lexer::new(code.into());

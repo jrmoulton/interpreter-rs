@@ -38,8 +38,8 @@ impl Compiler {
     ) -> Result<(), CompileError> {
         match statement {
             Statement::Let { ident, expr, span } => {
-                let ident: Rc<str> = Rc::from(ident.as_str());
                 self.compile_expr_base(expr, bytecode, symbol_table);
+                let ident: Rc<str> = Rc::from(ident.as_str());
                 symbol_table.define(ident);
                 bytecode.push(OpCode::CreateGlobal);
             },

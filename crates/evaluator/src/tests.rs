@@ -9,9 +9,8 @@ use crate::{eval, Environment};
 
 mod results {
 
-    use crate::EvalObj;
-
     use super::*;
+    use crate::EvalObj;
 
     fn get_inner_helper(code: &'static str) -> EvalObj {
         let lexer = Lexer::new(code.into());

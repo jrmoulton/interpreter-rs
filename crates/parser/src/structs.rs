@@ -114,6 +114,7 @@ impl Expr {
             | MethodCall { span, .. } => *span,
         }
     }
+
     pub fn into_statement(
         self, lexer: &mut PeekLex, error: &mut Option<Report<ParseError>>,
     ) -> Statement {
