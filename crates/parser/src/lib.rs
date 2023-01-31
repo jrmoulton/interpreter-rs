@@ -217,7 +217,7 @@ fn parse_expression(lexer: &mut PeekLex, prec: Precedence) -> ParseResult<Expr> 
             // All binary tokens should be matched here. This includes LParen but LParen will match
             // to a different function because it is the start of a function call which needs
             // a few more checks than just regular binary expressions
-            Plus | Minus | Slash | Asterisk | Eq | Ne | LT | GT | Assign | BitOr | Or | BitAnd
+            Plus | Minus | Slash | Asterisk | Eq | Ne | Lt | Gt | Assign | BitOr | Or | BitAnd
             | And => parse_binary_expression(lexer, left_exp)?,
             LParen => parse_call_expression(lexer, left_exp)?,
             LBracket => parse_array_index(lexer, left_exp)?,

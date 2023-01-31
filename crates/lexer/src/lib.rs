@@ -83,8 +83,8 @@ pub enum TokenKind {
     And,
 
     // Comparators
-    LT,
-    GT,
+    Lt,
+    Gt,
     Eq,
     Ne,
 
@@ -133,8 +133,8 @@ impl Display for TokenKind {
             Self::BitOr => "`|`".into(),
             Self::Or => "`||`".into(),
             Self::And => "`&&`".into(),
-            Self::LT => "`<`".into(),
-            Self::GT => "`>`".into(),
+            Self::Lt => "`<`".into(),
+            Self::Gt => "`>`".into(),
             Self::Eq => "`==`".into(),
             Self::Ne => "`!=`".into(),
             Self::Comma => "`,`".into(),
@@ -167,8 +167,8 @@ impl TokenKind {
             Minus => Sum,
             Slash => Product,
             Asterisk => Product,
-            LT => LessGreat,
-            GT => LessGreat,
+            Lt => LessGreat,
+            Gt => LessGreat,
             Eq => Equals,
             Ne => Equals,
             Or => LogicOr,
@@ -296,34 +296,28 @@ where
 {
     pub fn peek(&mut self) -> Option<&Token> {
         let iter = &mut self.iter;
-        match self.peeked.get(0).unwrap() {
-            Some(_p1) => self.peeked.get(0).unwrap().as_ref().unwrap().as_ref(),
-            None => match self.peeked.get(1).unwrap() {
-                Some(_p2) => {
-                    self.peeked[0] = self.peeked[1].take();
-                    self.peeked.get(0).unwrap().as_ref().unwrap().as_ref()
-                },
-                None => {
-                    self.peeked[0] = Some(iter.next_token().unwrap());
-                    self.peeked.get(0).unwrap().as_ref().unwrap().as_ref()
-                },
+        match self.peeked[0] {
+            Some(ref p1) => p1.as_ref(),
+            None => {
+                self.peeked[0] = iter.next_token().ok();
+                self.peeked[0].as_ref().unwrap().as_ref()
             },
         }
     }
 
     pub fn peek2(&mut self) -> Option<&Token> {
         let iter = &mut self.iter;
-        match self.peeked.get(1).unwrap() {
-            Some(_p2) => self.peeked.get(1).unwrap().as_ref().unwrap().as_ref(),
-            None => match self.peeked.get(0).unwrap() {
-                Some(_p1) => {
-                    self.peeked[1] = Some(iter.next_token().unwrap());
-                    self.peeked.get(1).unwrap().as_ref().unwrap().as_ref()
+        match self.peeked[1] {
+            Some(ref p2) => p2.as_ref(),
+            None => match self.peeked[0] {
+                Some(ref _p1) => {
+                    self.peeked[1] = iter.next_token().ok();
+                    self.peeked[1].as_ref().unwrap().as_ref()
                 },
                 None => {
-                    self.peeked[0] = Some(iter.next_token().unwrap());
-                    self.peeked[1] = Some(iter.next_token().unwrap());
-                    self.peeked.get(1).unwrap().as_ref().unwrap().as_ref()
+                    self.peeked[0] = iter.next_token().ok();
+                    self.peeked[1] = iter.next_token().ok();
+                    self.peeked[1].as_ref().unwrap().as_ref()
                 },
             },
         }
@@ -435,10 +429,10 @@ impl Lexer {
                     token.kind = TokenKind::Asterisk;
                 },
                 '<' => {
-                    token.kind = TokenKind::LT;
+                    token.kind = TokenKind::Lt;
                 },
                 '>' => {
-                    token.kind = TokenKind::GT;
+                    token.kind = TokenKind::Gt;
                 },
                 '.' => {
                     token.kind = TokenKind::Dot;
