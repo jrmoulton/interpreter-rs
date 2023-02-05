@@ -5,7 +5,10 @@ use std::rc::Rc;
 use bytecode::OpCode;
 use error_stack::Result;
 use lexer::{Span, Token};
-use parser::structs::{ElseIfExpr, Expr, Scope, Statement};
+use parser::{
+    expr::{ElseIfExpr, Expr, Scope},
+    statement::Statement,
+};
 pub use structs::*;
 pub use symbol_table::Symbol;
 use symbol_table::SymbolTable;
@@ -48,7 +51,7 @@ impl Compiler {
                 let symbol = symbol_table.resolve(ident).unwrap();
                 bytecode.push(OpCode::SetGlobal(symbol.index));
                 bytecode.push(OpCode::Pop); // Pop the expr (this pop
-                                            // matches the semicolon)
+                // matches the semicolon)
             },
             Statement::Return { expr, .. } => {
                 if let Some(expr) = expr {
@@ -69,7 +72,7 @@ impl Compiler {
     fn compile_expr_base(
         &mut self, expr_base: Expr, bytecode: &mut Vec<OpCode>, symbol_table: &mut SymbolTable,
     ) -> Result<(), CompileError> {
-        use parser::structs::Expr::*;
+        use Expr::*;
         match expr_base {
             IntLiteral { val, .. } => {
                 let len = self.constants.len();
@@ -158,12 +161,12 @@ impl Compiler {
             Some(alt) => {
                 match alt {
                     // if expressions are recursively compiled
-                    parser::structs::ElseIfExpr::ElseIf(if_expr) => {
+                    ElseIfExpr::ElseIf(if_expr) => {
                         self.compile_expr_base((*if_expr).into(), bytecode, symbol_table)?;
                     },
                     // the else condition is handled. Here we now know how long the conditional jump
                     // needs to be. The conditional jump go to the start of the else
-                    parser::structs::ElseIfExpr::Else(scope) => {
+                    ElseIfExpr::Else(scope) => {
                         let curr_len = bytecode.len();
                         std::mem::replace(
                             &mut bytecode[test_jump_pos],

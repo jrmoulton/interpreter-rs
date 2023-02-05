@@ -291,8 +291,7 @@ impl PeekLex {
     }
 }
 impl PeekLex
-where
-    PeekLex: Iterator,
+where PeekLex: Iterator
 {
     pub fn peek(&mut self) -> Option<&Token> {
         let iter = &mut self.iter;

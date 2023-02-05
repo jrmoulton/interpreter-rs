@@ -1,6 +1,6 @@
 use std::fmt::Display;
 
-use parser::structs::{Ident, Scope};
+use parser::expr::{Ident, Scope};
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum Object<T> {

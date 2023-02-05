@@ -1,9 +1,15 @@
-pub mod structs;
+pub mod error;
+pub mod expr;
+pub mod statement;
+mod structs;
 mod tests;
 
+use error::*;
 use error_stack::Report;
+use expr::*;
 use lexer::{PeekLex, Precedence, Token, TokenKind};
 use owo_colors::OwoColorize;
+use statement::Statement;
 use structs::*;
 
 pub fn parse(lexer: &mut PeekLex) -> ParseResult<Vec<Statement>> {
@@ -312,7 +318,7 @@ fn parse_array_index(lexer: &mut PeekLex, left: Expr) -> ParseResult<Expr> {
         array: Box::new(left),
         index: Box::new(index.unwrap()),
         span: lbracket.span + rbracket.unwrap().span,
-        })   
+        })
     };
     Err(e)
 }
@@ -409,11 +415,9 @@ fn parse_call_args(lexer: &mut PeekLex, end_token: TokenKind) -> ParseResult<Vec
             },
         }
     }
-
-    if let Some(e) = error {
-        Err(e)
-    } else {
-        Ok(arguments)
+    match error {
+        Some(e) => Err(e),
+        None => Ok(arguments),
     }
 }
 

@@ -6,7 +6,7 @@ use std::{
 };
 
 use error_stack::Context;
-use parser::structs::*;
+use parser::expr::Expr;
 
 use crate::EvalObj;
 

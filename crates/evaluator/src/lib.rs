@@ -6,7 +6,7 @@ use std::{any::Any, collections::HashMap, sync::Arc};
 use error_stack::{Report, Result};
 use lexer::TokenKind;
 use object::Object;
-use parser::structs::*;
+use parser::{error::*, expr::*, statement::Statement};
 
 use crate::structs::*;
 
