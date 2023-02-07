@@ -1,8 +1,10 @@
+mod error;
 pub mod structs;
 mod tests;
 
 use std::{any::Any, collections::HashMap, sync::Arc};
 
+use error::EvalError;
 use error_stack::{Report, Result};
 use lexer::TokenKind;
 use object::Object;
@@ -110,6 +112,7 @@ impl From<Vec<EvalObj>> for EvalObj {
 type EvalResult = Result<EvalObj, EvalError>;
 
 pub fn eval(statements: Vec<Statement>, env: Arc<Environment>) -> EvalResult {
+    // Install debug hooks for nice formatting for environment
     Report::install_debug_hook::<Suggestion>(|suggestion, context| {
         context.push_body(suggestion.to_string())
     });
@@ -119,6 +122,8 @@ pub fn eval(statements: Vec<Statement>, env: Arc<Environment>) -> EvalResult {
         use std::panic::Location;
         Report::install_debug_hook::<Location>(|_value, _context| {});
     }
+
+    // Run eval on each statement
     let mut last_obj = None;
     for statement in statements {
         match statement {
