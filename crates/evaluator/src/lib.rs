@@ -1,4 +1,5 @@
 mod error;
+mod object;
 pub mod structs;
 mod tests;
 
@@ -7,7 +8,7 @@ use std::{collections::HashMap, sync::Arc};
 use error::EvalError;
 use error_stack::{Report, Result};
 use lexer::TokenKind;
-use object::Object;
+use object::{EvalObj, Object};
 use parser::{error::*, expr::*, statement::Statement};
 
 use crate::structs::*;

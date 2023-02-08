@@ -1,3 +1,4 @@
+pub mod object;
 mod structs;
 mod symbol_table;
 use std::rc::Rc;
@@ -51,7 +52,7 @@ impl Compiler {
                 let symbol = symbol_table.resolve(ident).unwrap();
                 bytecode.push(OpCode::SetGlobal(symbol.index));
                 bytecode.push(OpCode::Pop); // Pop the expr (this pop
-                // matches the semicolon)
+                                            // matches the semicolon)
             },
             Statement::Return { expr, .. } => {
                 if let Some(expr) = expr {

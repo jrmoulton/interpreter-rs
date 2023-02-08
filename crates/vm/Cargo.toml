@@ -9,7 +9,6 @@ edition = "2021"
 evaluator = { workspace = true }
 bytecode = { workspace = true }
 compiler = { workspace = true }
-object.workspace = true
 
 error-stack = {workspace = true}
 
