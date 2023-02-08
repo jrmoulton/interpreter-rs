@@ -5,6 +5,7 @@ use std::rc::Rc;
 use bytecode::OpCode;
 use error_stack::Result;
 use lexer::{Span, Token};
+use object::Object;
 use parser::{
     expr::{ElseIfExpr, Expr, Scope},
     statement::Statement,
@@ -51,7 +52,7 @@ impl Compiler {
                 let symbol = symbol_table.resolve(ident).unwrap();
                 bytecode.push(OpCode::SetGlobal(symbol.index));
                 bytecode.push(OpCode::Pop); // Pop the expr (this pop
-                                            // matches the semicolon)
+                // matches the semicolon)
             },
             Statement::Return { expr, .. } => {
                 if let Some(expr) = expr {
@@ -105,7 +106,7 @@ impl Compiler {
                 let len = self.constants.len();
                 let idx = self
                     .constants
-                    .entry(object::Object::CompFunc(func_bytecode))
+                    .entry(Object::CompFunc(func_bytecode))
                     .or_insert(len);
                 bytecode.push(OpCode::Const(*idx));
             },
