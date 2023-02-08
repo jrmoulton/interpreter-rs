@@ -1,10 +1,10 @@
 use std::{collections::HashMap, fmt::Debug};
 
-use crate::object::Object;
+use object::Object;
 
 pub struct Compiler {
-    pub constants: HashMap<Object, usize>,
-    pub const_vec: Vec<Object>,
+    pub constants: HashMap<Object<()>, usize>,
+    pub const_vec: Vec<Object<()>>,
 }
 impl Debug for Compiler {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
@@ -26,7 +26,7 @@ impl Compiler {
     }
 
     pub(crate) fn fill_const_vec(&mut self) {
-        let mut x: Vec<(Object, usize)> = self
+        let mut x: Vec<(Object<()>, usize)> = self
             .constants
             .iter()
             .map(|(obj, num)| (obj.clone(), *num))

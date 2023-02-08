@@ -1,15 +1,18 @@
 use std::fmt::Display;
 
+use parser::expr::{Ident, Scope};
+
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub enum Object {
+pub enum Object<T> {
     Integer(i64),
     Boolean(bool),
     String(std::string::String),
-    Array(Vec<Object>),
+    Array(Vec<Object<T>>),
+    EvalFunc { parameters: Vec<Ident>, body: Scope, env: T },
     CompFunc(Vec<bytecode::OpCode>),
     Empty,
 }
-impl Object {
+impl<T> Object<T> {
     pub fn expect_bool(self) -> Option<bool> {
         if let Self::Boolean(val) = self {
             Some(val)
@@ -18,46 +21,46 @@ impl Object {
         }
     }
 }
-impl Display for Object {
+impl<T: std::fmt::Debug> Display for Object<T> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             Object::Integer(val) => write!(f, "{val}"),
             Object::Boolean(val) => write!(f, "{val}"),
             Object::String(val) => write!(f, "{val}"),
             Object::Array(val) => f.debug_set().entries(val.iter()).finish(),
-            Object::CompFunc(_) => write!(f, "Func at addr:{self:p}"),
+            Object::EvalFunc { .. } | Object::CompFunc(_) => write!(f, "Func at addr:{self:p}"),
             Object::Empty => write!(f, ""),
         }
     }
 }
-impl Default for Object {
+impl<T> Default for Object<T> {
     fn default() -> Self {
         Self::Empty
     }
 }
 
-impl From<i64> for Object {
+impl<T> From<i64> for Object<T> {
     fn from(val: i64) -> Self {
         Self::Integer(val)
     }
 }
-impl From<bool> for Object {
+impl<T> From<bool> for Object<T> {
     fn from(val: bool) -> Self {
         Self::Boolean(val)
     }
 }
-impl From<std::string::String> for Object {
+impl<T> From<std::string::String> for Object<T> {
     fn from(val: std::string::String) -> Self {
         Self::String(val)
     }
 }
-impl From<()> for Object {
+impl<T> From<()> for Object<T> {
     fn from(_: ()) -> Self {
         Self::Empty
     }
 }
-impl From<Vec<Object>> for Object {
-    fn from(val: Vec<Object>) -> Self {
+impl<T> From<Vec<Object<T>>> for Object<T> {
+    fn from(val: Vec<Object<T>>) -> Self {
         Object::Array(val)
     }
 }
