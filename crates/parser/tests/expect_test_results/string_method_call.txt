@@ -6,7 +6,7 @@
                 span: (0,1)->(0,8),
             },
             method: FuncCall {
-                function: Identifier {
+                function_ident: Identifier {
                     ident: "len",
                     span: (0,10)->(0,12),
                 },

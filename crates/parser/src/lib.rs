@@ -281,7 +281,7 @@ fn parse_left_expression(lexer: &mut PeekLex) -> ParseResult<Expr> {
                 parse_grouped_expression(lexer)?
             },
             If => parse_if_expression(lexer)?.into(),
-            Func => parse_func_literal(lexer)?,
+            Func => parse_func_def(lexer)?,
             TokenKind::LBrace => parse_scope(lexer)?.into(),
             TokenKind::LBracket => parse_array(lexer)?,
             _ => {
@@ -356,7 +356,7 @@ fn parse_method_expression(lexer: &mut PeekLex, instance: Expr) -> ParseResult<E
     })
 }
 
-fn parse_call_expression(lexer: &mut PeekLex, function: Expr) -> ParseResult<Expr> {
+fn parse_call_expression(lexer: &mut PeekLex, function_ident: Expr) -> ParseResult<Expr> {
     let mut error: Option<Report<ParseError>> = None;
     let _lparen = lexer.next().expect("already matched");
     let args = match parse_call_args(lexer, TokenKind::RParen) {
@@ -370,8 +370,8 @@ fn parse_call_expression(lexer: &mut PeekLex, function: Expr) -> ParseResult<Exp
         .next()
         .expect("already matched and checked in parse_call_args");
     Ok(Expr::FuncCall {
-        span: function.get_span() + rparen.span,
-        function: Box::new(function),
+        span: function_ident.get_span() + rparen.span,
+        function_ident: Box::new(function_ident),
         args,
     })
 }
@@ -421,7 +421,7 @@ fn parse_call_args(lexer: &mut PeekLex, end_token: TokenKind) -> ParseResult<Vec
     }
 }
 
-fn parse_func_literal(lexer: &mut PeekLex) -> ParseResult<Expr> {
+fn parse_func_def(lexer: &mut PeekLex) -> ParseResult<Expr> {
     let fn_tok = lexer
         .next()
         .expect("fn token should already be already matched");

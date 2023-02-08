@@ -109,7 +109,11 @@ impl Compiler {
                     .or_insert(len);
                 bytecode.push(OpCode::Const(*idx));
             },
-            FuncCall { function, args, span } => {
+            FuncCall {
+                function_ident: function,
+                args,
+                span,
+            } => {
                 // self.bytecode.push(OpCode::Const(*idx));
                 self.compile_expr_base(*function, bytecode, symbol_table);
                 bytecode.push(OpCode::Call);

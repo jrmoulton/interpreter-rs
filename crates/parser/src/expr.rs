@@ -33,7 +33,7 @@ pub enum Expr {
         span: Span,
     },
     FuncCall {
-        function: Box<Expr>,
+        function_ident: Box<Expr>,
         args: Vec<Expr>,
         span: Span,
     },
@@ -147,7 +147,7 @@ impl Display for Expr {
                 ret_str.push(')');
                 format!("fn{ret_str}{{...}}")
             },
-            Expr::FuncCall { function, args, .. } => {
+            Expr::FuncCall { function_ident: function, args, .. } => {
                 let mut ret_str = String::from("[ ");
                 for arg in args.iter() {
                     write!(ret_str, "{arg}, ")?;

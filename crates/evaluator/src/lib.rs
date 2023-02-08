@@ -2,7 +2,7 @@ mod error;
 pub mod structs;
 mod tests;
 
-use std::{any::Any, collections::HashMap, sync::Arc};
+use std::{collections::HashMap, sync::Arc};
 
 use error::EvalError;
 use error_stack::{Report, Result};
@@ -11,105 +11,6 @@ use object::Object;
 use parser::{error::*, expr::*, statement::Statement};
 
 use crate::structs::*;
-
-trait ExtendAssign {
-    fn extend(&mut self, e: Report<EvalError>);
-}
-impl ExtendAssign for Option<Report<EvalError>> {
-    fn extend(&mut self, e: Report<EvalError>) {
-        if let Some(error) = self.as_mut() {
-            error.extend_one(e);
-        } else {
-            *self = Some(e);
-        }
-    }
-}
-
-#[derive(Clone, Debug)]
-pub struct EvalObj {
-    is_return: bool,
-    obj: object::Object<Arc<Environment>>,
-}
-impl std::fmt::Display for EvalObj {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.write_fmt(format_args!("{}", self.obj))
-    }
-}
-impl EvalObj {
-    fn is_return(&self) -> bool {
-        self.is_return
-    }
-
-    fn set_return(&mut self) {
-        self.is_return = true;
-    }
-
-    pub fn inner(&self) -> &dyn Any {
-        match &self.obj {
-            Object::Integer(val) => val,
-            Object::Boolean(val) => val,
-            Object::String(val) => val,
-            Object::Array(val) => val,
-            Object::EvalFunc { .. } => &None::<()>,
-            Object::CompFunc(_) => &None::<()>,
-            Object::Empty => &(),
-        }
-    }
-}
-impl Default for EvalObj {
-    fn default() -> Self {
-        Self { is_return: false, obj: ().into() }
-    }
-}
-impl From<Object<Arc<Environment>>> for EvalObj {
-    fn from(val: Object<Arc<Environment>>) -> Self {
-        Self { is_return: false, obj: val }
-    }
-}
-
-impl From<i64> for EvalObj {
-    fn from(val: i64) -> Self {
-        Self {
-            obj: val.into(),
-            ..Default::default()
-        }
-    }
-}
-impl From<bool> for EvalObj {
-    fn from(val: bool) -> Self {
-        Self {
-            obj: val.into(),
-            ..Default::default()
-        }
-    }
-}
-impl From<std::string::String> for EvalObj {
-    fn from(val: std::string::String) -> Self {
-        Self {
-            obj: val.into(),
-            ..Default::default()
-        }
-    }
-}
-impl From<()> for EvalObj {
-    fn from(_: ()) -> Self {
-        Self { ..Default::default() }
-    }
-}
-impl From<Vec<EvalObj>> for EvalObj {
-    fn from(mut val: Vec<EvalObj>) -> Self {
-        Self {
-            obj: Object::Array(
-                val.iter_mut()
-                    .map(|val| std::mem::take(&mut val.obj))
-                    .collect(),
-            ),
-            ..Default::default()
-        }
-    }
-}
-
-type EvalResult = Result<EvalObj, EvalError>;
 
 pub fn eval(statements: Vec<Statement>, env: Arc<Environment>) -> EvalResult {
     // Install debug hooks for nice formatting for environment
@@ -168,8 +69,8 @@ fn eval_expr_base(expr_base: Expr, env: Arc<Environment>) -> EvalResult {
         Expr::FuncDef { parameters, body, .. } => {
             Ok(Object::EvalFunc { parameters, body, env }.into())
         },
-        Expr::FuncCall { function, args, .. } => {
-            let function_obj = eval_expr_base(*function, env.clone())?;
+        Expr::FuncCall { function_ident, args, .. } => {
+            let function_obj = eval_expr_base(*function_ident, env.clone())?;
             let args: Result<Vec<EvalObj>, EvalError> = args
                 .iter()
                 .map(|arg| eval_expr_base(arg.clone(), env.clone()))
@@ -261,7 +162,15 @@ fn apply_function(function_obj: EvalObj, args: Vec<EvalObj>) -> EvalResult {
                 .map(|param_ident| std::mem::take(&mut param_ident.ident))
                 .collect();
             if param_strings.len() != args.len() {
-                Err(Report::new(EvalError::MismatchedNumOfFunctionParams))?
+                Err(
+                    Report::new(EvalError::MismatchedNumOfFunctionParams).attach_printable(
+                        format!(
+                            "Expected {} parameters but found {}",
+                            param_strings.len(),
+                            args.len()
+                        ),
+                    ),
+                )?
             }
             let mut new_env = HashMap::new();
             param_strings.iter().zip(args).for_each(|(param, object)| {
@@ -272,7 +181,8 @@ fn apply_function(function_obj: EvalObj, args: Vec<EvalObj>) -> EvalResult {
                 Arc::new(Environment::new_from_map_and_outer(new_env, env)),
             )
         },
-        _ => unreachable!("No other objects match to calling this function {function_obj}"),
+        _ => Err(Report::new(EvalError::UnexpectedObject(function_obj))
+            .attach_printable("Expected a function object")),
     }
 }
 
