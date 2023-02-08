@@ -3,29 +3,35 @@
 
 [![Documentation](https://docs.rs/dacx0501/badge.svg)](https://docs.rs/dacx0501)
 
-A custom hand-written interpreter from scratch
+A custom hand-written interpreter ***and*** compiler from scratch (based on "Building an interpreter in Go" by Thorsten Ball)
 
 ## What is Interpreter-rs
 
-This project is an interpreter for an expression heavy dynamically typed language with rust-like syntax. Its purpose is to teach the building of an interpreter
+This project is an interpreter and a compiler (these are separate language implementations that share the same parser) for an expression heavy dynamically typed language with python/rust like syntax. 
 
 ## What is supported
 
-There is a lexer and a parser that are _finished_. This supports much of what a typical language would consist of although it does currently lack loops. The parser produces and AST that is passed to the evaluator. This does include support for proper parsing of operator precedence using a recursive descent parser. The evaluator is in nearly finished and supports expressions, variable binding, a REPL and has high quality error messages.
+This language supports expressions, functions, assignment, recursion, closures as well as a few language built-ins. The interpreter/evaluator has a more complete implementation than the compiler currently. 
 
-## A few short examples of code that can be properly parsed and evaluated
+## Examples
 
+### Fibbonacci Example
 ```rust
-let x = 5;
-foobar;
-let y = (3 + 3) * 5;
-if a {
-  b
-} else if c {
-  d
-} else {
-  e
-}
-let multiply = fn(x, y){x * y};
-100 / 20
+let fib = fn(n) {
+   if n < 2 {
+       n
+   } else {
+       fib(n-1) + fib(n-2)
+   }
+};
+fib(25)
+```
+
+### Closure Example
+``` rust
+let new_adder = fn(x) { 
+  fn(y) {x + y} // Implicit return of a function that adds y to the x (this is the magic of the closure)
+}; 
+let add_two = new_adder(2);
+add_two(3) // -> returns 5
 ```
