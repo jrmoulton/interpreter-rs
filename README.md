@@ -15,7 +15,7 @@ This language supports expressions, functions, assignment, recursion, closures a
 
 ## Examples
 
-### Fibbonacci Example
+### Recursion Example with Fibbonacci
 ```rust
 let fib = fn(n) {
    if n < 2 {
