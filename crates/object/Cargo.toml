@@ -9,4 +9,6 @@ edition = "2021"
 parser.workspace = true
 bytecode.workspace = true
 
-polars = "0.26.1"
+[features]
+evaluate = []
+compile = []

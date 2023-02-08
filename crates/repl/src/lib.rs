@@ -3,7 +3,7 @@ use std::{
     sync::Arc,
 };
 
-use evaluator::{eval, structs::Environment};
+use evaluator::{eval, Environment};
 use lexer::{Lexer, PeekLex};
 use owo_colors::OwoColorize;
 use parser::parse;

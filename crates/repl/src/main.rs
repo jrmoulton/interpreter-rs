@@ -1,7 +1,7 @@
 use std::{error::Error, fs, sync::Arc};
 
 use clap::Parser;
-use evaluator::{eval, structs::Environment};
+use evaluator::{eval, Environment};
 use lexer::{Lexer, PeekLex};
 use parser::parse;
 use repl::start;

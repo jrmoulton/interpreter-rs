@@ -8,7 +8,7 @@ edition = "2021"
 [dependencies]
 parser = { workspace = true }
 lexer = { workspace = true }
-object.workspace = true
+object = {path = "../object", features = ["evaluate"]}
 
 error-stack = { workspace = true }
 owo-colors = { workspace = true }

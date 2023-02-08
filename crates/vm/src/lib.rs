@@ -3,16 +3,14 @@ use std::{
     fmt::{Debug, Display},
 };
 
-type CompObj = Object<()>;
-
 use bytecode::OpCode;
 use error_stack::Result;
 use object::Object;
 
 pub struct VM {
-    constants: Vec<CompObj>,
-    globals: Vec<CompObj>,
-    stack: Vec<CompObj>,
+    constants: Vec<Object>,
+    globals: Vec<Object>,
+    stack: Vec<Object>,
     ip: usize,
     sp: usize,
 }
@@ -38,7 +36,7 @@ impl Display for VMError {
 impl Error for VMError {}
 
 impl VM {
-    pub fn new(constants: Vec<Object<()>>) -> Self {
+    pub fn new(constants: Vec<Object>) -> Self {
         Self {
             constants,
             globals: Vec::new(),
@@ -48,7 +46,7 @@ impl VM {
         }
     }
 
-    pub fn run(&mut self, bytecode: Vec<OpCode>) -> Result<CompObj, VMError> {
+    pub fn run(&mut self, bytecode: Vec<OpCode>) -> Result<Object, VMError> {
         let instruction_len = bytecode.len();
         while self.ip < instruction_len {
             let op = bytecode[self.ip];
@@ -107,13 +105,13 @@ impl VM {
     fn execute_prefix_expression(&mut self, op: OpCode) {
         let left = self.pop();
         self.stack[self.sp] = match left {
-            CompObj::Integer(int) => match op {
+            Object::Integer(int) => match op {
                 OpCode::Neg => (-int).into(),
                 OpCode::Positive => unreachable!("Not actually ever going to get this instruction"),
                 OpCode::Bang => (!int).into(),
                 _ => unreachable!(),
             },
-            CompObj::Boolean(bool) => match op {
+            Object::Boolean(bool) => match op {
                 OpCode::Bang => (!bool).into(),
                 _ => unreachable!(),
             },
@@ -126,7 +124,7 @@ impl VM {
         let right = self.pop();
         let left = self.pop();
         self.stack[self.sp] = match (left, right) {
-            (CompObj::Integer(left_int), CompObj::Integer(right_int)) => match op {
+            (Object::Integer(left_int), Object::Integer(right_int)) => match op {
                 OpCode::Add => (left_int + right_int).into(),
                 OpCode::Sub => (left_int - right_int).into(),
                 OpCode::Mul => (left_int * right_int).into(),
@@ -137,7 +135,7 @@ impl VM {
                 OpCode::LessThan => (left_int < right_int).into(),
                 _ => unreachable!(),
             },
-            (CompObj::String(left_str), CompObj::String(right_str)) => match op {
+            (Object::String(left_str), Object::String(right_str)) => match op {
                 OpCode::Add => (left_str + &right_str).into(),
                 OpCode::Equal => (left_str == right_str).into(),
                 OpCode::NotEqual => (left_str != right_str).into(),
@@ -150,7 +148,7 @@ impl VM {
         self.sp += 1;
     }
 
-    fn pop(&mut self) -> CompObj {
+    fn pop(&mut self) -> Object {
         self.sp -= 1;
         std::mem::replace(&mut self.stack[self.sp], ().into())
     }
